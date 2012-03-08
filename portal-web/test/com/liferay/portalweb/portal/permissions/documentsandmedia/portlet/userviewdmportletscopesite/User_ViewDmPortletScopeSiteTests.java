@@ -16,7 +16,7 @@ package com.liferay.portalweb.portal.permissions.documentsandmedia.portlet.userv
 
 import com.liferay.portalweb.portal.BaseTestSuite;
 import com.liferay.portalweb.portal.controlpanel.users.user.adduser.AddUserTest;
-import com.liferay.portalweb.portal.controlpanel.users.user.adduser.EditUserPasswordTest;
+import com.liferay.portalweb.portal.controlpanel.users.user.edituserpassword.EditUserPasswordTest;
 import com.liferay.portalweb.portal.controlpanel.users.user.signin.SignInTest;
 import com.liferay.portalweb.portal.controlpanel.users.user.signin.SignOutTest;
 import com.liferay.portalweb.portal.util.TearDownPageTest;
