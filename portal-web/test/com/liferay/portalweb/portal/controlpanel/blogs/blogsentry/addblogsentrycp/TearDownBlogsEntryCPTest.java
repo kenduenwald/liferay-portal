@@ -57,116 +57,84 @@ public class TearDownBlogsEntryCPTest extends BaseTestCase {
 				selenium.waitForPageToLoad("30000");
 				loadRequiredJavaScriptModules();
 
-				boolean entry1Present = selenium.isElementPresent(
-						"//input[@name='_161_rowIds']");
+				boolean entryNotRecycled = selenium.isElementPresent(
+						"//td[1]/input");
 
-				if (!entry1Present) {
-					label = 6;
-
-					continue;
-				}
-
-				assertFalse(selenium.isChecked(
-						"//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@name='_161_allRowIds']",
-					RuntimeVariables.replace("All Rows"));
-				assertTrue(selenium.isChecked("//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@value='Delete']",
-					RuntimeVariables.replace("Delete"));
-				selenium.waitForPageToLoad("30000");
-				loadRequiredJavaScriptModules();
-				assertTrue(selenium.getConfirmation()
-								   .matches("^Are you sure you want to delete the selected entries[\\s\\S]$"));
-
-				boolean entry2Present = selenium.isElementPresent(
-						"//input[@name='_161_rowIds']");
-
-				if (!entry2Present) {
-					label = 5;
-
-					continue;
-				}
-
-				assertFalse(selenium.isChecked(
-						"//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@name='_161_allRowIds']",
-					RuntimeVariables.replace("All Rows"));
-				assertTrue(selenium.isChecked("//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@value='Delete']",
-					RuntimeVariables.replace("Delete"));
-				selenium.waitForPageToLoad("30000");
-				loadRequiredJavaScriptModules();
-				assertTrue(selenium.getConfirmation()
-								   .matches("^Are you sure you want to delete the selected entries[\\s\\S]$"));
-
-				boolean entry3Present = selenium.isElementPresent(
-						"//input[@name='_161_rowIds']");
-
-				if (!entry3Present) {
-					label = 4;
-
-					continue;
-				}
-
-				assertFalse(selenium.isChecked(
-						"//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@name='_161_allRowIds']",
-					RuntimeVariables.replace("All Rows"));
-				assertTrue(selenium.isChecked("//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@value='Delete']",
-					RuntimeVariables.replace("Delete"));
-				selenium.waitForPageToLoad("30000");
-				loadRequiredJavaScriptModules();
-				assertTrue(selenium.getConfirmation()
-								   .matches("^Are you sure you want to delete the selected entries[\\s\\S]$"));
-
-				boolean entry4Present = selenium.isElementPresent(
-						"//input[@name='_161_rowIds']");
-
-				if (!entry4Present) {
-					label = 3;
-
-					continue;
-				}
-
-				assertFalse(selenium.isChecked(
-						"//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@name='_161_allRowIds']",
-					RuntimeVariables.replace("All Rows"));
-				assertTrue(selenium.isChecked("//input[@name='_161_allRowIds']"));
-				selenium.clickAt("//input[@value='Delete']",
-					RuntimeVariables.replace("Delete"));
-				selenium.waitForPageToLoad("30000");
-				loadRequiredJavaScriptModules();
-				assertTrue(selenium.getConfirmation()
-								   .matches("^Are you sure you want to delete the selected entries[\\s\\S]$"));
-
-				boolean entry5Present = selenium.isElementPresent(
-						"//input[@name='_161_rowIds']");
-
-				if (!entry5Present) {
+				if (!entryNotRecycled) {
 					label = 2;
 
 					continue;
 				}
 
-				assertFalse(selenium.isChecked(
-						"//input[@name='_161_allRowIds']"));
 				selenium.clickAt("//input[@name='_161_allRowIds']",
-					RuntimeVariables.replace("All Rows"));
-				assertTrue(selenium.isChecked("//input[@name='_161_allRowIds']"));
+					RuntimeVariables.replace("Select All"));
+				selenium.clickAt("//input[@value='Move to the Recycle Bin']",
+					RuntimeVariables.replace("Move to the Recycle Bin"));
+				selenium.waitForPageToLoad("30000");
+				loadRequiredJavaScriptModules();
+				assertTrue(selenium.getConfirmation()
+								   .matches("^Are you sure you want to move the selected entries to the Recycle Bin[\\s\\S]$"));
+				assertEquals(RuntimeVariables.replace(
+						"Your request completed successfully."),
+					selenium.getText("//div[@class='portlet-msg-success']"));
+
+			case 2:
+				selenium.open("/web/guest/home/");
+				loadRequiredJavaScriptModules();
+				assertEquals(RuntimeVariables.replace("Go to"),
+					selenium.getText("//li[@id='_145_mySites']/a/span"));
+				selenium.mouseOver("//li[@id='_145_mySites']/a/span");
+
+				for (int second = 0;; second++) {
+					if (second >= 90) {
+						fail("timeout");
+					}
+
+					try {
+						if (selenium.isVisible("link=Control Panel")) {
+							break;
+						}
+					}
+					catch (Exception e) {
+					}
+
+					Thread.sleep(1000);
+				}
+
+				selenium.clickAt("link=Control Panel",
+					RuntimeVariables.replace("Control Panel"));
+				selenium.waitForPageToLoad("30000");
+				loadRequiredJavaScriptModules();
+				selenium.clickAt("link=Recycle Bin",
+					RuntimeVariables.replace("Recycle Bin"));
+				selenium.waitForPageToLoad("30000");
+				loadRequiredJavaScriptModules();
+
+				boolean entryNotDeleted = selenium.isElementPresent(
+						"//td[1]/input");
+
+				if (!entryNotDeleted) {
+					label = 3;
+
+					continue;
+				}
+
+				selenium.clickAt("//input[@name='_182_allRowIds']",
+					RuntimeVariables.replace("Select All"));
 				selenium.clickAt("//input[@value='Delete']",
 					RuntimeVariables.replace("Delete"));
 				selenium.waitForPageToLoad("30000");
 				loadRequiredJavaScriptModules();
 				assertTrue(selenium.getConfirmation()
-								   .matches("^Are you sure you want to delete the selected entries[\\s\\S]$"));
+								   .matches("^Are you sure you want to delete the selected entries[\\s\\S] They will be deleted immediately.$"));
+				assertEquals(RuntimeVariables.replace(
+						"Your request completed successfully."),
+					selenium.getText("//div[@class='portlet-msg-success']"));
+				assertEquals(RuntimeVariables.replace(
+						"The Recycle Bin is empty."),
+					selenium.getText("//div[@class='portlet-msg-info']"));
 
-			case 2:
 			case 3:
-			case 4:
-			case 5:
-			case 6:
 			case 100:
 				label = -1;
 			}
