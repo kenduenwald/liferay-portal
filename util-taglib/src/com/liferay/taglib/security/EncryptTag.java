@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -114,8 +114,9 @@ public class EncryptTag extends TagSupport {
 					}
 					else {
 						try {
-							sb.append(HttpUtil.encodeURL(
-								Encryptor.encrypt(key, value)));
+							sb.append(
+								HttpUtil.encodeURL(
+									Encryptor.encrypt(key, value)));
 						}
 						catch (EncryptorException ee) {
 							_log.error(ee.getMessage());
@@ -143,7 +144,9 @@ public class EncryptTag extends TagSupport {
 			// Target
 
 			if (Validator.isNotNull(_target)) {
-				sb.append("target=\"" + _target + "\"");
+				sb.append("target=\"");
+				sb.append(_target);
+				sb.append("\"");
 			}
 
 			// Close anchor
@@ -191,13 +194,13 @@ public class EncryptTag extends TagSupport {
 		_url = url;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(EncryptTag.class);
+	private static final Log _log = LogFactoryUtil.getLog(EncryptTag.class);
 
 	private String _className;
 	private String _protocol;
 	private String _style;
 	private String _target;
-	private Set<String> _unencryptedParamsSet = new HashSet<String>();
+	private final Set<String> _unencryptedParamsSet = new HashSet<>();
 	private String _url;
 
 }

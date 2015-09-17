@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,7 @@
 
 package com.liferay.portlet.documentlibrary.util.comparator;
 
-import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.repository.model.RepositoryEntry;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
@@ -28,7 +27,8 @@ import java.util.Date;
  * @author Brian Wing Shun Chan
  * @author Alexander Chow
  */
-public class RepositoryModelModifiedDateComparator extends OrderByComparator {
+public class RepositoryModelModifiedDateComparator<T>
+	extends OrderByComparator<T> {
 
 	public static final String ORDER_BY_ASC = "modifiedDate ASC";
 
@@ -45,9 +45,9 @@ public class RepositoryModelModifiedDateComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Date modifiedDate1 = getModifiedDate(obj1);
-		Date modifiedDate2 = getModifiedDate(obj2);
+	public int compare(T t1, T t2) {
+		Date modifiedDate1 = getModifiedDate(t1);
+		Date modifiedDate2 = getModifiedDate(t2);
 
 		int value = DateUtil.compareTo(modifiedDate1, modifiedDate2);
 
@@ -95,18 +95,13 @@ public class RepositoryModelModifiedDateComparator extends OrderByComparator {
 
 			return dlFolder.getModifiedDate();
 		}
-		else if (obj instanceof FileEntry) {
-			FileEntry fileEntry = (FileEntry)obj;
-
-			return fileEntry.getModifiedDate();
-		}
 		else {
-			Folder folder = (Folder)obj;
+			RepositoryEntry repositoryEntry = (RepositoryEntry)obj;
 
-			return folder.getModifiedDate();
+			return repositoryEntry.getModifiedDate();
 		}
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

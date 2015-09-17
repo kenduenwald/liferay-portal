@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -33,6 +33,7 @@ import org.springframework.transaction.interceptor.TransactionAttributeSource;
 public class AnnotationTransactionAttributeSource
 	implements TransactionAttributeSource {
 
+	@Override
 	public TransactionAttribute getTransactionAttribute(
 		Method method, Class<?> targetClass) {
 
@@ -68,10 +69,10 @@ public class AnnotationTransactionAttributeSource
 		return transactionAttribute;
 	}
 
-	private static TransactionAttribute _nullTransactionAttribute =
+	private static final TransactionAttribute _nullTransactionAttribute =
 		new DefaultTransactionAttribute();
-	private Map<MethodTargetClassKey, TransactionAttribute>
-		_transactionAttributes =
-			new ConcurrentHashMap<MethodTargetClassKey, TransactionAttribute>();
+
+	private final Map<MethodTargetClassKey, TransactionAttribute>
+		_transactionAttributes = new ConcurrentHashMap<>();
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,7 +15,6 @@
 package com.liferay.portlet.expando.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portlet.expando.model.ExpandoColumn;
@@ -26,39 +25,45 @@ import com.liferay.portlet.expando.service.ExpandoColumnLocalServiceUtil;
  */
 public class ExpandoColumnPermissionImpl implements ExpandoColumnPermission {
 
+	@Override
 	public void check(
 			PermissionChecker permissionChecker, ExpandoColumn column,
 			String actionId)
 		throws PortalException {
 
 		if (!contains(permissionChecker, column, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, ExpandoColumn.class.getName(),
+				column.getColumnId(), actionId);
 		}
 	}
 
+	@Override
 	public void check(
 			PermissionChecker permissionChecker, long columnId, String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (!contains(permissionChecker, columnId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, ExpandoColumn.class.getName(), columnId,
+				actionId);
 		}
 	}
 
+	@Override
 	public void check(
 			PermissionChecker permissionChecker, long companyId,
 			String className, String tableName, String columnName,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		if (!contains(
-				permissionChecker, companyId, className, tableName, columnName,
-				actionId)) {
+		ExpandoColumn column = ExpandoColumnLocalServiceUtil.getColumn(
+			companyId, className, tableName, columnName);
 
-			throw new PrincipalException();
-		}
+		check(permissionChecker, column, actionId);
 	}
 
+	@Override
 	public boolean contains(
 		PermissionChecker permissionChecker, ExpandoColumn column,
 		String actionId) {
@@ -67,9 +72,10 @@ public class ExpandoColumnPermissionImpl implements ExpandoColumnPermission {
 			0, ExpandoColumn.class.getName(), column.getColumnId(), actionId);
 	}
 
+	@Override
 	public boolean contains(
 			PermissionChecker permissionChecker, long columnId, String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		ExpandoColumn column = ExpandoColumnLocalServiceUtil.getColumn(
 			columnId);
@@ -77,11 +83,10 @@ public class ExpandoColumnPermissionImpl implements ExpandoColumnPermission {
 		return contains(permissionChecker, column, actionId);
 	}
 
+	@Override
 	public boolean contains(
-			PermissionChecker permissionChecker, long companyId,
-			String className, String tableName, String columnName,
-			String actionId)
-		throws SystemException {
+		PermissionChecker permissionChecker, long companyId, String className,
+		String tableName, String columnName, String actionId) {
 
 		ExpandoColumn column = ExpandoColumnLocalServiceUtil.getColumn(
 			companyId, className, tableName, columnName);

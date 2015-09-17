@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,10 +16,13 @@ package com.liferay.portlet.documentlibrary.store;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.documentlibrary.NoSuchFileException;
 
 import java.io.File;
@@ -41,31 +44,29 @@ public abstract class BaseStore implements Store {
 	/**
 	 * Adds a directory.
 	 *
-	 * @param  companyId the primary key of the company
-	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
-	 * @param  dirName the directory's name
-	 * @throws PortalException if the directory's information was invalid
-	 * @throws SystemException if a system exception occurred
+	 * @param companyId the primary key of the company
+	 * @param repositoryId the primary key of the data repository (optionally
+	 *        {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
+	 * @param dirName the directory's name
 	 */
+	@Override
 	public abstract void addDirectory(
-			long companyId, long repositoryId, String dirName)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String dirName);
 
 	/**
 	 * Adds a file based on a byte array.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file name
 	 * @param  bytes the files's data
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void addFile(
 			long companyId, long repositoryId, String fileName, byte[] bytes)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		File file = null;
 
@@ -87,15 +88,15 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file name
 	 * @param  file Name the file name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void addFile(
 			long companyId, long repositoryId, String fileName, File file)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		InputStream is = null;
 
@@ -105,7 +106,7 @@ public abstract class BaseStore implements Store {
 			addFile(companyId, repositoryId, fileName, is);
 		}
 		catch (FileNotFoundException fnfe) {
-			throw new NoSuchFileException(fileName);
+			throw new SystemException(fnfe);
 		}
 		finally {
 			try {
@@ -124,24 +125,24 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file name
 	 * @param  is the files's data
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract void addFile(
 			long companyId, long repositoryId, String fileName, InputStream is)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	/**
 	 * Ensures company's root directory exists. Only implemented by {@link
 	 * JCRStore#checkRoot(long)}.
 	 *
-	 * @param  companyId the primary key of the company
-	 * @throws SystemException if a system exception occurred
+	 * @param companyId the primary key of the company
 	 */
-	public abstract void checkRoot(long companyId) throws SystemException;
+	@Override
+	public abstract void checkRoot(long companyId);
 
 	/**
 	 * Creates a new copy of the file version.
@@ -149,25 +150,29 @@ public abstract class BaseStore implements Store {
 	 * <p>
 	 * This method should be overrided if a more optimized approach can be used
 	 * (e.g., {@link FileSystemStore#copyFileVersion(long, long, String, String,
-	 * String, String)}).
+	 * String)}).
 	 * </p>
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the original's file name
 	 * @param  fromVersionLabel the original file's version label
 	 * @param  toVersionLabel the new version label
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void copyFileVersion(
 			long companyId, long repositoryId, String fileName,
 			String fromVersionLabel, String toVersionLabel)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		InputStream is = getFileAsStream(
 			companyId, repositoryId, fileName, fromVersionLabel);
+
+		if (is == null) {
+			is = new UnsyncByteArrayInputStream(new byte[0]);
+		}
 
 		updateFile(companyId, repositoryId, fileName, toVersionLabel, is);
 	}
@@ -175,47 +180,41 @@ public abstract class BaseStore implements Store {
 	/**
 	 * Deletes a directory.
 	 *
-	 * @param  companyId the primary key of the company
-	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
-	 * @param  dirName the directory's name
-	 * @throws PortalException if the directory's information was invalid
-	 * @throws SystemException if a system exception occurred
+	 * @param companyId the primary key of the company
+	 * @param repositoryId the primary key of the data repository (optionally
+	 *        {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
+	 * @param dirName the directory's name
 	 */
+	@Override
 	public abstract void deleteDirectory(
-			long companyId, long repositoryId, String dirName)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String dirName);
 
 	/**
 	 * Deletes a file. If a file has multiple versions, all versions will be
 	 * deleted.
 	 *
-	 * @param  companyId the primary key of the company
-	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
-	 * @param  fileName the file's name
-	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
+	 * @param companyId the primary key of the company
+	 * @param repositoryId the primary key of the data repository (optionally
+	 *        {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
+	 * @param fileName the file's name
 	 */
+	@Override
 	public abstract void deleteFile(
-			long companyId, long repositoryId, String fileName)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String fileName);
 
 	/**
 	 * Deletes a file at a particular version.
 	 *
-	 * @param  companyId the primary key of the company
-	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
-	 * @param  fileName the file's name
-	 * @param  versionLabel the file's version label
-	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
+	 * @param companyId the primary key of the company
+	 * @param repositoryId the primary key of the data repository (optionally
+	 *        {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
+	 * @param fileName the file's name
+	 * @param versionLabel the file's version label
 	 */
+	@Override
 	public abstract void deleteFile(
-			long companyId, long repositoryId, String fileName,
-			String versionLabel)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String fileName,
+		String versionLabel);
 
 	/**
 	 * Returns the file as a {@link File} object.
@@ -230,14 +229,14 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @return Returns the {@link File} object with the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public File getFile(long companyId, long repositoryId, String fileName)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return getFile(companyId, repositoryId, fileName, StringPool.BLANK);
 	}
@@ -260,17 +259,17 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @param  versionLabel the file's version label
 	 * @return Returns the {@link File} object with the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public File getFile(
 			long companyId, long repositoryId, String fileName,
 			String versionLabel)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		throw new UnsupportedOperationException();
 	}
@@ -280,15 +279,15 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @return Returns the byte array with the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public byte[] getFileAsBytes(
 			long companyId, long repositoryId, String fileName)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		byte[] bytes = null;
 
@@ -309,17 +308,17 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @param  versionLabel the file's version label
 	 * @return Returns the byte array with the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public byte[] getFileAsBytes(
 			long companyId, long repositoryId, String fileName,
 			String versionLabel)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		byte[] bytes = null;
 
@@ -341,15 +340,15 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @return Returns the {@link InputStream} object with the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public InputStream getFileAsStream(
 			long companyId, long repositoryId, String fileName)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return getFileAsStream(
 			companyId, repositoryId, fileName, StringPool.BLANK);
@@ -360,79 +359,72 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @param  versionLabel the file's version label
 	 * @return Returns the {@link InputStream} object with the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract InputStream getFileAsStream(
 			long companyId, long repositoryId, String fileName,
 			String versionLabel)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	/**
 	 * Returns all files of the directory.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  dirName the directory's name
 	 * @return Returns all files of the directory
-	 * @throws PortalException if the directory's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract String[] getFileNames(
-			long companyId, long repositoryId, String dirName)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String dirName);
 
 	/**
 	 * Returns the size of the file.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @return Returns the size of the file
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract long getFileSize(
 			long companyId, long repositoryId, String fileName)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	/**
 	 * Returns <code>true</code> if the directory exists.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  dirName the directory's name
 	 * @return <code>true</code> if the directory exists; <code>false</code>
 	 *         otherwise
-	 * @throws PortalException if the directory's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract boolean hasDirectory(
-			long companyId, long repositoryId, String dirName)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String dirName);
 
 	/**
 	 * Returns <code>true</code> if the file exists.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @return <code>true</code> if the file exists; <code>false</code>
 	 *         otherwise
-	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
-	public boolean hasFile(long companyId, long repositoryId, String fileName)
-		throws PortalException, SystemException {
-
+	@Override
+	public boolean hasFile(long companyId, long repositoryId, String fileName) {
 		return hasFile(companyId, repositoryId, fileName, VERSION_DEFAULT);
 	}
 
@@ -441,29 +433,27 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @param  versionLabel the file's version label
 	 * @return <code>true</code> if the file exists; <code>false</code>
 	 *         otherwise
-	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract boolean hasFile(
-			long companyId, long repositoryId, String fileName,
-			String versionLabel)
-		throws PortalException, SystemException;
+		long companyId, long repositoryId, String fileName,
+		String versionLabel);
 
 	/**
 	 * Moves an existing directory. Only implemented by {@link
 	 * JCRStore#move(String, String)}.
 	 *
-	 * @param  srcDir the original directory's name
-	 * @param  destDir the new directory's name
-	 * @throws SystemException if a system exception occurred
+	 * @param srcDir the original directory's name
+	 * @param destDir the new directory's name
 	 */
-	public abstract void move(String srcDir, String destDir)
-		throws SystemException;
+	@Override
+	public void move(String srcDir, String destDir) {
+	}
 
 	/**
 	 * Moves a file to a new data repository.
@@ -473,29 +463,29 @@ public abstract class BaseStore implements Store {
 	 * @param  newRepositoryId the primary key of the new data repository
 	 * @param  fileName the file's name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract void updateFile(
 			long companyId, long repositoryId, long newRepositoryId,
 			String fileName)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	/**
 	 * Updates a file based on a byte array.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file name
 	 * @param  versionLabel the file's new version label
 	 * @param  bytes the new file's data
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void updateFile(
 			long companyId, long repositoryId, String fileName,
 			String versionLabel, byte[] bytes)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		File file = null;
 
@@ -517,17 +507,17 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file name
 	 * @param  versionLabel the file's new version label
 	 * @param  file Name the file name
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void updateFile(
 			long companyId, long repositoryId, String fileName,
 			String versionLabel, File file)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		InputStream is = null;
 
@@ -537,7 +527,8 @@ public abstract class BaseStore implements Store {
 			updateFile(companyId, repositoryId, fileName, versionLabel, is);
 		}
 		catch (FileNotFoundException fnfe) {
-			throw new NoSuchFileException(fileName);
+			throw new NoSuchFileException(
+				companyId, repositoryId, fileName, versionLabel, fnfe);
 		}
 		finally {
 			try {
@@ -556,45 +547,93 @@ public abstract class BaseStore implements Store {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file name
 	 * @param  versionLabel the file's new version label
 	 * @param  is the new file's data
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public abstract void updateFile(
 			long companyId, long repositoryId, String fileName,
 			String versionLabel, InputStream is)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	/**
 	 * Update's a file version label. Similar to {@link #copyFileVersion(long,
-	 * long, String, String, String, String)} except that the old file version
-	 * is deleted.
+	 * long, String, String, String)} except that the old file version is
+	 * deleted.
 	 *
 	 * @param  companyId the primary key of the company
 	 * @param  repositoryId the primary key of the data repository (optionally
-	 *         {@link CompanyConstants#SYSTEM})
+	 *         {@link com.liferay.portal.model.CompanyConstants#SYSTEM})
 	 * @param  fileName the file's name
 	 * @param  fromVersionLabel the file's version label
 	 * @param  toVersionLabel the file's new version label
 	 * @throws PortalException if the file's information was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void updateFileVersion(
 			long companyId, long repositoryId, String fileName,
 			String fromVersionLabel, String toVersionLabel)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		InputStream is = getFileAsStream(
 			companyId, repositoryId, fileName, fromVersionLabel);
+
+		if (is == null) {
+			is = new UnsyncByteArrayInputStream(new byte[0]);
+		}
 
 		updateFile(companyId, repositoryId, fileName, toVersionLabel, is);
 
 		deleteFile(companyId, repositoryId, fileName, fromVersionLabel);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(BaseStore.class);
+	protected void logFailedDeletion(
+		long companyId, long repositoryId, String fileName) {
+
+		logFailedDeletion(companyId, repositoryId, fileName, null);
+	}
+
+	protected void logFailedDeletion(
+		long companyId, long repositoryId, String fileName,
+		String versionLabel) {
+
+		logFailedDeletion(
+			companyId, repositoryId, fileName, versionLabel, null);
+	}
+
+	protected void logFailedDeletion(
+		long companyId, long repositoryId, String fileName, String versionLabel,
+		Exception cause) {
+
+		if (_log.isWarnEnabled()) {
+			StringBundler sb = new StringBundler(9);
+
+			sb.append("Unable to delete file {companyId=");
+			sb.append(companyId);
+			sb.append(", repositoryId=");
+			sb.append(repositoryId);
+			sb.append(", fileName=");
+			sb.append(fileName);
+
+			if (Validator.isNotNull(versionLabel)) {
+				sb.append(", versionLabel=");
+				sb.append(versionLabel);
+			}
+
+			sb.append("} because it does not exist");
+
+			if (cause == null) {
+				_log.warn(sb.toString());
+			}
+			else {
+				_log.warn(sb.toString(), cause);
+			}
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(BaseStore.class);
 
 }

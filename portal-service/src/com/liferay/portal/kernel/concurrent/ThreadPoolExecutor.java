@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * <p>
- * See http://issues.liferay.com/browse/LPS-14986.
+ * See https://issues.liferay.com/browse/LPS-14986.
  * </p>
  *
  * @author Shuyang Zhou
@@ -78,8 +79,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		_rejectedExecutionHandler = rejectedExecutionHandler;
 		_threadFactory = threadFactory;
 		_threadPoolHandler = threadPoolHandler;
-		_taskQueue = new TaskQueue<Runnable>(maxQueueSize);
-		_workerTasks = new HashSet<WorkerTask>();
+		_taskQueue = new TaskQueue<>(maxQueueSize);
+		_workerTasks = new HashSet<>();
 	}
 
 	public void adjustPoolSize(int newCorePoolSize, int newMaxPoolSize) {
@@ -131,6 +132,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		}
 	}
 
+	@Override
 	public boolean awaitTermination(long timeout, TimeUnit timeUnit)
 		throws InterruptedException {
 
@@ -156,6 +158,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		}
 	}
 
+	@Override
 	public void execute(Runnable runnable) {
 		if (runnable == null) {
 			throw new NullPointerException();
@@ -236,6 +239,10 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		return _maxPoolSize;
 	}
 
+	public String getName() {
+		return _name;
+	}
+
 	public int getPendingTaskCount() {
 		return _taskQueue.size();
 	}
@@ -285,6 +292,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		return _allowCoreThreadTimeout;
 	}
 
+	@Override
 	public boolean isShutdown() {
 		if (_runState != _RUNNING) {
 			return true;
@@ -294,6 +302,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		}
 	}
 
+	@Override
 	public boolean isTerminated() {
 		if (_runState == _TERMINATED) {
 			return true;
@@ -324,6 +333,10 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		_keepAliveTime = timeUnit.toNanos(keepAliveTime);
 	}
 
+	public void setName(String name) {
+		_name = name;
+	}
+
 	public void setRejectedExecutionHandler(
 		RejectedExecutionHandler rejectedExecutionHandler) {
 
@@ -350,6 +363,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		_threadPoolHandler = threadPoolHandler;
 	}
 
+	@Override
 	public void shutdown() {
 		_mainLock.lock();
 
@@ -371,6 +385,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		}
 	}
 
+	@Override
 	public List<Runnable> shutdownNow() {
 		_mainLock.lock();
 
@@ -385,7 +400,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 				workerTask._thread.interrupt();
 			}
 
-			List<Runnable> runnables = new ArrayList<Runnable>();
+			List<Runnable> runnables = new ArrayList<>();
 
 			_taskQueue.drainTo(runnables);
 
@@ -396,6 +411,43 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		finally {
 			_mainLock.unlock();
 		}
+	}
+
+	@Override
+	public <T> NoticeableFuture<T> submit(Callable<T> callable) {
+		if (callable == null) {
+			throw new NullPointerException("Callable is null");
+		}
+
+		DefaultNoticeableFuture<T> defaultNoticeableFuture = newTaskFor(
+			callable);
+
+		execute(defaultNoticeableFuture);
+
+		return defaultNoticeableFuture;
+	}
+
+	@Override
+	public NoticeableFuture<?> submit(Runnable runnable) {
+		return submit(runnable, null);
+	}
+
+	@Override
+	public <T> NoticeableFuture<T> submit(Runnable runnable, T result) {
+		if (runnable == null) {
+			throw new NullPointerException("Runnable is null");
+		}
+
+		DefaultNoticeableFuture<T> defaultNoticeableFuture = newTaskFor(
+			runnable, result);
+
+		execute(defaultNoticeableFuture);
+
+		return defaultNoticeableFuture;
+	}
+
+	public NoticeableFuture<Void> terminationNoticeableFuture() {
+		return _terminationDefaultNoticeableFuture;
 	}
 
 	@Override
@@ -413,6 +465,18 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 
 	protected Set<WorkerTask> getWorkerTasks() {
 		return _workerTasks;
+	}
+
+	@Override
+	protected <T> DefaultNoticeableFuture<T> newTaskFor(Callable<T> callable) {
+		return new DefaultNoticeableFuture<>(callable);
+	}
+
+	@Override
+	protected <T> DefaultNoticeableFuture<T> newTaskFor(
+		Runnable runnable, T value) {
+
+		return new DefaultNoticeableFuture<>(runnable, value);
 	}
 
 	private void _addWorkerThread() {
@@ -433,7 +497,11 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 					((runState == _SHUTDOWN) && (poolSize == 0) &&
 					 !_taskQueue.isEmpty())) {
 
-					_doAddWorkerThread(_taskQueue.poll());
+					Runnable runnable = _taskQueue.poll();
+
+					if (runnable != null) {
+						_doAddWorkerThread(runnable);
+					}
 				}
 			}
 			finally {
@@ -527,7 +595,10 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 				_runState = _TERMINATED;
 
 				_terminationCondition.signalAll();
+
 				_threadPoolHandler.terminated();
+
+				_terminationDefaultNoticeableFuture.run();
 
 				return;
 			}
@@ -553,11 +624,24 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 	private volatile int _largestPoolSize;
 	private final ReentrantLock _mainLock = new ReentrantLock();
 	private volatile int _maxPoolSize;
+	private String _name;
 	private volatile int _poolSize;
 	private volatile RejectedExecutionHandler _rejectedExecutionHandler;
 	private volatile int _runState;
 	private final TaskQueue<Runnable> _taskQueue;
 	private final Condition _terminationCondition = _mainLock.newCondition();
+
+	private final DefaultNoticeableFuture<Void>
+		_terminationDefaultNoticeableFuture =
+			new DefaultNoticeableFuture<Void>() {
+
+				@Override
+				public boolean cancel(boolean mayInterruptIfRunning) {
+					return false;
+				}
+
+			};
+
 	private volatile ThreadFactory _threadFactory;
 	private volatile ThreadPoolHandler _threadPoolHandler;
 	private final Set<WorkerTask> _workerTasks;
@@ -569,11 +653,14 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 			_runnable = runnable;
 		}
 
+		@Override
 		public void run() {
 			boolean[] cleanUpMarker = new boolean[1];
 
 			try {
 				Runnable runnable = _runnable;
+
+				_runnable = null;
 
 				do {
 					if (runnable != null) {
@@ -697,7 +784,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 		}
 
 		private volatile long _localCompletedTaskCount;
-		private final Runnable _runnable;
+		private Runnable _runnable;
 		private Thread _thread;
 
 	}

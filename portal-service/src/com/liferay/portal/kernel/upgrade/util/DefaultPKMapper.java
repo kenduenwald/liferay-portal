@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.kernel.upgrade.util;
 
 import com.liferay.portal.kernel.upgrade.StagnantRowException;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -33,21 +34,20 @@ public class DefaultPKMapper extends ValueMapperWrapper {
 		if (oldValueString.equals("-1") || oldValueString.equals("0") ||
 			oldValueString.equals("")) {
 
-			return new Long(0);
+			return Long.valueOf(0);
 		}
-		else {
-			try {
-				ValueMapper valueMapper = getValueMapper();
 
-				if (oldValue instanceof String) {
-					oldValue = oldValueString.toLowerCase();
-				}
+		try {
+			ValueMapper valueMapper = getValueMapper();
 
-				return valueMapper.getNewValue(oldValue);
+			if (oldValue instanceof String) {
+				oldValue = StringUtil.toLowerCase(oldValueString);
 			}
-			catch (StagnantRowException sre) {
-				return new Long(0);
-			}
+
+			return valueMapper.getNewValue(oldValue);
+		}
+		catch (StagnantRowException sre) {
+			return Long.valueOf(0);
 		}
 	}
 

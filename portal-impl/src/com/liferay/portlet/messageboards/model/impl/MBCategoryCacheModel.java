@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.messageboards.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.messageboards.model.MBCategory;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,11 +37,36 @@ import java.util.Date;
  * @see MBCategory
  * @generated
  */
+@ProviderType
 public class MBCategoryCacheModel implements CacheModel<MBCategory>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof MBCategoryCacheModel)) {
+			return false;
+		}
+
+		MBCategoryCacheModel mbCategoryCacheModel = (MBCategoryCacheModel)obj;
+
+		if (categoryId == mbCategoryCacheModel.categoryId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, categoryId);
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(31);
+		StringBundler sb = new StringBundler(41);
 
 		sb.append("{uuid=");
 		sb.append(uuid);
@@ -67,11 +98,22 @@ public class MBCategoryCacheModel implements CacheModel<MBCategory>,
 		sb.append(messageCount);
 		sb.append(", lastPostDate=");
 		sb.append(lastPostDate);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
+		sb.append(", status=");
+		sb.append(status);
+		sb.append(", statusByUserId=");
+		sb.append(statusByUserId);
+		sb.append(", statusByUserName=");
+		sb.append(statusByUserName);
+		sb.append(", statusDate=");
+		sb.append(statusDate);
 		sb.append("}");
 
 		return sb.toString();
 	}
 
+	@Override
 	public MBCategory toEntityModel() {
 		MBCategoryImpl mbCategoryImpl = new MBCategoryImpl();
 
@@ -141,9 +183,121 @@ public class MBCategoryCacheModel implements CacheModel<MBCategory>,
 			mbCategoryImpl.setLastPostDate(new Date(lastPostDate));
 		}
 
+		if (lastPublishDate == Long.MIN_VALUE) {
+			mbCategoryImpl.setLastPublishDate(null);
+		}
+		else {
+			mbCategoryImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
+
+		mbCategoryImpl.setStatus(status);
+		mbCategoryImpl.setStatusByUserId(statusByUserId);
+
+		if (statusByUserName == null) {
+			mbCategoryImpl.setStatusByUserName(StringPool.BLANK);
+		}
+		else {
+			mbCategoryImpl.setStatusByUserName(statusByUserName);
+		}
+
+		if (statusDate == Long.MIN_VALUE) {
+			mbCategoryImpl.setStatusDate(null);
+		}
+		else {
+			mbCategoryImpl.setStatusDate(new Date(statusDate));
+		}
+
 		mbCategoryImpl.resetOriginalValues();
 
 		return mbCategoryImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
+		categoryId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		parentCategoryId = objectInput.readLong();
+		name = objectInput.readUTF();
+		description = objectInput.readUTF();
+		displayStyle = objectInput.readUTF();
+		threadCount = objectInput.readInt();
+		messageCount = objectInput.readInt();
+		lastPostDate = objectInput.readLong();
+		lastPublishDate = objectInput.readLong();
+		status = objectInput.readInt();
+		statusByUserId = objectInput.readLong();
+		statusByUserName = objectInput.readUTF();
+		statusDate = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		objectOutput.writeLong(categoryId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+		objectOutput.writeLong(parentCategoryId);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (description == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
+		if (displayStyle == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(displayStyle);
+		}
+
+		objectOutput.writeInt(threadCount);
+		objectOutput.writeInt(messageCount);
+		objectOutput.writeLong(lastPostDate);
+		objectOutput.writeLong(lastPublishDate);
+		objectOutput.writeInt(status);
+		objectOutput.writeLong(statusByUserId);
+
+		if (statusByUserName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(statusByUserName);
+		}
+
+		objectOutput.writeLong(statusDate);
 	}
 
 	public String uuid;
@@ -161,4 +315,9 @@ public class MBCategoryCacheModel implements CacheModel<MBCategory>,
 	public int threadCount;
 	public int messageCount;
 	public long lastPostDate;
+	public long lastPublishDate;
+	public int status;
+	public long statusByUserId;
+	public String statusByUserName;
+	public long statusDate;
 }

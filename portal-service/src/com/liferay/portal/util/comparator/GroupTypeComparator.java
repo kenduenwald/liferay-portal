@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@ import com.liferay.portal.model.Group;
 /**
  * @author Brian Wing Shun Chan
  */
-public class GroupTypeComparator extends OrderByComparator {
+public class GroupTypeComparator extends OrderByComparator<Group> {
 
 	public static final String ORDER_BY_ASC = "groupType ASC, groupName ASC";
 
@@ -37,10 +37,7 @@ public class GroupTypeComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Group group1 = (Group)obj1;
-		Group group2 = (Group)obj2;
-
+	public int compare(Group group1, Group group2) {
 		int value = 0;
 
 		if (group1.getType() > group2.getType()) {
@@ -51,7 +48,10 @@ public class GroupTypeComparator extends OrderByComparator {
 		}
 
 		if (value == 0) {
-			value = group1.getName().compareTo(group2.getName());
+			String name1 = group1.getName();
+			String name2 = group2.getName();
+
+			value = name1.compareTo(name2);
 		}
 
 		if (_ascending) {
@@ -82,6 +82,6 @@ public class GroupTypeComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

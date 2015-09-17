@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.portlet.social.model;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
@@ -56,7 +57,7 @@ public class SocialActivityDefinition implements Serializable {
 
 		activityDefinition.setActivityProcessor(_activityProcessor);
 		activityDefinition.setActivityType(_activityType);
-		activityDefinition.setEnabled(_enabled);
+		activityDefinition.setCountersEnabled(_countersEnabled);
 		activityDefinition.setLanguageKey(_languageKey);
 		activityDefinition.setLogActivity(_logActivity);
 		activityDefinition.setModelName(_modelName);
@@ -88,7 +89,8 @@ public class SocialActivityDefinition implements Serializable {
 				activityDefinition.getActivityProcessor()) &&
 			Validator.equals(
 				_activityType, activityDefinition.getActivityType()) &&
-			Validator.equals(_enabled, activityDefinition.isEnabled()) &&
+			Validator.equals(
+				_countersEnabled, activityDefinition.isCountersEnabled()) &&
 			Validator.equals(
 				_languageKey, activityDefinition.getLanguageKey()) &&
 			Validator.equals(
@@ -138,8 +140,22 @@ public class SocialActivityDefinition implements Serializable {
 			locale, "social.activity." + _modelName + "." + _languageKey);
 	}
 
-	public boolean isEnabled() {
-		return _enabled;
+	@Override
+	public int hashCode() {
+		int hash = HashUtil.hash(0, _achievements);
+
+		hash = HashUtil.hash(hash, _activityCounterDefinitions);
+		hash = HashUtil.hash(hash, _activityProcessor);
+		hash = HashUtil.hash(hash, _activityType);
+		hash = HashUtil.hash(hash, _countersEnabled);
+		hash = HashUtil.hash(hash, _languageKey);
+		hash = HashUtil.hash(hash, _logActivity);
+
+		return HashUtil.hash(hash, _modelName);
+	}
+
+	public boolean isCountersEnabled() {
+		return _countersEnabled;
 	}
 
 	public boolean isLogActivity() {
@@ -169,8 +185,8 @@ public class SocialActivityDefinition implements Serializable {
 		}
 	}
 
-	public void setEnabled(boolean enabled) {
-		_enabled = enabled;
+	public void setCountersEnabled(boolean enabled) {
+		_countersEnabled = enabled;
 	}
 
 	public void setLanguageKey(String languageKey) {
@@ -185,14 +201,12 @@ public class SocialActivityDefinition implements Serializable {
 		_modelName = modelName;
 	}
 
-	private List<SocialAchievement> _achievements =
-		new ArrayList<SocialAchievement>();
-	private Map<String, SocialActivityCounterDefinition>
-		_activityCounterDefinitions =
-			new HashMap<String, SocialActivityCounterDefinition>();
+	private final List<SocialAchievement> _achievements = new ArrayList<>();
+	private final Map<String, SocialActivityCounterDefinition>
+		_activityCounterDefinitions = new HashMap<>();
 	private SocialActivityProcessor _activityProcessor;
 	private int _activityType;
-	private boolean _enabled = true;
+	private boolean _countersEnabled = true;
 	private String _languageKey;
 	private boolean _logActivity;
 	private String _modelName;

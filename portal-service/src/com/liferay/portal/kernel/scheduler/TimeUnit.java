@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,27 +19,8 @@ package com.liferay.portal.kernel.scheduler;
  */
 public enum TimeUnit {
 
-	DAY("day"), HOUR("hour"), MINUTE("minute"), SECOND("second"), WEEK("week");
-
-	public static TimeUnit parse(String value) {
-		if (DAY.getValue().equals(value)) {
-			return DAY;
-		}
-		else if (HOUR.getValue().equals(value)) {
-			return HOUR;
-		}
-		else if (MINUTE.getValue().equals(value)) {
-			return MINUTE;
-		}
-		else if (SECOND.getValue().equals(value)) {
-			return SECOND;
-		}
-		else if (WEEK.getValue().equals(value)) {
-			return WEEK;
-		}
-
-		throw new IllegalArgumentException("Invalid value " + value);
-	}
+	DAY("day"), HOUR("hour"), MILLISECOND("millisecond"), MINUTE("minute"),
+	MONTH("month"), SECOND("second"), WEEK("week"), YEAR("year");
 
 	public String getValue() {
 		return _value;
@@ -54,6 +35,6 @@ public enum TimeUnit {
 		_value = value;
 	}
 
-	private String _value;
+	private final String _value;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,25 +18,30 @@ import com.liferay.client.soap.portal.model.UserSoap;
 import com.liferay.client.soap.portal.service.ServiceContext;
 import com.liferay.client.soap.portal.service.http.UserServiceSoap;
 import com.liferay.client.soap.portal.service.http.UserServiceSoapServiceLocator;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.service.ServiceTestUtil;
-import com.liferay.portal.test.EnvironmentExecutionTestListener;
-import com.liferay.portal.test.ExecutionTestListeners;
-import com.liferay.portal.test.LiferayIntegrationJUnitTestRunner;
-import com.liferay.portal.util.TestPropsValues;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.MainServletTestRule;
 
 import java.util.Calendar;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * @author Brian Wing Shun Chan
  */
-@ExecutionTestListeners(listeners = {EnvironmentExecutionTestListener.class})
-@RunWith(LiferayIntegrationJUnitTestRunner.class)
 public class UserServiceSoapTest {
+
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(), MainServletTestRule.INSTANCE);
 
 	@Test
 	public void testAddUser() throws Exception {
@@ -65,16 +70,15 @@ public class UserServiceSoapTest {
 		boolean autoScreenName = true;
 		String screenName = StringPool.BLANK;
 		String emailAddress =
-			"UserServiceSoapTest." + ServiceTestUtil.nextLong() +
-				"@liferay.com";
+			"UserServiceSoapTest." + RandomTestUtil.nextLong() + "@liferay.com";
 		long facebookId = 0;
 		String openId = StringPool.BLANK;
 		String locale = LocaleUtil.getDefault().toString();
 		String firstName = "UserServiceSoapTest";
 		String middleName = StringPool.BLANK;
 		String lastName = "UserServiceSoapTest";
-		int prefixId = 0;
-		int suffixId = 0;
+		long prefixId = 0;
+		long suffixId = 0;
 		boolean male = true;
 		int birthdayMonth = Calendar.JANUARY;
 		int birthdayDay = 1;
@@ -96,14 +100,13 @@ public class UserServiceSoapTest {
 	}
 
 	protected UserServiceSoap getUserServiceSoap() throws Exception {
-		UserServiceSoapServiceLocator locator =
+		UserServiceSoapServiceLocator userServiceSoapServiceLocator =
 			new UserServiceSoapServiceLocator();
 
-		UserServiceSoap service = locator.getPortal_UserService(
-			TestPropsValues.getSoapURL(
-				locator.getPortal_UserServiceWSDDServiceName()));
-
-		return service;
+		return userServiceSoapServiceLocator.getPortal_UserService(
+			HttpPrincipalTestUtil.getSoapURL(
+				userServiceSoapServiceLocator.
+					getPortal_UserServiceWSDDServiceName()));
 	}
 
 }

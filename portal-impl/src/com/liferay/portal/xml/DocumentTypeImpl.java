@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.portal.xml;
 
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.DocumentType;
 
 /**
@@ -26,10 +27,31 @@ public class DocumentTypeImpl implements DocumentType {
 		_documentType = documentType;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof DocumentTypeImpl)) {
+			return false;
+		}
+
+		DocumentTypeImpl documentTypeImpl = (DocumentTypeImpl)obj;
+
+		if (Validator.equals(_documentType, documentTypeImpl._documentType)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
 	public String getName() {
 		return _documentType.getName();
 	}
 
+	@Override
 	public String getPublicId() {
 		if (_documentType == null) {
 			return null;
@@ -38,6 +60,7 @@ public class DocumentTypeImpl implements DocumentType {
 		return _documentType.getPublicID();
 	}
 
+	@Override
 	public String getSystemId() {
 		if (_documentType == null) {
 			return null;

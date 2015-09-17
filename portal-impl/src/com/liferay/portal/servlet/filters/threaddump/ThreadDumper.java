@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.servlet.filters.threaddump;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.log.SanitizerLogWrapper;
 import com.liferay.portal.kernel.util.ThreadUtil;
 
 /**
@@ -28,15 +29,25 @@ public class ThreadDumper implements Runnable {
 		return _executed;
 	}
 
+	@Override
 	public void run() {
 		if (_log.isInfoEnabled()) {
-			_log.info(ThreadUtil.threadDump());
+			Log log = SanitizerLogWrapper.allowCRLF(_log);
+
+			log.info(ThreadUtil.threadDump());
+		}
+		else {
+			Class<?> clazz = getClass();
+
+			_log.error(
+				"Thread dumps require the log level to be at least INFO for " +
+					clazz.getName());
 		}
 
 		_executed = true;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ThreadDumper.class);
+	private static final Log _log = LogFactoryUtil.getLog(ThreadDumper.class);
 
 	private boolean _executed;
 

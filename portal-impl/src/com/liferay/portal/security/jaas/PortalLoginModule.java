@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -34,9 +34,11 @@ import javax.security.auth.spi.LoginModule;
 public class PortalLoginModule implements LoginModule {
 
 	public PortalLoginModule() {
+		LoginModule loginModule = null;
+
 		if (Validator.isNotNull(PropsValues.PORTAL_JAAS_IMPL)) {
 			try {
-				_loginModule = (LoginModule)InstanceFactory.newInstance(
+				loginModule = (LoginModule)InstanceFactory.newInstance(
 					PropsValues.PORTAL_JAAS_IMPL);
 			}
 			catch (Exception e) {
@@ -44,52 +46,57 @@ public class PortalLoginModule implements LoginModule {
 			}
 		}
 
-		if (_loginModule == null) {
+		if (loginModule == null) {
 			if (ServerDetector.isJBoss()) {
-				_loginModule =
+				loginModule =
 					new com.liferay.portal.security.jaas.ext.jboss.
 						PortalLoginModule();
 			}
 			else if (ServerDetector.isJetty()) {
-				_loginModule =
+				loginModule =
 					new com.liferay.portal.security.jaas.ext.jetty.
 						PortalLoginModule();
 			}
 			else if (ServerDetector.isJOnAS()) {
-				_loginModule =
+				loginModule =
 					new com.liferay.portal.security.jaas.ext.jonas.
 						PortalLoginModule();
 			}
 			else if (ServerDetector.isResin()) {
-				_loginModule =
+				loginModule =
 					new com.liferay.portal.security.jaas.ext.resin.
 						PortalLoginModule();
 			}
 			else if (ServerDetector.isTomcat()) {
-				_loginModule =
+				loginModule =
 					new com.liferay.portal.security.jaas.ext.tomcat.
 						PortalLoginModule();
 			}
 			else if (ServerDetector.isWebLogic()) {
-				_loginModule =
+				loginModule =
 					new com.liferay.portal.security.jaas.ext.weblogic.
 						PortalLoginModule();
 			}
 		}
 
 		if (_log.isDebugEnabled()) {
-			_log.debug(_loginModule.getClass().getName());
+			_log.debug(loginModule.getClass().getName());
 		}
+
+		_loginModule = loginModule;
 	}
 
+	@Override
 	public boolean abort() throws LoginException {
 		return _loginModule.abort();
 	}
 
+	@Override
 	public boolean commit() throws LoginException {
 		return _loginModule.commit();
 	}
 
+	@Override
 	public void initialize(
 		Subject subject, CallbackHandler callbackHandler,
 		Map<String, ?> sharedState, Map<String, ?> options) {
@@ -97,16 +104,19 @@ public class PortalLoginModule implements LoginModule {
 		_loginModule.initialize(subject, callbackHandler, sharedState, options);
 	}
 
+	@Override
 	public boolean login() throws LoginException {
 		return _loginModule.login();
 	}
 
+	@Override
 	public boolean logout() throws LoginException {
 		return _loginModule.logout();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PortalLoginModule.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		PortalLoginModule.class);
 
-	private LoginModule _loginModule;
+	private final LoginModule _loginModule;
 
 }

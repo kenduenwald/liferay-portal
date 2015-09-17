@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,18 @@
 
 package com.liferay.portlet.softwarecatalog.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.softwarecatalog.model.SCProductScreenshot;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing SCProductScreenshot in entity cache.
@@ -28,8 +34,33 @@ import java.io.Serializable;
  * @see SCProductScreenshot
  * @generated
  */
+@ProviderType
 public class SCProductScreenshotCacheModel implements CacheModel<SCProductScreenshot>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof SCProductScreenshotCacheModel)) {
+			return false;
+		}
+
+		SCProductScreenshotCacheModel scProductScreenshotCacheModel = (SCProductScreenshotCacheModel)obj;
+
+		if (productScreenshotId == scProductScreenshotCacheModel.productScreenshotId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, productScreenshotId);
+	}
+
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(15);
@@ -53,6 +84,7 @@ public class SCProductScreenshotCacheModel implements CacheModel<SCProductScreen
 		return sb.toString();
 	}
 
+	@Override
 	public SCProductScreenshot toEntityModel() {
 		SCProductScreenshotImpl scProductScreenshotImpl = new SCProductScreenshotImpl();
 
@@ -67,6 +99,29 @@ public class SCProductScreenshotCacheModel implements CacheModel<SCProductScreen
 		scProductScreenshotImpl.resetOriginalValues();
 
 		return scProductScreenshotImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		productScreenshotId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		productEntryId = objectInput.readLong();
+		thumbnailId = objectInput.readLong();
+		fullImageId = objectInput.readLong();
+		priority = objectInput.readInt();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(productScreenshotId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(productEntryId);
+		objectOutput.writeLong(thumbnailId);
+		objectOutput.writeLong(fullImageId);
+		objectOutput.writeInt(priority);
 	}
 
 	public long productScreenshotId;

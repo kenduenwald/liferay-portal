@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -27,8 +27,11 @@ import com.liferay.portal.kernel.mail.SMTPAccount;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.File;
@@ -56,8 +59,6 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-
-import org.apache.commons.lang.time.StopWatch;
 
 /**
  * @author Brian Wing Shun Chan
@@ -177,13 +178,9 @@ public class MailEngine {
 			List<FileAttachment> fileAttachments, SMTPAccount smtpAccount)
 		throws MailEngineException {
 
-		StopWatch stopWatch = null;
+		long startTime = System.currentTimeMillis();
 
 		if (_log.isDebugEnabled()) {
-			stopWatch = new StopWatch();
-
-			stopWatch.start();
-
 			_log.debug("From: " + from);
 			_log.debug("To: " + Arrays.toString(to));
 			_log.debug("CC: " + Arrays.toString(cc));
@@ -214,6 +211,28 @@ public class MailEngine {
 		}
 
 		try {
+			InternetAddressUtil.validateAddress(from);
+
+			if (ArrayUtil.isNotEmpty(to)) {
+				InternetAddressUtil.validateAddresses(to);
+			}
+
+			if (ArrayUtil.isNotEmpty(cc)) {
+				InternetAddressUtil.validateAddresses(cc);
+			}
+
+			if (ArrayUtil.isNotEmpty(bcc)) {
+				InternetAddressUtil.validateAddresses(bcc);
+			}
+
+			if (ArrayUtil.isNotEmpty(replyTo)) {
+				InternetAddressUtil.validateAddresses(replyTo);
+			}
+
+			if (ArrayUtil.isNotEmpty(bulkAddresses)) {
+				InternetAddressUtil.validateAddresses(bulkAddresses);
+			}
+
 			Session session = null;
 
 			if (smtpAccount == null) {
@@ -225,22 +244,28 @@ public class MailEngine {
 
 			Message message = new LiferayMimeMessage(session);
 
-			message.setFrom(from);
-			message.setRecipients(Message.RecipientType.TO, to);
+			message.addHeader(
+				"X-Auto-Response-Suppress", "AutoReply, DR, NDR, NRN, OOF, RN");
 
-			if (cc != null) {
+			message.setFrom(from);
+
+			if (ArrayUtil.isNotEmpty(to)) {
+				message.setRecipients(Message.RecipientType.TO, to);
+			}
+
+			if (ArrayUtil.isNotEmpty(cc)) {
 				message.setRecipients(Message.RecipientType.CC, cc);
 			}
 
-			if (bcc != null) {
+			if (ArrayUtil.isNotEmpty(bcc)) {
 				message.setRecipients(Message.RecipientType.BCC, bcc);
 			}
 
 			subject = GetterUtil.getString(subject);
 
-			message.setSubject(subject);
+			message.setSubject(_sanitizeCRLF(subject));
 
-			if ((fileAttachments != null) && (fileAttachments.size() > 0)) {
+			if (ListUtil.isNotEmpty(fileAttachments)) {
 				MimeMultipart rootMultipart = new MimeMultipart(
 					_MULTIPART_TYPE_MIXED);
 
@@ -309,17 +334,17 @@ public class MailEngine {
 
 			message.setSentDate(new Date());
 
-			if (replyTo != null) {
+			if (ArrayUtil.isNotEmpty(replyTo)) {
 				message.setReplyTo(replyTo);
 			}
 
 			if (messageId != null) {
-				message.setHeader("Message-ID", messageId);
+				message.setHeader("Message-ID", _sanitizeCRLF(messageId));
 			}
 
 			if (inReplyTo != null) {
-				message.setHeader("In-Reply-To", inReplyTo);
-				message.setHeader("References", inReplyTo);
+				message.setHeader("In-Reply-To", _sanitizeCRLF(inReplyTo));
+				message.setHeader("References", _sanitizeCRLF(inReplyTo));
 			}
 
 			int batchSize = GetterUtil.getInteger(
@@ -329,13 +354,19 @@ public class MailEngine {
 		}
 		catch (SendFailedException sfe) {
 			_log.error(sfe);
+
+			if (_isThrowsExceptionOnFailure()) {
+				throw new MailEngineException(sfe);
+			}
 		}
 		catch (Exception e) {
 			throw new MailEngineException(e);
 		}
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Sending mail takes " + stopWatch.getTime() + " ms");
+			_log.debug(
+				"Sending mail takes " +
+					(System.currentTimeMillis() - startTime) + " ms");
 		}
 	}
 
@@ -485,9 +516,21 @@ public class MailEngine {
 		}
 	}
 
+	private static boolean _isThrowsExceptionOnFailure() {
+		return GetterUtil.getBoolean(
+			PropsUtil.get(PropsKeys.MAIL_THROWS_EXCEPTION_ON_FAILURE));
+	}
+
+	private static String _sanitizeCRLF(String text) {
+		return StringUtil.replace(
+			text, new String[] {StringPool.NEW_LINE, StringPool.RETURN},
+			new String[] {StringPool.SPACE, StringPool.SPACE});
+	}
+
 	private static void _send(
-		Session session, Message message, InternetAddress[] bulkAddresses,
-		int batchSize) {
+			Session session, Message message, InternetAddress[] bulkAddresses,
+			int batchSize)
+		throws MailEngineException {
 
 		try {
 			boolean smtpAuth = GetterUtil.getBoolean(
@@ -511,7 +554,7 @@ public class MailEngine {
 
 				Address[] addresses = null;
 
-				if (Validator.isNotNull(bulkAddresses)) {
+				if (ArrayUtil.isNotEmpty(bulkAddresses)) {
 					addresses = bulkAddresses;
 				}
 				else {
@@ -522,9 +565,7 @@ public class MailEngine {
 					Address[] batchAddresses = _getBatchAddresses(
 						addresses, i, batchSize);
 
-					if ((batchAddresses == null) ||
-						(batchAddresses.length == 0)) {
-
+					if (ArrayUtil.isEmpty(batchAddresses)) {
 						break;
 					}
 
@@ -534,13 +575,13 @@ public class MailEngine {
 				transport.close();
 			}
 			else {
-				if (Validator.isNotNull(bulkAddresses)) {
+				if (ArrayUtil.isNotEmpty(bulkAddresses)) {
 					int curBatch = 0;
 
 					Address[] portion = _getBatchAddresses(
 						bulkAddresses, curBatch, batchSize);
 
-					while (Validator.isNotNull(portion)) {
+					while (ArrayUtil.isNotEmpty(portion)) {
 						Transport.send(message, portion);
 
 						curBatch++;
@@ -564,9 +605,11 @@ public class MailEngine {
 				}
 			}
 			else {
-				_log.error(me.getMessage());
-
 				LogUtil.log(_log, me);
+			}
+
+			if (_isThrowsExceptionOnFailure()) {
+				throw new MailEngineException(me);
 			}
 		}
 	}
@@ -581,6 +624,6 @@ public class MailEngine {
 
 	private static final String _TEXT_PLAIN = "text/plain;charset=\"UTF-8\"";
 
-	private static Log _log = LogFactoryUtil.getLog(MailEngine.class);
+	private static final Log _log = LogFactoryUtil.getLog(MailEngine.class);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -38,8 +38,8 @@ public class ThemeSandboxHandler extends BaseSandboxHandler {
 		String portalWebDir = PortalUtil.getPortalWebDir();
 
 		CopyTask.copyDirectory(
-			new File(portalWebDir, "html/themes/classic"), dir, null,
-			"/_diffs/**", true, true);
+			new File(portalWebDir, "/classic"), dir, null, "/_diffs/**", true,
+			true);
 	}
 
 	@Override

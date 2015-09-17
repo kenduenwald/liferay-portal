@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import java.io.IOException;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -45,12 +44,10 @@ import java.util.TreeSet;
 public class UnicodeProperties extends HashMap<String, String> {
 
 	public UnicodeProperties() {
-		super();
+		_safe = false;
 	}
 
 	public UnicodeProperties(boolean safe) {
-		super();
-
 		_safe = safe;
 	}
 
@@ -148,16 +145,14 @@ public class UnicodeProperties extends HashMap<String, String> {
 		if (key == null) {
 			return null;
 		}
-		else {
-			if (value == null) {
-				return remove(key);
-			}
-			else {
-				_length += key.length() + value.length() + 2;
 
-				return super.put(key, value);
-			}
+		if (value == null) {
+			return remove(key);
 		}
+
+		_length += key.length() + value.length() + 2;
+
+		return super.put(key, value);
 	}
 
 	@Override
@@ -165,25 +160,33 @@ public class UnicodeProperties extends HashMap<String, String> {
 		if ((key == null) || !containsKey(key)) {
 			return null;
 		}
-		else {
-			String keyString = (String)key;
 
-			String value = super.remove(key);
+		String keyString = (String)key;
 
-			_length -= keyString.length() + value.length() + 2;
+		String value = super.remove(key);
 
-			return value;
-		}
+		_length -= keyString.length() + value.length() + 2;
+
+		return value;
 	}
 
 	public String setProperty(String key, String value) {
 		return put(key, value);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #toString}
+	 */
+	@Deprecated
 	public String toSortedString() {
+		return toString();
+	}
+
+	@Override
+	public String toString() {
 		StringBuilder sb = new StringBuilder(_length);
 
-		Set<String> keys = new TreeSet<String>(keySet());
+		Set<String> keys = new TreeSet<>(keySet());
 
 		for (String key : keys) {
 			String value = get(key);
@@ -197,30 +200,6 @@ public class UnicodeProperties extends HashMap<String, String> {
 			}
 
 			sb.append(key);
-			sb.append(StringPool.EQUAL);
-			sb.append(value);
-			sb.append(StringPool.NEW_LINE);
-		}
-
-		return sb.toString();
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder(_length);
-
-		for (Map.Entry<String, String> entry : entrySet()) {
-			String value = entry.getValue();
-
-			if (Validator.isNull(value)) {
-				continue;
-			}
-
-			if (_safe) {
-				value = _encode(value);
-			}
-
-			sb.append(entry.getKey());
 			sb.append(StringPool.EQUAL);
 			sb.append(value);
 			sb.append(StringPool.NEW_LINE);
@@ -258,9 +237,10 @@ public class UnicodeProperties extends HashMap<String, String> {
 	private static final String _SAFE_NEWLINE_CHARACTER =
 		"_SAFE_NEWLINE_CHARACTER_";
 
-	private static Log _log = LogFactoryUtil.getLog(UnicodeProperties.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		UnicodeProperties.class);
 
 	private int _length;
-	private boolean _safe = false;
+	private final boolean _safe;
 
 }

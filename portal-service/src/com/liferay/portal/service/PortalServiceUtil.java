@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portal.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.util.MethodCache;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 
 /**
- * The utility for the portal remote service. This utility wraps {@link com.liferay.portal.service.impl.PortalServiceImpl} and is the primary access point for service operations in application layer code running on a remote server.
- *
- * <p>
- * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
- * </p>
+ * Provides the remote service utility for Portal. This utility wraps
+ * {@link com.liferay.portal.service.impl.PortalServiceImpl} and is the
+ * primary access point for service operations in application layer code running
+ * on a remote server. Methods of this service are expected to have security
+ * checks based on the propagated JAAS credentials because this service can be
+ * accessed remotely.
  *
  * @author Brian Wing Shun Chan
  * @see PortalService
@@ -31,70 +33,88 @@ import com.liferay.portal.kernel.util.ReferenceRegistry;
  * @see com.liferay.portal.service.impl.PortalServiceImpl
  * @generated
  */
+@ProviderType
 public class PortalServiceUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never modify this class directly. Add custom service methods to {@link com.liferay.portal.service.impl.PortalServiceImpl} and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static java.lang.String getAutoDeployDirectory()
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static java.lang.String getAutoDeployDirectory() {
 		return getService().getAutoDeployDirectory();
+	}
+
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	public static java.lang.String getBeanIdentifier() {
+		return getService().getBeanIdentifier();
 	}
 
 	public static int getBuildNumber() {
 		return getService().getBuildNumber();
 	}
 
-	public static void testAddClassName_Rollback(
-		java.lang.String classNameValue)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		getService().testAddClassName_Rollback(classNameValue);
+	public static java.lang.String getVersion() {
+		return getService().getVersion();
 	}
 
-	public static void testAddClassName_Success(java.lang.String classNameValue)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		getService().testAddClassName_Success(classNameValue);
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public static void setBeanIdentifier(java.lang.String beanIdentifier) {
+		getService().setBeanIdentifier(beanIdentifier);
 	}
 
 	public static void testAddClassNameAndTestTransactionPortletBar_PortalRollback(
-		java.lang.String transactionPortletBarText)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		java.lang.String transactionPortletBarText) {
 		getService()
 			.testAddClassNameAndTestTransactionPortletBar_PortalRollback(transactionPortletBarText);
 	}
 
 	public static void testAddClassNameAndTestTransactionPortletBar_PortletRollback(
-		java.lang.String transactionPortletBarText)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		java.lang.String transactionPortletBarText) {
 		getService()
 			.testAddClassNameAndTestTransactionPortletBar_PortletRollback(transactionPortletBarText);
 	}
 
 	public static void testAddClassNameAndTestTransactionPortletBar_Success(
-		java.lang.String transactionPortletBarText)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		java.lang.String transactionPortletBarText) {
 		getService()
 			.testAddClassNameAndTestTransactionPortletBar_Success(transactionPortletBarText);
 	}
 
-	public static void testCounterIncrement_Rollback()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		getService().testCounterIncrement_Rollback();
+	public static void testAddClassName_Rollback(
+		java.lang.String classNameValue) {
+		getService().testAddClassName_Rollback(classNameValue);
+	}
+
+	public static void testAddClassName_Success(java.lang.String classNameValue) {
+		getService().testAddClassName_Success(classNameValue);
+	}
+
+	public static void testAutoSyncHibernateSessionStateOnTxCreation() {
+		getService().testAutoSyncHibernateSessionStateOnTxCreation();
 	}
 
 	public static void testDeleteClassName()
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().testDeleteClassName();
+	}
+
+	public static int testGetBuildNumber() {
+		return getService().testGetBuildNumber();
 	}
 
 	public static void testGetUserId() {
 		getService().testGetUserId();
 	}
 
-	public static boolean testHasClassName()
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static boolean testHasClassName() {
 		return getService().testHasClassName();
 	}
 
@@ -104,19 +124,16 @@ public class PortalServiceUtil {
 
 			ReferenceRegistry.registerReference(PortalServiceUtil.class,
 				"_service");
-			MethodCache.remove(PortalService.class);
 		}
 
 		return _service;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setService(PortalService service) {
-		MethodCache.remove(PortalService.class);
-
-		_service = service;
-
-		ReferenceRegistry.registerReference(PortalServiceUtil.class, "_service");
-		MethodCache.remove(PortalService.class);
 	}
 
 	private static PortalService _service;

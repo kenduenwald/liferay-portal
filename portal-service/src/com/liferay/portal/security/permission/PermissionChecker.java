@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.security.permission;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.model.User;
 
 import java.util.List;
@@ -23,6 +25,7 @@ import javax.portlet.PortletRequest;
 /**
  * @author Brian Wing Shun Chan
  */
+@ProviderType
 public interface PermissionChecker extends Cloneable {
 
 	public static final long[] DEFAULT_ROLE_IDS = {};
@@ -38,6 +41,8 @@ public interface PermissionChecker extends Cloneable {
 
 	public List<Long> getGuestResourceBlockIds(
 		long companyId, long groupId, String name, String actionId);
+
+	public PermissionCheckerBag getGuestUserBag() throws Exception;
 
 	public List<Long> getOwnerResourceBlockIds(
 		long companyId, long groupId, String name, String actionId);
@@ -62,6 +67,11 @@ public interface PermissionChecker extends Cloneable {
 	 * @return the primary keys of the roles the user has within the group
 	 */
 	public long[] getRoleIds(long userId, long groupId);
+
+	public User getUser();
+
+	public PermissionCheckerBag getUserBag(long userId, long groupId)
+		throws Exception;
 
 	/**
 	 * Returns the primary key of the user.
@@ -172,13 +182,15 @@ public interface PermissionChecker extends Cloneable {
 	public boolean isCheckGuest();
 
 	/**
-	 * @deprecated As of 6.1, renamed to {@link #isGroupAdmin(long)}
+	 * @deprecated As of 6.1.0, renamed to {@link #isGroupAdmin(long)}
 	 */
+	@Deprecated
 	public boolean isCommunityAdmin(long groupId);
 
 	/**
-	 * @deprecated As of 6.1, renamed to {@link #isGroupOwner(long)}
+	 * @deprecated As of 6.1.0, renamed to {@link #isGroupOwner(long)}
 	 */
+	@Deprecated
 	public boolean isCommunityOwner(long groupId);
 
 	/**
@@ -198,6 +210,18 @@ public interface PermissionChecker extends Cloneable {
 	 *         <code>false</code> otherwise
 	 */
 	public boolean isCompanyAdmin(long companyId);
+
+	/**
+	 * Returns <code>true</code> if the user is a content reviewer or has
+	 * sufficient permissions to review content (i.e. the user is a company or
+	 * group administrator).
+	 *
+	 * @param  companyId the primary key of the company
+	 * @param  groupId the primary key of the group
+	 * @return <code>true</code> if the user is a reviewer or has sufficient
+	 *         permissions to review content; <code>false</code> otherwise
+	 */
+	public boolean isContentReviewer(long companyId, long groupId);
 
 	/**
 	 * Returns <code>true</code> if the user is an administrator of the group.
@@ -246,6 +270,15 @@ public interface PermissionChecker extends Cloneable {
 	public boolean isOrganizationAdmin(long organizationId);
 
 	/**
+	 * Returns <code>true</code> if the user is an owner of the organization.
+	 *
+	 * @param  organizationId the primary key of the organization
+	 * @return <code>true</code> if the user is an owner of the organization;
+	 *         <code>false</code> otherwise
+	 */
+	public boolean isOrganizationOwner(long organizationId);
+
+	/**
 	 * Returns <code>true</code> if the user is signed in.
 	 *
 	 * @return <code>true</code> if the user is signed in; <code>false</code>
@@ -254,13 +287,15 @@ public interface PermissionChecker extends Cloneable {
 	public boolean isSignedIn();
 
 	/**
-	 * @deprecated Does nothing
+	 * @deprecated As of 6.2.0, does nothing
 	 */
+	@Deprecated
 	public void resetValues();
 
 	/**
-	 * @deprecated Does nothing
+	 * @deprecated As of 6.2.0, does nothing
 	 */
+	@Deprecated
 	public void setValues(PortletRequest portletRequest);
 
 }

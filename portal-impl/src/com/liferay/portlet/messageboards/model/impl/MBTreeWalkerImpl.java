@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,8 +19,10 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBTreeWalker;
 import com.liferay.portlet.messageboards.service.MBMessageLocalService;
+import com.liferay.portlet.messageboards.util.comparator.MessageThreadComparator;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,17 +33,24 @@ import java.util.Map;
 public class MBTreeWalkerImpl implements MBTreeWalker {
 
 	public MBTreeWalkerImpl(
-		MBMessage message, int status,
-		MBMessageLocalService messageLocalService) {
+		long threadId, int status, MBMessageLocalService messageLocalService,
+		Comparator<MBMessage> comparator) {
 
-		_messageIdsMap = new HashMap<Long, Integer>();
+		_messageIdsMap = new HashMap<>();
+
+		List<MBMessage> messages = null;
+		MBMessage rootMessage = null;
 
 		try {
-			_messages = messageLocalService.getThreadMessages(
-				message.getThreadId(), status);
+			messages = messageLocalService.getThreadMessages(
+				threadId, status, comparator);
 
-			for (int i = 0; i < _messages.size(); i++) {
-				MBMessage curMessage = _messages.get(i);
+			for (int i = 0; i < messages.size(); i++) {
+				MBMessage curMessage = messages.get(i);
+
+				if (curMessage.isRoot()) {
+					rootMessage = curMessage;
+				}
 
 				long parentMessageId = curMessage.getParentMessageId();
 
@@ -55,10 +64,28 @@ public class MBTreeWalkerImpl implements MBTreeWalker {
 		catch (Exception e) {
 			_log.error(e);
 		}
+
+		_messages = messages;
+		_rootMessage = rootMessage;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #MBTreeWalkerImpl(long, int,
+	 *             MBMessageLocalService, Comparator)}
+	 */
+	@Deprecated
+	public MBTreeWalkerImpl(
+		MBMessage message, int status,
+		MBMessageLocalService messageLocalService) {
+
+		this(
+			message.getThreadId(), status, messageLocalService,
+			new MessageThreadComparator());
+	}
+
+	@Override
 	public List<MBMessage> getChildren(MBMessage message) {
-		List<MBMessage> children = new ArrayList<MBMessage>();
+		List<MBMessage> children = new ArrayList<>();
 
 		int[] range = getChildrenRange(message);
 
@@ -69,6 +96,7 @@ public class MBTreeWalkerImpl implements MBTreeWalker {
 		return children;
 	}
 
+	@Override
 	public int[] getChildrenRange(MBMessage message) {
 		long messageId = message.getMessageId();
 
@@ -95,16 +123,19 @@ public class MBTreeWalkerImpl implements MBTreeWalker {
 		return range;
 	}
 
+	@Override
 	public List<MBMessage> getMessages() {
 		return _messages;
 	}
 
+	@Override
 	public MBMessage getRoot() {
-		return _messages.get(0);
+		return _rootMessage;
 	}
 
+	@Override
 	public boolean isLeaf(MBMessage message) {
-		Long messageIdObj = new Long(message.getMessageId());
+		Long messageIdObj = Long.valueOf(message.getMessageId());
 
 		if (_messageIdsMap.containsKey(messageIdObj)) {
 			return false;
@@ -114,16 +145,19 @@ public class MBTreeWalkerImpl implements MBTreeWalker {
 		}
 	}
 
+	@Override
 	public boolean isOdd() {
 		_odd = !_odd;
 
 		return _odd;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(MBTreeWalkerImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		MBTreeWalkerImpl.class);
 
-	private Map<Long, Integer> _messageIdsMap;
-	private List<MBMessage> _messages;
+	private final Map<Long, Integer> _messageIdsMap;
+	private final List<MBMessage> _messages;
 	private boolean _odd;
+	private final MBMessage _rootMessage;
 
 }

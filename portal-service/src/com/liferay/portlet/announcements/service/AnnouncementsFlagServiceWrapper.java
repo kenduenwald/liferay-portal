@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,17 +14,18 @@
 
 package com.liferay.portlet.announcements.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.service.ServiceWrapper;
 
 /**
- * <p>
- * This class is a wrapper for {@link AnnouncementsFlagService}.
- * </p>
+ * Provides a wrapper for {@link AnnouncementsFlagService}.
  *
- * @author    Brian Wing Shun Chan
- * @see       AnnouncementsFlagService
+ * @author Brian Wing Shun Chan
+ * @see AnnouncementsFlagService
  * @generated
  */
+@ProviderType
 public class AnnouncementsFlagServiceWrapper implements AnnouncementsFlagService,
 	ServiceWrapper<AnnouncementsFlagService> {
 	public AnnouncementsFlagServiceWrapper(
@@ -32,44 +33,68 @@ public class AnnouncementsFlagServiceWrapper implements AnnouncementsFlagService
 		_announcementsFlagService = announcementsFlagService;
 	}
 
+	@Override
 	public void addFlag(long entryId, int value)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		_announcementsFlagService.addFlag(entryId, value);
 	}
 
+	@Override
 	public void deleteFlag(long flagId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		_announcementsFlagService.deleteFlag(flagId);
 	}
 
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	@Override
+	public java.lang.String getBeanIdentifier() {
+		return _announcementsFlagService.getBeanIdentifier();
+	}
+
+	@Override
 	public com.liferay.portlet.announcements.model.AnnouncementsFlag getFlag(
 		long entryId, int value)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return _announcementsFlagService.getFlag(entryId, value);
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedService}
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	@Override
+	public void setBeanIdentifier(java.lang.String beanIdentifier) {
+		_announcementsFlagService.setBeanIdentifier(beanIdentifier);
+	}
+
+	/**
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedService}
 	 */
+	@Deprecated
 	public AnnouncementsFlagService getWrappedAnnouncementsFlagService() {
 		return _announcementsFlagService;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #setWrappedService}
+	 * @deprecated As of 6.1.0, replaced by {@link #setWrappedService}
 	 */
+	@Deprecated
 	public void setWrappedAnnouncementsFlagService(
 		AnnouncementsFlagService announcementsFlagService) {
 		_announcementsFlagService = announcementsFlagService;
 	}
 
+	@Override
 	public AnnouncementsFlagService getWrappedService() {
 		return _announcementsFlagService;
 	}
 
+	@Override
 	public void setWrappedService(
 		AnnouncementsFlagService announcementsFlagService) {
 		_announcementsFlagService = announcementsFlagService;

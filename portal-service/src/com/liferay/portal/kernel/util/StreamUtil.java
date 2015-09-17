@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,21 +14,25 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.portal.kernel.io.unsync.UnsyncFilterInputStream;
+import com.liferay.portal.kernel.io.unsync.UnsyncFilterOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 
-import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Raymond Augé
+ * @author Shuyang Zhou
  */
 public class StreamUtil {
 
@@ -38,65 +42,55 @@ public class StreamUtil {
 	public static final boolean FORCE_TIO = GetterUtil.getBoolean(
 		System.getProperty(StreamUtil.class.getName() + ".force.tio"));
 
-	public static void cleanUp(Channel channel) {
-		try {
-			if (channel != null) {
-				channel.close();
+	public static void cleanUp(boolean quite, Closeable... closeables) {
+		IOException ioException = null;
+
+		for (Closeable closeable : closeables) {
+			if (closeable != null) {
+				try {
+					closeable.close();
+				}
+				catch (IOException ioe) {
+					if (ioException == null) {
+						ioException = ioe;
+					}
+					else {
+						ioException.addSuppressed(ioe);
+					}
+				}
 			}
 		}
-		catch (Exception e) {
+
+		if (ioException == null) {
+			return;
+		}
+
+		if (quite) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(ioException, ioException);
 			}
+		}
+		else {
+			ReflectionUtil.throwException(ioException);
 		}
 	}
 
-	public static void cleanUp(Channel inputChannel, Channel outputChannel) {
-		cleanUp(inputChannel);
-		cleanUp(outputChannel);
+	public static void cleanUp(Closeable... closeables) {
+		cleanUp(true, closeables);
 	}
 
-	public static void cleanUp(InputStream inputStream) {
-		try {
-			if (inputStream != null) {
-				inputStream.close();
-			}
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
-	}
+	public static void runWithSwappedSystemOut(
+		OutputStream outputStream, Runnable runnable) {
 
-	public static void cleanUp(
-		InputStream inputStream, OutputStream outputStream) {
+		PrintStream printStream = System.out;
 
-		cleanUp(outputStream);
-		cleanUp(inputStream);
-	}
-
-	public static void cleanUp(OutputStream outputStream) {
-		try {
-			if (outputStream != null) {
-				outputStream.flush();
-			}
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
+		System.setOut(new PrintStream(outputStream));
 
 		try {
-			if (outputStream != null) {
-				outputStream.close();
-			}
+			runnable.run();
 		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
+		finally {
+			System.setOut(printStream);
 		}
 	}
 
@@ -135,11 +129,11 @@ public class StreamUtil {
 		throws IOException {
 
 		if (inputStream == null) {
-			throw new IllegalArgumentException("Input stream cannot be null");
+			throw new IllegalArgumentException("Input stream is null");
 		}
 
 		if (outputStream == null) {
-			throw new IllegalArgumentException("Output stream cannot be null");
+			throw new IllegalArgumentException("Output stream is null");
 		}
 
 		if (bufferSize <= 0) {
@@ -165,7 +159,7 @@ public class StreamUtil {
 		}
 		finally {
 			if (cleanUp) {
-				cleanUp(inputStream, outputStream);
+				cleanUp(false, inputStream, outputStream);
 			}
 		}
 	}
@@ -177,6 +171,34 @@ public class StreamUtil {
 		transfer(inputStream, outputStream, BUFFER_SIZE, true, length);
 	}
 
+	public static InputStream uncloseable(InputStream inputStream) {
+		if (inputStream == null) {
+			return null;
+		}
+
+		return new UnsyncFilterInputStream(inputStream) {
+
+			@Override
+			public void close() {
+			}
+
+		};
+	}
+
+	public static OutputStream uncloseable(OutputStream outputStream) {
+		if (outputStream == null) {
+			return null;
+		}
+
+		return new UnsyncFilterOutputStream(outputStream) {
+
+			@Override
+			public void close() {
+			}
+
+		};
+	}
+
 	protected static void transferByteArray(
 			InputStream inputStream, OutputStream outputStream, int bufferSize,
 			long length)
@@ -184,9 +206,9 @@ public class StreamUtil {
 
 		byte[] bytes = new byte[bufferSize];
 
-		long remainingLength = length;
+		if (length > 0) {
+			long remainingLength = length;
 
-		if (remainingLength > 0) {
 			while (remainingLength > 0) {
 				int readBytes = inputStream.read(
 					bytes, 0, (int)Math.min(remainingLength, bufferSize));
@@ -214,23 +236,19 @@ public class StreamUtil {
 			long length)
 		throws IOException {
 
-		long size = 0;
-
-		if (length > 0) {
-			size = length;
-		}
-		else {
-			size = inputFileChannel.size();
+		if (length <= 0) {
+			length = inputFileChannel.size() - inputFileChannel.position();
 		}
 
-		long position = 0;
+		long count = 0;
 
-		while (position < size) {
-			position += inputFileChannel.transferTo(
-				position, size - position, outputFileChannel);
+		while (count < length) {
+			count += inputFileChannel.transferTo(
+				inputFileChannel.position() + count, length - count,
+				outputFileChannel);
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(StreamUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(StreamUtil.class);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,7 @@
 
 package com.liferay.portal.security.auth;
 
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.service.UserLocalServiceUtil;
 
 import java.util.Map;
@@ -22,8 +23,10 @@ import java.util.Map;
  * @author Brian Wing Shun Chan
  * @author Scott Lee
  */
+@OSGiBeanProperties(property = "key=auth.max.failures")
 public class LoginMaxFailures implements AuthFailure {
 
+	@Override
 	public void onFailureByEmailAddress(
 			long companyId, String emailAddress,
 			Map<String, String[]> headerMap, Map<String, String[]> parameterMap)
@@ -38,6 +41,7 @@ public class LoginMaxFailures implements AuthFailure {
 		}
 	}
 
+	@Override
 	public void onFailureByScreenName(
 			long companyId, String screenName, Map<String, String[]> headerMap,
 			Map<String, String[]> parameterMap)
@@ -52,6 +56,7 @@ public class LoginMaxFailures implements AuthFailure {
 		}
 	}
 
+	@Override
 	public void onFailureByUserId(
 			long companyId, long userId, Map<String, String[]> headerMap,
 			Map<String, String[]> parameterMap)

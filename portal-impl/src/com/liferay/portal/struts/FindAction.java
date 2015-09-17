@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,24 +14,7 @@
 
 package com.liferay.portal.struts;
 
-import com.liferay.portal.NoSuchLayoutException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutConstants;
-import com.liferay.portal.model.LayoutTypePortlet;
-import com.liferay.portal.service.LayoutLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.PortletURLFactoryUtil;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
 import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,122 +30,61 @@ import org.apache.struts.action.ActionMapping;
 public abstract class FindAction extends Action {
 
 	public FindAction() {
-		_portletIds = initPortletIds();
+		_findActionHelper = new BaseStrutsPortletFindActionHelper() {
 
-		if ((_portletIds == null) || (_portletIds.length == 0)) {
-			throw new RuntimeException("Portlet IDs cannot be null or empty");
-		}
+			@Override
+			public long getGroupId(long primaryKey) throws Exception {
+				return FindAction.this.getGroupId(primaryKey);
+			}
+
+			@Override
+			public String getPrimaryKeyParameterName() {
+				return FindAction.this.getPrimaryKeyParameterName();
+			}
+
+			@Override
+			public String getStrutsAction(
+				HttpServletRequest request, String portletId) {
+
+				return FindAction.this.getStrutsAction(request, portletId);
+			}
+
+			@Override
+			public String[] initPortletIds() {
+				return FindAction.this.initPortletIds();
+			}
+
+			@Override
+			public PortletURL processPortletURL(
+					HttpServletRequest request, PortletURL portletURL)
+				throws Exception {
+
+				return FindAction.this.processPortletURL(request, portletURL);
+			}
+
+			@Override
+			public void setPrimaryKeyParameter(
+					PortletURL portletURL, long primaryKey)
+				throws Exception {
+
+				FindAction.this.setPrimaryKeyParameter(portletURL, primaryKey);
+			}
+
+		};
 	}
 
 	@Override
 	public ActionForward execute(
-			ActionMapping mapping, ActionForm form, HttpServletRequest request,
-			HttpServletResponse response)
+			ActionMapping actionMapping, ActionForm actionForm,
+			HttpServletRequest request, HttpServletResponse response)
 		throws Exception {
 
-		try {
-			long plid = ParamUtil.getLong(request, "p_l_id");
-			long primaryKey = ParamUtil.getLong(
-				request, getPrimaryKeyParameterName());
+		_findActionHelper.execute(request, response);
 
-			Object[] plidAndPortletId = getPlidAndPortletId(
-				request, plid, primaryKey);
-
-			plid = (Long)plidAndPortletId[0];
-
-			String portletId = (String)plidAndPortletId[1];
-
-			PortletURL portletURL = PortletURLFactoryUtil.create(
-				request, portletId, plid, PortletRequest.RENDER_PHASE);
-
-			portletURL.setParameter(
-				"struts_action", getStrutsAction(request, portletId));
-
-			String redirect = ParamUtil.getString(request, "redirect");
-
-			if (Validator.isNotNull(redirect)) {
-				portletURL.setParameter("redirect", redirect);
-			}
-
-			setPrimaryKeyParameter(portletURL, primaryKey);
-
-			portletURL.setPortletMode(PortletMode.VIEW);
-			portletURL.setWindowState(WindowState.NORMAL);
-
-			portletURL = processPortletURL(request, portletURL);
-
-			response.sendRedirect(portletURL.toString());
-
-			return null;
-		}
-		catch (Exception e) {
-			String noSuchEntryRedirect = ParamUtil.getString(
-				request, "noSuchEntryRedirect");
-
-			if (Validator.isNotNull(noSuchEntryRedirect) &&
-				(e instanceof NoSuchLayoutException)) {
-
-				response.sendRedirect(noSuchEntryRedirect);
-			}
-			else {
-				PortalUtil.sendError(e, request, response);
-			}
-
-			return null;
-		}
+		return null;
 	}
 
 	protected abstract long getGroupId(long primaryKey) throws Exception;
-
-	protected Object[] getPlidAndPortletId(
-			HttpServletRequest request, long plid, long primaryKey)
-		throws Exception {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		long groupId = themeDisplay.getScopeGroupId();
-
-		if (primaryKey > 0) {
-			try {
-				groupId = getGroupId(primaryKey);
-			}
-			catch (Exception e) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(e, e);
-				}
-			}
-		}
-
-		if ((plid != LayoutConstants.DEFAULT_PLID) &&
-			(groupId == themeDisplay.getScopeGroupId())) {
-
-			try {
-				Layout layout = LayoutLocalServiceUtil.getLayout(plid);
-
-				LayoutTypePortlet layoutTypePortlet =
-					(LayoutTypePortlet)layout.getLayoutType();
-
-				for (String portletId : _portletIds) {
-					if (layoutTypePortlet.hasPortletId(portletId)) {
-						return new Object[] {plid, portletId};
-					}
-				}
-			}
-			catch (NoSuchLayoutException nsle) {
-			}
-		}
-
-		for (String portletId : _portletIds) {
-			plid = PortalUtil.getPlidFromPortletId(groupId, portletId);
-
-			if (plid != LayoutConstants.DEFAULT_PLID) {
-				return new Object[] {plid, portletId};
-			}
-		}
-
-		throw new NoSuchLayoutException();
-	}
 
 	protected abstract String getPrimaryKeyParameterName();
 
@@ -186,8 +108,6 @@ public abstract class FindAction extends Action {
 			getPrimaryKeyParameterName(), String.valueOf(primaryKey));
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(FindAction.class);
-
-	private String[] _portletIds;
+	private final FindActionHelper _findActionHelper;
 
 }

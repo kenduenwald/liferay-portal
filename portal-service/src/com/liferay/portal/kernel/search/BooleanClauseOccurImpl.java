@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -25,6 +25,14 @@ public class BooleanClauseOccurImpl implements BooleanClauseOccur {
 
 	@Override
 	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof BooleanClauseOccur)) {
+			return false;
+		}
+
 		BooleanClauseOccur booleanClauseOccur = (BooleanClauseOccur)obj;
 
 		String name = booleanClauseOccur.getName();
@@ -37,10 +45,21 @@ public class BooleanClauseOccurImpl implements BooleanClauseOccur {
 		}
 	}
 
+	@Override
 	public String getName() {
 		return _name;
 	}
 
-	private String _name;
+	@Override
+	public int hashCode() {
+		return _name.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return _name;
+	}
+
+	private final String _name;
 
 }

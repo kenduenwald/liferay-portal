@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -52,7 +52,7 @@ public class RecurrenceSerializer {
 			dayOfWeek = StringPool.QUESTION;
 		}
 		else if (frequency == Recurrence.DAILY) {
-			dayOfMonth += StringPool.FORWARD_SLASH + interval;
+			dayOfMonth = 1 + StringPool.FORWARD_SLASH + interval;
 			month = StringPool.STAR;
 			dayOfWeek = StringPool.QUESTION;
 			year = StringPool.STAR;
@@ -91,7 +91,7 @@ public class RecurrenceSerializer {
 		}
 		else if (frequency == Recurrence.MONTHLY) {
 			dayOfMonth = StringPool.QUESTION;
-			month += StringPool.FORWARD_SLASH + interval;
+			month = 1 + StringPool.FORWARD_SLASH + interval;
 			dayOfWeek = StringPool.QUESTION;
 			year = StringPool.STAR;
 

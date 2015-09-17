@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet;
 
-import com.liferay.portal.kernel.messaging.sender.SingleDestinationMessageSender;
+import com.liferay.portal.kernel.monitoring.PortletMonitoringControl;
 
 import javax.portlet.Portlet;
 import javax.portlet.PortletConfig;
@@ -30,37 +30,38 @@ public class MonitoringPortletFactoryImpl extends InvokerPortletFactoryImpl {
 	public InvokerPortlet create(
 			com.liferay.portal.model.Portlet portletModel, Portlet portlet,
 			PortletConfig portletConfig, PortletContext portletContext,
+			InvokerFilterContainer invokerFilterContainer,
 			boolean checkAuthToken, boolean facesPortlet, boolean strutsPortlet,
 			boolean strutsBridgePortlet)
 		throws PortletException {
 
 		InvokerPortlet invokerPortlet = super.create(
 			portletModel, portlet, portletConfig, portletContext,
-			checkAuthToken, facesPortlet, strutsPortlet, strutsBridgePortlet);
+			invokerFilterContainer, checkAuthToken, facesPortlet, strutsPortlet,
+			strutsBridgePortlet);
 
-		return new MonitoringPortlet(
-			invokerPortlet, _singleDestinationMessageSender);
+		return new MonitoringPortlet(invokerPortlet, _portletMonitoringControl);
 	}
 
 	@Override
 	public InvokerPortlet create(
 			com.liferay.portal.model.Portlet portletModel, Portlet portlet,
-			PortletContext portletContext)
+			PortletContext portletContext,
+			InvokerFilterContainer invokerFilterContainer)
 		throws PortletException {
 
 		InvokerPortlet invokerPortlet = super.create(
-			portletModel, portlet, portletContext);
+			portletModel, portlet, portletContext, invokerFilterContainer);
 
-		return new MonitoringPortlet(
-			invokerPortlet, _singleDestinationMessageSender);
+		return new MonitoringPortlet(invokerPortlet, _portletMonitoringControl);
 	}
 
-	public void setSingleDestinationMessageSender(
-		SingleDestinationMessageSender singleDestinationMessageSender) {
+	public void setPortletMonitoringControl(
+		PortletMonitoringControl portletMonitoringControl) {
 
-		_singleDestinationMessageSender = singleDestinationMessageSender;
+		_portletMonitoringControl = portletMonitoringControl;
 	}
 
-	private SingleDestinationMessageSender _singleDestinationMessageSender;
+	private PortletMonitoringControl _portletMonitoringControl;
 
 }

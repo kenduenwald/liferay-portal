@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,29 +14,37 @@
 
 package com.liferay.portal.kernel.util;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Miguel Pastor
+ * @author Shuyang Zhou
  */
 public class ReflectionUtil {
 
-	public static Class<?> getAnnotationDeclaringClass(
-		Class<? extends Annotation> annotationClass, Class<?> clazz) {
+	public static Object arrayClone(Object array) {
+		Class<?> clazz = array.getClass();
 
-		if ((clazz == null) || clazz.equals(Object.class)) {
-			return null;
+		if (!clazz.isArray()) {
+			throw new IllegalArgumentException(
+				"Input object is not an array: " + array);
 		}
 
-		if (isAnnotationDeclaredInClass(annotationClass, clazz)) {
-			return clazz;
+		try {
+			return _CLONE_METHOD.invoke(array);
 		}
-		else {
-			return getAnnotationDeclaringClass(
-				annotationClass, clazz.getSuperclass());
+		catch (Exception e) {
+			return throwException(e);
 		}
 	}
 
@@ -49,7 +57,7 @@ public class ReflectionUtil {
 			field.setAccessible(true);
 		}
 
-		return field;
+		return unfinalField(field);
 	}
 
 	public static Method getDeclaredMethod(
@@ -63,6 +71,73 @@ public class ReflectionUtil {
 		}
 
 		return method;
+	}
+
+	public static Type getGenericInterface(
+		Object object, Class<?> interfaceClass) {
+
+		Class<?> clazz = object.getClass();
+
+		Type genericInterface = _getGenericInterface(clazz, interfaceClass);
+
+		if (genericInterface != null) {
+			return genericInterface;
+		}
+
+		Class<?> superClass = clazz.getSuperclass();
+
+		while (superClass != null) {
+			genericInterface = _getGenericInterface(superClass, interfaceClass);
+
+			if (genericInterface != null) {
+				return genericInterface;
+			}
+
+			superClass = superClass.getSuperclass();
+		}
+
+		return null;
+	}
+
+	public static Class<?> getGenericSuperType(Class<?> clazz) {
+		try {
+			ParameterizedType parameterizedType =
+				(ParameterizedType)clazz.getGenericSuperclass();
+
+			Type[] types = parameterizedType.getActualTypeArguments();
+
+			if (types.length > 0) {
+				return (Class<?>)types[0];
+			}
+		}
+		catch (Throwable t) {
+		}
+
+		return null;
+	}
+
+	public static Class<?>[] getInterfaces(Object object) {
+		return getInterfaces(object, null);
+	}
+
+	public static Class<?>[] getInterfaces(
+		Object object, ClassLoader classLoader) {
+
+		Set<Class<?>> interfaceClasses = new LinkedHashSet<>();
+
+		Class<?> clazz = object.getClass();
+
+		_getInterfaces(interfaceClasses, clazz, classLoader);
+
+		Class<?> superClass = clazz.getSuperclass();
+
+		while (superClass != null) {
+			_getInterfaces(interfaceClasses, superClass, classLoader);
+
+			superClass = superClass.getSuperclass();
+		}
+
+		return interfaceClasses.toArray(new Class<?>[interfaceClasses.size()]);
 	}
 
 	public static Class<?>[] getParameterTypes(Object[] arguments) {
@@ -108,22 +183,102 @@ public class ReflectionUtil {
 		return parameterTypes;
 	}
 
-	public static boolean isAnnotationDeclaredInClass(
-		Class<? extends Annotation> annotationClass, Class<?> clazz) {
+	public static Set<Method> getVisibleMethods(Class<?> clazz) {
+		Set<Method> visibleMethods = new HashSet<>(
+			Arrays.asList(clazz.getMethods()));
 
-		if ((annotationClass == null) || (clazz == null)) {
-			throw new IllegalArgumentException();
-		}
+		visibleMethods.addAll(Arrays.asList(clazz.getDeclaredMethods()));
 
-		Annotation[] annotations = clazz.getAnnotations();
+		while ((clazz = clazz.getSuperclass()) != null) {
+			for (Method method : clazz.getDeclaredMethods()) {
+				int modifiers = method.getModifiers();
 
-		for (Annotation annotation : annotations) {
-			if (annotationClass.equals(annotation.annotationType())) {
-				return true;
+				if (!Modifier.isPrivate(modifiers) &
+					!Modifier.isPublic(modifiers)) {
+
+					visibleMethods.add(method);
+				}
 			}
 		}
 
-		return false;
+		return visibleMethods;
+	}
+
+	public static <T> T throwException(Throwable throwable) {
+		return ReflectionUtil.<T, RuntimeException>_doThrowException(throwable);
+	}
+
+	public static Field unfinalField(Field field) throws Exception {
+		int modifiers = field.getModifiers();
+
+		if ((modifiers & Modifier.FINAL) == Modifier.FINAL) {
+			Field modifiersField = getDeclaredField(Field.class, "modifiers");
+
+			modifiersField.setInt(field, modifiers & ~Modifier.FINAL);
+		}
+
+		return field;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T, E extends Throwable> T _doThrowException(
+			Throwable throwable)
+		throws E {
+
+		throw (E)throwable;
+	}
+
+	private static Type _getGenericInterface(
+		Class<?> clazz, Class<?> interfaceClass) {
+
+		Type[] genericInterfaces = clazz.getGenericInterfaces();
+
+		for (Type genericInterface : genericInterfaces) {
+			if (!(genericInterface instanceof ParameterizedType)) {
+				continue;
+			}
+
+			ParameterizedType parameterizedType =
+				(ParameterizedType)genericInterface;
+
+			Type rawType = parameterizedType.getRawType();
+
+			if (rawType.equals(interfaceClass)) {
+				return parameterizedType;
+			}
+		}
+
+		return null;
+	}
+
+	private static void _getInterfaces(
+		Set<Class<?>> interfaceClasses, Class<?> clazz,
+		ClassLoader classLoader) {
+
+		for (Class<?> interfaceClass : clazz.getInterfaces()) {
+			try {
+				if (classLoader != null) {
+					interfaceClasses.add(
+						classLoader.loadClass(interfaceClass.getName()));
+				}
+				else {
+					interfaceClasses.add(interfaceClass);
+				}
+			}
+			catch (ClassNotFoundException cnfe) {
+			}
+		}
+	}
+
+	private static final Method _CLONE_METHOD;
+
+	static {
+		try {
+			_CLONE_METHOD = getDeclaredMethod(Object.class, "clone");
+		}
+		catch (Exception e) {
+			throw new ExceptionInInitializerError(e);
+		}
 	}
 
 }

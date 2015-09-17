@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.kernel.search;
 
+import com.liferay.portal.kernel.util.ProxyFactory;
+
 import java.util.List;
 
 /**
@@ -21,11 +23,11 @@ import java.util.List;
  */
 public class IndexerRegistryUtil {
 
-	public static Indexer getIndexer(Class<?> clazz) {
-		return getIndexerRegistry().getIndexer(clazz.getName());
+	public static <T> Indexer<T> getIndexer(Class<T> clazz) {
+		return getIndexerRegistry().getIndexer(clazz);
 	}
 
-	public static Indexer getIndexer(String className) {
+	public static <T> Indexer<T> getIndexer(String className) {
 		return getIndexerRegistry().getIndexer(className);
 	}
 
@@ -33,46 +35,39 @@ public class IndexerRegistryUtil {
 		return _indexerRegistry;
 	}
 
-	public static List<Indexer> getIndexers() {
+	public static List<Indexer<?>> getIndexers() {
 		return getIndexerRegistry().getIndexers();
 	}
 
-	public static Indexer nullSafeGetIndexer(Class<?> clazz) {
-		return getIndexerRegistry().nullSafeGetIndexer(clazz.getName());
+	public static <T> Indexer<T> nullSafeGetIndexer(Class<T> clazz) {
+		return getIndexerRegistry().nullSafeGetIndexer(clazz);
 	}
 
-	public static Indexer nullSafeGetIndexer(String className) {
+	public static <T> Indexer<T> nullSafeGetIndexer(String className) {
 		return getIndexerRegistry().nullSafeGetIndexer(className);
 	}
 
-	public static void register(Indexer indexer) {
-		for (String className : indexer.getClassNames()) {
-			register(className, indexer);
-		}
-
-		register(indexer.getClass().getName(), indexer);
+	public static void register(Indexer<?> indexer) {
+		getIndexerRegistry().register(indexer);
 	}
 
-	public static void register(String className, Indexer indexer) {
-		getIndexerRegistry().register(className, indexer);
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #register(Indexer)}
+	 */
+	@Deprecated
+	public static void register(String className, Indexer<?> indexer) {
+		getIndexerRegistry().register(indexer);
 	}
 
-	public static void unregister(Indexer indexer) {
-		for (String className : indexer.getClassNames()) {
-			unregister(className);
-		}
-
-		unregister(indexer.getClass().getName());
+	public static void unregister(Indexer<?> indexer) {
+		getIndexerRegistry().unregister(indexer);
 	}
 
 	public static void unregister(String className) {
 		getIndexerRegistry().unregister(className);
 	}
 
-	public void setIndexerRegistry(IndexerRegistry indexerRegistry) {
-		_indexerRegistry = indexerRegistry;
-	}
-
-	private static IndexerRegistry _indexerRegistry;
+	private static final IndexerRegistry _indexerRegistry =
+		ProxyFactory.newServiceTrackedInstance(IndexerRegistry.class);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.documentlibrary.model.DLFileVersion;
 import com.liferay.portlet.documentlibrary.service.DLFileVersionLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.documentlibrary.service.DLFileVersionLocalServiceUtil
  *
  * @author Brian Wing Shun Chan
  * @see DLFileVersionImpl
- * @see com.liferay.portlet.documentlibrary.model.DLFileVersion
+ * @see DLFileVersion
  * @generated
  */
+@ProviderType
 public abstract class DLFileVersionBaseImpl extends DLFileVersionModelImpl
 	implements DLFileVersion {
 	/*
@@ -38,12 +39,22 @@ public abstract class DLFileVersionBaseImpl extends DLFileVersionModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a document library file version model instance should use the {@link DLFileVersion} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			DLFileVersionLocalServiceUtil.addDLFileVersion(this);
 		}
 		else {
 			DLFileVersionLocalServiceUtil.updateDLFileVersion(this);
 		}
+	}
+
+	@Override
+	public void updateTreePath(String treePath) {
+		DLFileVersion dlFileVersion = this;
+
+		dlFileVersion.setTreePath(treePath);
+
+		DLFileVersionLocalServiceUtil.updateDLFileVersion(dlFileVersion);
 	}
 }

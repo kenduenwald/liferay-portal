@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,7 @@
 
 package com.liferay.portal.upgrade.util;
 
+import com.liferay.portal.dao.jdbc.postgresql.PostgreSQLJDBCUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedWriter;
@@ -21,6 +22,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.StagnantRowException;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
+import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -57,25 +59,6 @@ import org.apache.commons.lang.time.StopWatch;
  */
 public class Table {
 
-	public static final int BATCH_SIZE = GetterUtil.getInteger(
-		PropsUtil.get("hibernate.jdbc.batch_size"));
-
-	public static final String[][] SAFE_CHARS = {
-		{StringPool.RETURN, StringPool.COMMA, StringPool.NEW_LINE},
-		{
-			Table.SAFE_RETURN_CHARACTER, Table.SAFE_COMMA_CHARACTER,
-			Table.SAFE_NEWLINE_CHARACTER
-		}
-	};
-
-	public static final String SAFE_COMMA_CHARACTER = "_SAFE_COMMA_CHARACTER_";
-
-	public static final String SAFE_NEWLINE_CHARACTER =
-		"_SAFE_NEWLINE_CHARACTER_";
-
-	public static final String SAFE_RETURN_CHARACTER =
-		"_SAFE_RETURN_CHARACTER_";
-
 	public Table(String tableName) {
 		_tableName = tableName;
 	}
@@ -94,9 +77,12 @@ public class Table {
 				"Nulls should never be inserted into the database. " +
 					"Attempted to append column to " + sb.toString() + ".");
 		}
+		else if (value instanceof byte[]) {
+			sb.append(Base64.encode((byte[])value));
+		}
 		else if (value instanceof Clob || value instanceof String) {
 			value = StringUtil.replace(
-				(String)value, SAFE_CHARS[0], SAFE_CHARS[1]);
+				(String)value, _SAFE_TABLE_CHARS[0], _SAFE_TABLE_CHARS[1]);
 
 			sb.append(value);
 		}
@@ -143,18 +129,18 @@ public class Table {
 		appendColumn(sb, value, last);
 	}
 
-	public String generateTempFile() throws Exception {
-		Connection con = DataAccess.getConnection();
+	public void generateTempFile() throws Exception {
+		Connection con = DataAccess.getUpgradeOptimizedConnection();
 
 		try {
-			return generateTempFile(con);
+			generateTempFile(con);
 		}
 		finally {
 			DataAccess.cleanUp(con);
 		}
 	}
 
-	public String generateTempFile(Connection con) throws Exception {
+	public void generateTempFile(Connection con) throws Exception {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
@@ -164,24 +150,20 @@ public class Table {
 			SystemProperties.get(SystemProperties.TMP_DIR) + "/temp-db-" +
 				_tableName + "-" + System.currentTimeMillis();
 
-		StopWatch stopWatch = null;
+		StopWatch stopWatch = new StopWatch();
+
+		stopWatch.start();
 
 		if (_log.isInfoEnabled()) {
-			stopWatch = new StopWatch();
-
-			stopWatch.start();
-
 			_log.info(
 				"Starting backup of " + _tableName + " to " + tempFileName);
 		}
-
-		String selectSQL = getSelectSQL();
 
 		UnsyncBufferedWriter unsyncBufferedWriter = new UnsyncBufferedWriter(
 			new FileWriter(tempFileName));
 
 		try {
-			ps = con.prepareStatement(selectSQL);
+			ps = getSelectPreparedStatement(con);
 
 			rs = ps.executeQuery();
 
@@ -224,13 +206,12 @@ public class Table {
 		}
 
 		if (!empty) {
-			return tempFileName;
-		}
-		else {
-			FileUtil.delete(tempFileName);
+			_tempFileName = tempFileName;
 
-			return null;
+			return;
 		}
+
+		FileUtil.delete(tempFileName);
 	}
 
 	public Object[][] getColumns() {
@@ -298,7 +279,7 @@ public class Table {
 		String createSQL = getCreateSQL();
 
 		if (Validator.isNotNull(createSQL)) {
-			String createSQLLowerCase = createSQL.toLowerCase();
+			String createSQLLowerCase = StringUtil.toLowerCase(createSQL);
 
 			int x = createSQLLowerCase.indexOf("create table ");
 
@@ -319,6 +300,12 @@ public class Table {
 
 	public int[] getOrder() {
 		return _order;
+	}
+
+	public PreparedStatement getSelectPreparedStatement(Connection con)
+		throws Exception {
+
+		return con.prepareStatement(getSelectSQL());
 	}
 
 	public String getSelectSQL() throws Exception {
@@ -349,6 +336,10 @@ public class Table {
 		return _tableName;
 	}
 
+	public String getTempFileName() {
+		return _tempFileName;
+	}
+
 	public long getTotalRows() {
 		return _totalRows;
 	}
@@ -366,6 +357,21 @@ public class Table {
 			}
 			catch (SQLException sqle) {
 				value = GetterUtil.getLong(rs.getString(name));
+			}
+		}
+		else if (t == Types.BIT) {
+			value = GetterUtil.getBoolean(rs.getBoolean(name));
+		}
+		else if ((t == Types.BLOB) || (t == Types.LONGVARBINARY)) {
+			if (PostgreSQLJDBCUtil.isPGStatement(rs.getStatement())) {
+				value = PostgreSQLJDBCUtil.getLargeObject(rs, name);
+			}
+			else {
+				value = rs.getBytes(name);
+			}
+
+			if (value == null) {
+				value = new byte[0];
 			}
 		}
 		else if (t == Types.BOOLEAN) {
@@ -388,7 +394,7 @@ public class Table {
 
 					while ((line = unsyncBufferedReader.readLine()) != null) {
 						if (sb.length() != 0) {
-							sb.append(SAFE_NEWLINE_CHARACTER);
+							sb.append(_SAFE_TABLE_NEWLINE_CHARACTER);
 						}
 
 						sb.append(line);
@@ -414,6 +420,12 @@ public class Table {
 		else if (t == Types.INTEGER) {
 			value = GetterUtil.getInteger(rs.getInt(name));
 		}
+		else if (t == Types.LONGVARCHAR) {
+			value = GetterUtil.getString(rs.getString(name));
+		}
+		else if (t == Types.NUMERIC) {
+			value = GetterUtil.getLong(rs.getLong(name));
+		}
 		else if (t == Types.SMALLINT) {
 			value = GetterUtil.getShort(rs.getShort(name));
 		}
@@ -428,6 +440,9 @@ public class Table {
 				value = StringPool.NULL;
 			}
 		}
+		else if (t == Types.TINYINT) {
+			value = GetterUtil.getShort(rs.getShort(name));
+		}
 		else if (t == Types.VARCHAR) {
 			value = GetterUtil.getString(rs.getString(name));
 		}
@@ -439,26 +454,28 @@ public class Table {
 		return value;
 	}
 
-	public void populateTable(String tempFileName) throws Exception {
-		Connection con = DataAccess.getConnection();
+	public void populateTable() throws Exception {
+		Connection con = DataAccess.getUpgradeOptimizedConnection();
 
 		try {
-			populateTable(tempFileName, con);
+			populateTable(con);
 		}
 		finally {
 			DataAccess.cleanUp(con);
 		}
 	}
 
-	public void populateTable(String tempFileName, Connection con)
-		throws Exception {
+	public void populateTable(Connection con) throws Exception {
+		if (_tempFileName == null) {
+			return;
+		}
 
 		PreparedStatement ps = null;
 
 		String insertSQL = getInsertSQL();
 
 		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new FileReader(tempFileName));
+			new FileReader(_tempFileName));
 
 		String line = null;
 
@@ -499,7 +516,7 @@ public class Table {
 				if (databaseMetaData.supportsBatchUpdates()) {
 					ps.addBatch();
 
-					if (count == BATCH_SIZE) {
+					if (count == _BATCH_SIZE) {
 						populateTableRows(ps, true);
 
 						count = 0;
@@ -558,11 +575,23 @@ public class Table {
 		if (t == Types.BIGINT) {
 			ps.setLong(paramIndex, GetterUtil.getLong(value));
 		}
+		else if ((t == Types.BLOB) || (t == Types.LONGVARBINARY)) {
+			if (PostgreSQLJDBCUtil.isPGStatement(ps)) {
+				PostgreSQLJDBCUtil.setLargeObject(
+					ps, paramIndex, Base64.decode(value));
+			}
+			else {
+				ps.setBytes(paramIndex, Base64.decode(value));
+			}
+		}
 		else if (t == Types.BOOLEAN) {
 			ps.setBoolean(paramIndex, GetterUtil.getBoolean(value));
 		}
-		else if ((t == Types.CLOB) || (t == Types.VARCHAR)) {
-			value = StringUtil.replace(value, SAFE_CHARS[1], SAFE_CHARS[0]);
+		else if ((t == Types.CLOB) || (t == Types.LONGVARCHAR) ||
+				 (t == Types.VARCHAR)) {
+
+			value = StringUtil.replace(
+				value, _SAFE_TABLE_CHARS[1], _SAFE_TABLE_CHARS[0]);
 
 			ps.setString(paramIndex, value);
 		}
@@ -588,6 +617,9 @@ public class Table {
 				ps.setTimestamp(
 					paramIndex, new Timestamp(df.parse(value).getTime()));
 			}
+		}
+		else if (t == Types.TINYINT) {
+			ps.setShort(paramIndex, GetterUtil.getShort(value));
 		}
 		else {
 			throw new UpgradeException(
@@ -630,13 +662,75 @@ public class Table {
 		_selectSQL = selectSQL;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(Table.class);
+	public void updateColumnValue(
+		String columnName, String oldValue, String newValue) {
+
+		Connection con = null;
+		PreparedStatement ps = null;
+
+		StringBundler sb = new StringBundler(7);
+
+		sb.append("update ");
+		sb.append(_tableName);
+		sb.append(" set ");
+		sb.append(columnName);
+		sb.append(" = ? where ");
+		sb.append(columnName);
+		sb.append(" = ?");
+
+		String sql = sb.toString();
+
+		try {
+			con = DataAccess.getUpgradeOptimizedConnection();
+
+			ps = con.prepareStatement(sql);
+
+			ps.setString(1, newValue);
+			ps.setString(2, oldValue);
+
+			ps.executeUpdate();
+		}
+		catch (SQLException sqle) {
+			if (_log.isErrorEnabled()) {
+				_log.error(sqle, sqle);
+			}
+
+			throw new RuntimeException("Unable to execute " + sql, sqle);
+		}
+		finally {
+			DataAccess.cleanUp(con, ps);
+		}
+	}
+
+	private static final int _BATCH_SIZE = GetterUtil.getInteger(
+		PropsUtil.get("hibernate.jdbc.batch_size"));
+
+	private static final String[][] _SAFE_TABLE_CHARS = {
+		{StringPool.COMMA, StringPool.NEW_LINE, StringPool.RETURN},
+		{
+			Table._SAFE_TABLE_COMMA_CHARACTER,
+			Table._SAFE_TABLE_NEWLINE_CHARACTER,
+			Table._SAFE_TABLE_RETURN_CHARACTER
+		}
+	};
+
+	private static final String _SAFE_TABLE_COMMA_CHARACTER =
+		"_SAFE_TABLE_COMMA_CHARACTER_";
+
+	private static final String _SAFE_TABLE_NEWLINE_CHARACTER =
+		"_SAFE_TABLE_NEWLINE_CHARACTER_";
+
+	private static final String _SAFE_TABLE_RETURN_CHARACTER =
+		"_SAFE_TABLE_RETURN_CHARACTER_";
+
+	private static final Log _log = LogFactoryUtil.getLog(Table.class);
 
 	private Object[][] _columns;
 	private String _createSQL;
 	private int[] _order;
 	private String _selectSQL;
-	private String _tableName;
+	private final String _tableName;
+	private String _tempFileName;
 	private long _totalRows;
 
 }

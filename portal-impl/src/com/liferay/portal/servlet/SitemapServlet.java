@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -39,7 +39,7 @@ public class SitemapServlet extends HttpServlet {
 		throws IOException, ServletException {
 
 		try {
-			String redirect = Portal.PATH_MAIN + "/layouts_admin/sitemap";
+			String redirect = Portal.PATH_MAIN + "/portal/sitemap";
 
 			ServletContext servletContext = getServletContext();
 
@@ -57,6 +57,6 @@ public class SitemapServlet extends HttpServlet {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(SitemapServlet.class);
+	private static final Log _log = LogFactoryUtil.getLog(SitemapServlet.class);
 
 }

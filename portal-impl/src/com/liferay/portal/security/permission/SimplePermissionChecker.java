@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,6 +24,19 @@ public class SimplePermissionChecker extends BasePermissionChecker {
 		return new SimplePermissionChecker();
 	}
 
+	@Override
+	public PermissionCheckerBag getGuestUserBag() throws Exception {
+		return null;
+	}
+
+	@Override
+	public PermissionCheckerBag getUserBag(long userId, long groupId)
+		throws Exception {
+
+		return null;
+	}
+
+	@Override
 	public boolean hasOwnerPermission(
 		long companyId, String name, String primKey, long ownerId,
 		String actionId) {
@@ -31,12 +44,14 @@ public class SimplePermissionChecker extends BasePermissionChecker {
 		return hasPermission(actionId);
 	}
 
+	@Override
 	public boolean hasPermission(
 		long groupId, String name, String primKey, String actionId) {
 
 		return hasPermission(actionId);
 	}
 
+	@Override
 	public boolean hasUserPermission(
 		long groupId, String name, String primKey, String actionId,
 		boolean checkAdmin) {
@@ -44,27 +59,43 @@ public class SimplePermissionChecker extends BasePermissionChecker {
 		return hasPermission(actionId);
 	}
 
+	@Override
 	public boolean isCompanyAdmin() {
 		return signedIn;
 	}
 
+	@Override
 	public boolean isCompanyAdmin(long companyId) {
 		return signedIn;
 	}
 
+	@Override
+	public boolean isContentReviewer(long companyId, long groupId) {
+		return signedIn;
+	}
+
+	@Override
 	public boolean isGroupAdmin(long groupId) {
 		return signedIn;
 	}
 
+	@Override
 	public boolean isGroupMember(long groupId) {
 		return signedIn;
 	}
 
+	@Override
 	public boolean isGroupOwner(long groupId) {
 		return signedIn;
 	}
 
+	@Override
 	public boolean isOrganizationAdmin(long organizationId) {
+		return signedIn;
+	}
+
+	@Override
+	public boolean isOrganizationOwner(long organizationId) {
 		return signedIn;
 	}
 

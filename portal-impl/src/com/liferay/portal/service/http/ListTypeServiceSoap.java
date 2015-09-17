@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.service.http;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.service.ListTypeServiceUtil;
@@ -21,13 +23,11 @@ import com.liferay.portal.service.ListTypeServiceUtil;
 import java.rmi.RemoteException;
 
 /**
- * <p>
- * This class provides a SOAP utility for the
- * {@link com.liferay.portal.service.ListTypeServiceUtil} service utility. The
+ * Provides the SOAP utility for the
+ * {@link ListTypeServiceUtil} service utility. The
  * static methods of this class calls the same methods of the service utility.
  * However, the signatures are different because it is difficult for SOAP to
  * support certain types.
- * </p>
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
@@ -47,9 +47,8 @@ import java.rmi.RemoteException;
  * </p>
  *
  * <p>
- * You can see a list of services at
- * http://localhost:8080/api/secure/axis. Set the property
- * <b>axis.servlet.hosts.allowed</b> in portal.properties to configure
+ * You can see a list of services at http://localhost:8080/api/axis. Set the
+ * property <b>axis.servlet.hosts.allowed</b> in portal.properties to configure
  * security.
  * </p>
  *
@@ -57,15 +56,16 @@ import java.rmi.RemoteException;
  * The SOAP utility is only generated for remote services.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       ListTypeServiceHttp
- * @see       com.liferay.portal.model.ListTypeSoap
- * @see       com.liferay.portal.service.ListTypeServiceUtil
+ * @author Brian Wing Shun Chan
+ * @see ListTypeServiceHttp
+ * @see com.liferay.portal.model.ListTypeSoap
+ * @see ListTypeServiceUtil
  * @generated
  */
+@ProviderType
 public class ListTypeServiceSoap {
 	public static com.liferay.portal.model.ListTypeSoap getListType(
-		int listTypeId) throws RemoteException {
+		long listTypeId) throws RemoteException {
 		try {
 			com.liferay.portal.model.ListType returnValue = ListTypeServiceUtil.getListType(listTypeId);
 
@@ -92,7 +92,7 @@ public class ListTypeServiceSoap {
 		}
 	}
 
-	public static void validate(int listTypeId, long classNameId,
+	public static void validate(long listTypeId, long classNameId,
 		java.lang.String type) throws RemoteException {
 		try {
 			ListTypeServiceUtil.validate(listTypeId, classNameId, type);
@@ -104,7 +104,7 @@ public class ListTypeServiceSoap {
 		}
 	}
 
-	public static void validate(int listTypeId, java.lang.String type)
+	public static void validate(long listTypeId, java.lang.String type)
 		throws RemoteException {
 		try {
 			ListTypeServiceUtil.validate(listTypeId, type);

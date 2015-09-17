@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@ import com.liferay.portal.model.Layout;
 /**
  * @author Brian Wing Shun Chan
  */
-public class LayoutComparator extends OrderByComparator {
+public class LayoutComparator extends OrderByComparator<Layout> {
 
 	public static final String ORDER_BY_ASC =
 		"Layout.groupId ASC, Layout.layoutId ASC";
@@ -39,12 +39,9 @@ public class LayoutComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Layout layout1 = (Layout)obj1;
-		Layout layout2 = (Layout)obj2;
-
-		Long groupId1 = new Long(layout1.getGroupId());
-		Long groupId2 = new Long(layout2.getGroupId());
+	public int compare(Layout layout1, Layout layout2) {
+		Long groupId1 = Long.valueOf(layout1.getGroupId());
+		Long groupId2 = Long.valueOf(layout2.getGroupId());
 
 		int value = groupId1.compareTo(groupId2);
 
@@ -57,8 +54,8 @@ public class LayoutComparator extends OrderByComparator {
 			}
 		}
 
-		Long layoutId1 = new Long(layout1.getLayoutId());
-		Long layoutId2 = new Long(layout2.getLayoutId());
+		Long layoutId1 = Long.valueOf(layout1.getLayoutId());
+		Long layoutId2 = Long.valueOf(layout2.getLayoutId());
 
 		value = layoutId1.compareTo(layoutId2);
 
@@ -90,6 +87,6 @@ public class LayoutComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

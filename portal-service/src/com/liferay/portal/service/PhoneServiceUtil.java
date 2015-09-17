@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portal.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.util.MethodCache;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 
 /**
- * The utility for the phone remote service. This utility wraps {@link com.liferay.portal.service.impl.PhoneServiceImpl} and is the primary access point for service operations in application layer code running on a remote server.
- *
- * <p>
- * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
- * </p>
+ * Provides the remote service utility for Phone. This utility wraps
+ * {@link com.liferay.portal.service.impl.PhoneServiceImpl} and is the
+ * primary access point for service operations in application layer code running
+ * on a remote server. Methods of this service are expected to have security
+ * checks based on the propagated JAAS credentials because this service can be
+ * accessed remotely.
  *
  * @author Brian Wing Shun Chan
  * @see PhoneService
@@ -31,46 +33,76 @@ import com.liferay.portal.kernel.util.ReferenceRegistry;
  * @see com.liferay.portal.service.impl.PhoneServiceImpl
  * @generated
  */
+@ProviderType
 public class PhoneServiceUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never modify this class directly. Add custom service methods to {@link com.liferay.portal.service.impl.PhoneServiceImpl} and rerun ServiceBuilder to regenerate this class.
 	 */
+
+	/**
+	* @deprecated As of 6.2.0, replaced by {@link #addPhone(String, long,
+	String, String, int, boolean, ServiceContext)}
+	*/
+	@Deprecated
 	public static com.liferay.portal.model.Phone addPhone(
 		java.lang.String className, long classPK, java.lang.String number,
-		java.lang.String extension, int typeId, boolean primary)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		java.lang.String extension, long typeId, boolean primary)
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .addPhone(className, classPK, number, extension, typeId,
 			primary);
 	}
 
+	public static com.liferay.portal.model.Phone addPhone(
+		java.lang.String className, long classPK, java.lang.String number,
+		java.lang.String extension, long typeId, boolean primary,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return getService()
+				   .addPhone(className, classPK, number, extension, typeId,
+			primary, serviceContext);
+	}
+
 	public static void deletePhone(long phoneId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().deletePhone(phoneId);
 	}
 
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	public static java.lang.String getBeanIdentifier() {
+		return getService().getBeanIdentifier();
+	}
+
 	public static com.liferay.portal.model.Phone getPhone(long phoneId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getPhone(phoneId);
 	}
 
 	public static java.util.List<com.liferay.portal.model.Phone> getPhones(
 		java.lang.String className, long classPK)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getPhones(className, classPK);
 	}
 
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public static void setBeanIdentifier(java.lang.String beanIdentifier) {
+		getService().setBeanIdentifier(beanIdentifier);
+	}
+
 	public static com.liferay.portal.model.Phone updatePhone(long phoneId,
-		java.lang.String number, java.lang.String extension, int typeId,
+		java.lang.String number, java.lang.String extension, long typeId,
 		boolean primary)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .updatePhone(phoneId, number, extension, typeId, primary);
 	}
@@ -81,19 +113,16 @@ public class PhoneServiceUtil {
 
 			ReferenceRegistry.registerReference(PhoneServiceUtil.class,
 				"_service");
-			MethodCache.remove(PhoneService.class);
 		}
 
 		return _service;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setService(PhoneService service) {
-		MethodCache.remove(PhoneService.class);
-
-		_service = service;
-
-		ReferenceRegistry.registerReference(PhoneServiceUtil.class, "_service");
-		MethodCache.remove(PhoneService.class);
 	}
 
 	private static PhoneService _service;

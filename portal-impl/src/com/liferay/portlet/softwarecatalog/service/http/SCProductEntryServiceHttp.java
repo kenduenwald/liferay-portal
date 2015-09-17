@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.softwarecatalog.service.http;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
@@ -24,13 +26,11 @@ import com.liferay.portal.service.http.TunnelUtil;
 import com.liferay.portlet.softwarecatalog.service.SCProductEntryServiceUtil;
 
 /**
- * <p>
- * This class provides a HTTP utility for the
- * {@link com.liferay.portlet.softwarecatalog.service.SCProductEntryServiceUtil} service utility. The
+ * Provides the HTTP utility for the
+ * {@link SCProductEntryServiceUtil} service utility. The
  * static methods of this class calls the same methods of the service utility.
  * However, the signatures are different because it requires an additional
- * {@link com.liferay.portal.security.auth.HttpPrincipal} parameter.
- * </p>
+ * {@link HttpPrincipal} parameter.
  *
  * <p>
  * The benefits of using the HTTP utility is that it is fast and allows for
@@ -47,12 +47,13 @@ import com.liferay.portlet.softwarecatalog.service.SCProductEntryServiceUtil;
  * The HTTP utility is only generated for remote services.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       SCProductEntryServiceSoap
- * @see       com.liferay.portal.security.auth.HttpPrincipal
- * @see       com.liferay.portlet.softwarecatalog.service.SCProductEntryServiceUtil
+ * @author Brian Wing Shun Chan
+ * @see SCProductEntryServiceSoap
+ * @see HttpPrincipal
+ * @see SCProductEntryServiceUtil
  * @generated
  */
+@ProviderType
 public class SCProductEntryServiceHttp {
 	public static com.liferay.portlet.softwarecatalog.model.SCProductEntry addProductEntry(
 		HttpPrincipal httpPrincipal, java.lang.String name,
@@ -63,10 +64,9 @@ public class SCProductEntryServiceHttp {
 		long[] licenseIds, java.util.List<byte[]> thumbnails,
 		java.util.List<byte[]> fullImages,
 		com.liferay.portal.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		try {
-			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class.getName(),
+			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class,
 					"addProductEntry", _addProductEntryParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey, name,
@@ -84,10 +84,6 @@ public class SCProductEntryServiceHttp {
 					throw (com.liferay.portal.kernel.exception.PortalException)e;
 				}
 
-				if (e instanceof com.liferay.portal.kernel.exception.SystemException) {
-					throw (com.liferay.portal.kernel.exception.SystemException)e;
-				}
-
 				throw new com.liferay.portal.kernel.exception.SystemException(e);
 			}
 
@@ -102,10 +98,9 @@ public class SCProductEntryServiceHttp {
 
 	public static void deleteProductEntry(HttpPrincipal httpPrincipal,
 		long productEntryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		try {
-			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class.getName(),
+			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class,
 					"deleteProductEntry", _deleteProductEntryParameterTypes1);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
@@ -117,10 +112,6 @@ public class SCProductEntryServiceHttp {
 			catch (Exception e) {
 				if (e instanceof com.liferay.portal.kernel.exception.PortalException) {
 					throw (com.liferay.portal.kernel.exception.PortalException)e;
-				}
-
-				if (e instanceof com.liferay.portal.kernel.exception.SystemException) {
-					throw (com.liferay.portal.kernel.exception.SystemException)e;
 				}
 
 				throw new com.liferay.portal.kernel.exception.SystemException(e);
@@ -135,10 +126,9 @@ public class SCProductEntryServiceHttp {
 
 	public static com.liferay.portlet.softwarecatalog.model.SCProductEntry getProductEntry(
 		HttpPrincipal httpPrincipal, long productEntryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		try {
-			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class.getName(),
+			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class,
 					"getProductEntry", _getProductEntryParameterTypes2);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
@@ -152,10 +142,6 @@ public class SCProductEntryServiceHttp {
 			catch (Exception e) {
 				if (e instanceof com.liferay.portal.kernel.exception.PortalException) {
 					throw (com.liferay.portal.kernel.exception.PortalException)e;
-				}
-
-				if (e instanceof com.liferay.portal.kernel.exception.SystemException) {
-					throw (com.liferay.portal.kernel.exception.SystemException)e;
 				}
 
 				throw new com.liferay.portal.kernel.exception.SystemException(e);
@@ -178,10 +164,9 @@ public class SCProductEntryServiceHttp {
 		java.lang.String repoGroupId, java.lang.String repoArtifactId,
 		long[] licenseIds, java.util.List<byte[]> thumbnails,
 		java.util.List<byte[]> fullImages)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		try {
-			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class.getName(),
+			MethodKey methodKey = new MethodKey(SCProductEntryServiceUtil.class,
 					"updateProductEntry", _updateProductEntryParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
@@ -197,10 +182,6 @@ public class SCProductEntryServiceHttp {
 			catch (Exception e) {
 				if (e instanceof com.liferay.portal.kernel.exception.PortalException) {
 					throw (com.liferay.portal.kernel.exception.PortalException)e;
-				}
-
-				if (e instanceof com.liferay.portal.kernel.exception.SystemException) {
-					throw (com.liferay.portal.kernel.exception.SystemException)e;
 				}
 
 				throw new com.liferay.portal.kernel.exception.SystemException(e);

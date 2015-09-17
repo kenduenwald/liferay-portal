@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,7 +24,7 @@ import javax.servlet.jsp.JspException;
  * @author Julio Camarero
  * @generated
  */
-public class BaseFieldsetTag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseFieldsetTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -51,6 +51,10 @@ public class BaseFieldsetTag extends com.liferay.taglib.util.IncludeTag {
 
 	public java.lang.String getLabel() {
 		return _label;
+	}
+
+	public boolean getLocalizeLabel() {
+		return _localizeLabel;
 	}
 
 	public void setColumn(boolean column) {
@@ -83,18 +87,22 @@ public class BaseFieldsetTag extends com.liferay.taglib.util.IncludeTag {
 		setScopedAttribute("label", label);
 	}
 
+	public void setLocalizeLabel(boolean localizeLabel) {
+		_localizeLabel = localizeLabel;
+
+		setScopedAttribute("localizeLabel", localizeLabel);
+	}
+
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_column = false;
 		_cssClass = null;
 		_helpMessage = null;
 		_id = null;
 		_label = null;
-	}
-
-	@Override
-	protected String getEndPage() {
-		return _END_PAGE;
+		_localizeLabel = true;
 	}
 
 	@Override
@@ -109,12 +117,10 @@ public class BaseFieldsetTag extends com.liferay.taglib.util.IncludeTag {
 		setNamespacedAttribute(request, "helpMessage", _helpMessage);
 		setNamespacedAttribute(request, "id", _id);
 		setNamespacedAttribute(request, "label", _label);
+		setNamespacedAttribute(request, "localizeLabel", _localizeLabel);
 	}
 
 	protected static final String _ATTRIBUTE_NAMESPACE = "aui:fieldset:";
-
-	private static final String _END_PAGE =
-		"/html/taglib/aui/fieldset/end.jsp";
 
 	private static final String _START_PAGE =
 		"/html/taglib/aui/fieldset/start.jsp";
@@ -124,5 +130,6 @@ public class BaseFieldsetTag extends com.liferay.taglib.util.IncludeTag {
 	private java.lang.String _helpMessage = null;
 	private java.lang.String _id = null;
 	private java.lang.String _label = null;
+	private boolean _localizeLabel = true;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.social.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.social.model.SocialActivityCounter;
 import com.liferay.portlet.social.service.SocialActivityCounterLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.social.service.SocialActivityCounterLocalServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see SocialActivityCounterImpl
- * @see com.liferay.portlet.social.model.SocialActivityCounter
+ * @see SocialActivityCounter
  * @generated
  */
+@ProviderType
 public abstract class SocialActivityCounterBaseImpl
 	extends SocialActivityCounterModelImpl implements SocialActivityCounter {
 	/*
@@ -38,7 +39,8 @@ public abstract class SocialActivityCounterBaseImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a social activity counter model instance should use the {@link SocialActivityCounter} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			SocialActivityCounterLocalServiceUtil.addSocialActivityCounter(this);
 		}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,20 +19,21 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.Converter;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 
 import java.util.Iterator;
 import java.util.Map;
 
 /**
  * <p>
- * See http://issues.liferay.com/browse/LPS-5363.
+ * See https://issues.liferay.com/browse/LPS-5363.
  * </p>
  *
  * @author Brian Wing Shun Chan
  */
 public class HibernateConfigurationConverter implements Converter<String> {
 
+	@Override
 	public String convert(String input) {
 		String output = input;
 
@@ -55,7 +56,7 @@ public class HibernateConfigurationConverter implements Converter<String> {
 			return input;
 		}
 
-		Document document = SAXReaderUtil.read(input);
+		Document document = UnsecureSAXReaderUtil.read(input);
 
 		Element rootElement = document.getRootElement();
 
@@ -76,7 +77,7 @@ public class HibernateConfigurationConverter implements Converter<String> {
 		return document.asXML();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		HibernateConfigurationConverter.class);
 
 	private Map<String, String> _classNames;

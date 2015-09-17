@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,7 @@
 
 <%
 if (request.getAttribute("aui:select:useNamespace") == null) {
-	useNamespace = auiFormUseNamespace;
+	useNamespace = GetterUtil.getBoolean((String)request.getAttribute("aui:form:useNamespace"), true);
 }
 
 if (!useNamespace) {
@@ -24,20 +24,48 @@ if (!useNamespace) {
 }
 
 if (Validator.isNull(label) && changesContext) {
-	StringBundler sb = new StringBundler(5);
-
-	sb.append(LanguageUtil.get(pageContext, title));
-	sb.append(StringPool.SPACE);
-	sb.append(StringPool.OPEN_PARENTHESIS);
-	sb.append(LanguageUtil.get(pageContext, "changing-the-value-of-this-field-will-reload-the-page"));
-	sb.append(StringPool.CLOSE_PARENTHESIS);
-
-	title = sb.toString();
+	title = StringUtil.appendParentheticalSuffix(LanguageUtil.get(request, title), LanguageUtil.get(request, "changing-the-value-of-this-field-reloads-the-page"));
 }
 else if (Validator.isNotNull(title)) {
-	title = LanguageUtil.get(pageContext, title);
+	title = LanguageUtil.get(request, title);
 }
 
-String fieldCss = AUIUtil.buildCss(AUIUtil.FIELD_PREFIX, "select", inlineField, disabled, false, first, last, cssClass);
-String inputCss = AUIUtil.buildCss(AUIUtil.INPUT_PREFIX, "select", false, false, false, false, false, inputCssClass);
+String controlGroupCssClass = AUIUtil.buildControlGroupCss(inlineField, inlineLabel, wrapperCssClass, "select");
+String fieldCss = AUIUtil.buildCss("form-control", disabled, first, last, cssClass);
+
+boolean numericValue = false;
+
+if ((bean != null) && Validator.isNull(listType) && showEmptyOption) {
+	Object propertyInstance = null;
+
+	Class<?> propertyTypeClass = BeanPropertiesUtil.getObjectTypeSilent(bean, name, String.class);
+
+	if (propertyTypeClass.isPrimitive()) {
+		propertyInstance = _primitiveObjects.get(propertyTypeClass);
+	}
+	else {
+		try {
+			propertyInstance = propertyTypeClass.newInstance();
+		}
+		catch (Exception e) {
+		}
+	}
+
+	if (propertyInstance instanceof Number) {
+		numericValue = true;
+	}
+}
+%>
+
+<%!
+private static Map<Class<?>, Object> _primitiveObjects = new HashMap<Class<?>, Object>();
+
+static {
+	_primitiveObjects.put(byte.class, Byte.valueOf("0"));
+	_primitiveObjects.put(double.class, Double.valueOf(0));
+	_primitiveObjects.put(float.class, Float.valueOf(0));
+	_primitiveObjects.put(int.class, Integer.valueOf(0));
+	_primitiveObjects.put(long.class, Long.valueOf(0));
+	_primitiveObjects.put(short.class, Short.valueOf("0"));
+}
 %>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -62,8 +62,8 @@ public class AtomPager {
 			_page = page;
 		}
 
-		_totalElements = totalElements;
 		_elementsPerPage = elementsPerPage;
+		_totalElements = totalElements;
 
 		_start = (_page - 1) * _elementsPerPage;
 
@@ -72,6 +72,7 @@ public class AtomPager {
 		if (end > totalElements) {
 			end = totalElements;
 		}
+
 		_end = end - 1;
 
 		_previousPage = _page - 1;
@@ -136,14 +137,14 @@ public class AtomPager {
 		}
 	}
 
-	private int _elementsPerPage;
-	private int _end;
-	private int _firstPage;
-	private int _lastPage;
-	private int _nextPage;
-	private int _page;
-	private int _previousPage;
-	private int _start;
-	private int _totalElements;
+	private final int _elementsPerPage;
+	private final int _end;
+	private final int _firstPage;
+	private final int _lastPage;
+	private final int _nextPage;
+	private final int _page;
+	private final int _previousPage;
+	private final int _start;
+	private final int _totalElements;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,23 +14,28 @@
 
 package com.liferay.portlet.expando.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class ExpandoRowSoap implements Serializable {
 	public static ExpandoRowSoap toSoapModel(ExpandoRow model) {
 		ExpandoRowSoap soapModel = new ExpandoRowSoap();
 
 		soapModel.setRowId(model.getRowId());
 		soapModel.setCompanyId(model.getCompanyId());
+		soapModel.setModifiedDate(model.getModifiedDate());
 		soapModel.setTableId(model.getTableId());
 		soapModel.setClassPK(model.getClassPK());
 
@@ -101,6 +106,14 @@ public class ExpandoRowSoap implements Serializable {
 		_companyId = companyId;
 	}
 
+	public Date getModifiedDate() {
+		return _modifiedDate;
+	}
+
+	public void setModifiedDate(Date modifiedDate) {
+		_modifiedDate = modifiedDate;
+	}
+
 	public long getTableId() {
 		return _tableId;
 	}
@@ -119,6 +132,7 @@ public class ExpandoRowSoap implements Serializable {
 
 	private long _rowId;
 	private long _companyId;
+	private Date _modifiedDate;
 	private long _tableId;
 	private long _classPK;
 }

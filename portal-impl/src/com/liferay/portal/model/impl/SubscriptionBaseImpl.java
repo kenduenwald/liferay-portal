@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.model.Subscription;
 import com.liferay.portal.service.SubscriptionLocalServiceUtil;
 
@@ -27,9 +28,10 @@ import com.liferay.portal.service.SubscriptionLocalServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see SubscriptionImpl
- * @see com.liferay.portal.model.Subscription
+ * @see Subscription
  * @generated
  */
+@ProviderType
 public abstract class SubscriptionBaseImpl extends SubscriptionModelImpl
 	implements Subscription {
 	/*
@@ -37,7 +39,8 @@ public abstract class SubscriptionBaseImpl extends SubscriptionModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a subscription model instance should use the {@link Subscription} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			SubscriptionLocalServiceUtil.addSubscription(this);
 		}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,24 +14,34 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.OrganizationServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.OrganizationServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.OrganizationServiceSoap
  * @generated
  */
+@ProviderType
 public class OrganizationSoap implements Serializable {
 	public static OrganizationSoap toSoapModel(Organization model) {
 		OrganizationSoap soapModel = new OrganizationSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
+		soapModel.setUuid(model.getUuid());
 		soapModel.setOrganizationId(model.getOrganizationId());
 		soapModel.setCompanyId(model.getCompanyId());
+		soapModel.setUserId(model.getUserId());
+		soapModel.setUserName(model.getUserName());
+		soapModel.setCreateDate(model.getCreateDate());
+		soapModel.setModifiedDate(model.getModifiedDate());
 		soapModel.setParentOrganizationId(model.getParentOrganizationId());
 		soapModel.setTreePath(model.getTreePath());
 		soapModel.setName(model.getName());
@@ -41,6 +51,8 @@ public class OrganizationSoap implements Serializable {
 		soapModel.setCountryId(model.getCountryId());
 		soapModel.setStatusId(model.getStatusId());
 		soapModel.setComments(model.getComments());
+		soapModel.setLogoId(model.getLogoId());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 
 		return soapModel;
 	}
@@ -93,6 +105,22 @@ public class OrganizationSoap implements Serializable {
 		setOrganizationId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
+	public String getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String uuid) {
+		_uuid = uuid;
+	}
+
 	public long getOrganizationId() {
 		return _organizationId;
 	}
@@ -107,6 +135,38 @@ public class OrganizationSoap implements Serializable {
 
 	public void setCompanyId(long companyId) {
 		_companyId = companyId;
+	}
+
+	public long getUserId() {
+		return _userId;
+	}
+
+	public void setUserId(long userId) {
+		_userId = userId;
+	}
+
+	public String getUserName() {
+		return _userName;
+	}
+
+	public void setUserName(String userName) {
+		_userName = userName;
+	}
+
+	public Date getCreateDate() {
+		return _createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		_createDate = createDate;
+	}
+
+	public Date getModifiedDate() {
+		return _modifiedDate;
+	}
+
+	public void setModifiedDate(Date modifiedDate) {
+		_modifiedDate = modifiedDate;
 	}
 
 	public long getParentOrganizationId() {
@@ -169,11 +229,11 @@ public class OrganizationSoap implements Serializable {
 		_countryId = countryId;
 	}
 
-	public int getStatusId() {
+	public long getStatusId() {
 		return _statusId;
 	}
 
-	public void setStatusId(int statusId) {
+	public void setStatusId(long statusId) {
 		_statusId = statusId;
 	}
 
@@ -185,8 +245,30 @@ public class OrganizationSoap implements Serializable {
 		_comments = comments;
 	}
 
+	public long getLogoId() {
+		return _logoId;
+	}
+
+	public void setLogoId(long logoId) {
+		_logoId = logoId;
+	}
+
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	private long _mvccVersion;
+	private String _uuid;
 	private long _organizationId;
 	private long _companyId;
+	private long _userId;
+	private String _userName;
+	private Date _createDate;
+	private Date _modifiedDate;
 	private long _parentOrganizationId;
 	private String _treePath;
 	private String _name;
@@ -194,6 +276,8 @@ public class OrganizationSoap implements Serializable {
 	private boolean _recursable;
 	private long _regionId;
 	private long _countryId;
-	private int _statusId;
+	private long _statusId;
 	private String _comments;
+	private long _logoId;
+	private Date _lastPublishDate;
 }

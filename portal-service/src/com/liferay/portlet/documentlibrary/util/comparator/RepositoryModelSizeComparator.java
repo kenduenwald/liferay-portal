@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.portlet.documentlibrary.util.comparator;
 
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
@@ -25,13 +26,13 @@ import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
 /**
  * @author Alexander Chow
  */
-public class RepositoryModelSizeComparator extends OrderByComparator {
+public class RepositoryModelSizeComparator<T> extends OrderByComparator<T> {
 
 	public static final String ORDER_BY_ASC = "size_ ASC";
 
 	public static final String ORDER_BY_DESC = "size_ DESC";
 
-	public static final String[] ORDER_BY_FIELDS = {"size_"};
+	public static final String[] ORDER_BY_FIELDS = {"size"};
 
 	public RepositoryModelSizeComparator() {
 		this(false);
@@ -42,9 +43,9 @@ public class RepositoryModelSizeComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Long size1 = getSize(obj1);
-		Long size2 = getSize(obj2);
+	public int compare(T t1, T t2) {
+		Long size1 = getSize(t1);
+		Long size2 = getSize(t2);
 
 		int value = size1.compareTo(size2);
 
@@ -76,26 +77,41 @@ public class RepositoryModelSizeComparator extends OrderByComparator {
 		return _ascending;
 	}
 
+	protected long getFileShortcutSize(Object obj) {
+		long toFileEntryId = 0;
+
+		if (obj instanceof FileShortcut) {
+			FileShortcut fileShortcut = (FileShortcut)obj;
+
+			toFileEntryId = fileShortcut.getToFileEntryId();
+		}
+		else {
+			DLFileShortcut dlFileShortcut = (DLFileShortcut)obj;
+
+			toFileEntryId = dlFileShortcut.getToFileEntryId();
+		}
+
+		try {
+			DLFileEntry dlFileEntry = DLFileEntryLocalServiceUtil.getFileEntry(
+				toFileEntryId);
+
+			return dlFileEntry.getSize();
+		}
+		catch (Exception e) {
+			return 0;
+		}
+	}
+
 	protected long getSize(Object obj) {
 		if (obj instanceof DLFileEntry) {
 			DLFileEntry dlFileEntry = (DLFileEntry)obj;
 
 			return dlFileEntry.getSize();
 		}
-		else if (obj instanceof DLFileShortcut) {
-			DLFileShortcut dlFileShortcut = (DLFileShortcut)obj;
+		else if ((obj instanceof DLFileShortcut) ||
+				 (obj instanceof FileShortcut)) {
 
-			long toFileEntryId = dlFileShortcut.getToFileEntryId();
-
-			try {
-				DLFileEntry dlFileEntry =
-					DLFileEntryLocalServiceUtil.getFileEntry(toFileEntryId);
-
-				return dlFileEntry.getSize();
-			}
-			catch (Exception e) {
-				return 0;
-			}
+			return getFileShortcutSize(obj);
 		}
 		else if ((obj instanceof DLFolder) || (obj instanceof Folder)) {
 			return 0;
@@ -107,6 +123,6 @@ public class RepositoryModelSizeComparator extends OrderByComparator {
 		}
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

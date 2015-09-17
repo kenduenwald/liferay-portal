@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.asset.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.asset.model.AssetTag;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,12 +37,39 @@ import java.util.Date;
  * @see AssetTag
  * @generated
  */
-public class AssetTagCacheModel implements CacheModel<AssetTag>, Serializable {
+@ProviderType
+public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof AssetTagCacheModel)) {
+			return false;
+		}
+
+		AssetTagCacheModel assetTagCacheModel = (AssetTagCacheModel)obj;
+
+		if (tagId == assetTagCacheModel.tagId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, tagId);
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(23);
 
-		sb.append("{tagId=");
+		sb.append("{uuid=");
+		sb.append(uuid);
+		sb.append(", tagId=");
 		sb.append(tagId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -54,13 +87,23 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Serializable {
 		sb.append(name);
 		sb.append(", assetCount=");
 		sb.append(assetCount);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
 		sb.append("}");
 
 		return sb.toString();
 	}
 
+	@Override
 	public AssetTag toEntityModel() {
 		AssetTagImpl assetTagImpl = new AssetTagImpl();
+
+		if (uuid == null) {
+			assetTagImpl.setUuid(StringPool.BLANK);
+		}
+		else {
+			assetTagImpl.setUuid(uuid);
+		}
 
 		assetTagImpl.setTagId(tagId);
 		assetTagImpl.setGroupId(groupId);
@@ -97,11 +140,70 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Serializable {
 
 		assetTagImpl.setAssetCount(assetCount);
 
+		if (lastPublishDate == Long.MIN_VALUE) {
+			assetTagImpl.setLastPublishDate(null);
+		}
+		else {
+			assetTagImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
+
 		assetTagImpl.resetOriginalValues();
 
 		return assetTagImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
+		tagId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		name = objectInput.readUTF();
+		assetCount = objectInput.readInt();
+		lastPublishDate = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		objectOutput.writeLong(tagId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		objectOutput.writeInt(assetCount);
+		objectOutput.writeLong(lastPublishDate);
+	}
+
+	public String uuid;
 	public long tagId;
 	public long groupId;
 	public long companyId;
@@ -111,4 +213,5 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Serializable {
 	public long modifiedDate;
 	public String name;
 	public int assetCount;
+	public long lastPublishDate;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -27,20 +27,14 @@ import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.model.User;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.asset.model.AssetEntry;
-import com.liferay.portlet.asset.service.AssetEntryLocalServiceUtil;
 import com.liferay.portlet.blogs.model.BlogsEntry;
-import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.portlet.messageboards.model.MBCategory;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBThread;
-import com.liferay.portlet.messageboards.service.MBThreadLocalServiceUtil;
 import com.liferay.portlet.social.model.SocialActivityConstants;
 import com.liferay.portlet.social.model.SocialActivityCounterConstants;
 import com.liferay.portlet.social.model.SocialActivityCounterDefinition;
 import com.liferay.portlet.social.util.SocialCounterPeriodUtil;
-import com.liferay.portlet.wiki.model.WikiNode;
-import com.liferay.portlet.wiki.model.WikiPage;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -57,60 +51,72 @@ public class UpgradeSocial extends UpgradeProcess {
 
 	public UpgradeSocial() {
 		putEquityToActivityMap(
-			BlogsEntry.class, ActionKeys.ADD_DISCUSSION,
+			BlogsEntry.class.getName(), ActionKeys.ADD_DISCUSSION,
 			SocialActivityConstants.TYPE_ADD_COMMENT);
-		putEquityToActivityMap(BlogsEntry.class, ActionKeys.ADD_ENTRY, 2);
 		putEquityToActivityMap(
-			BlogsEntry.class, ActionKeys.ADD_VOTE,
+			BlogsEntry.class.getName(), ActionKeys.ADD_ENTRY, 2);
+		putEquityToActivityMap(
+			BlogsEntry.class.getName(), ActionKeys.ADD_VOTE,
 			SocialActivityConstants.TYPE_ADD_VOTE);
 		putEquityToActivityMap(
-			BlogsEntry.class, ActionKeys.SUBSCRIBE,
+			BlogsEntry.class.getName(), ActionKeys.SUBSCRIBE,
 			SocialActivityConstants.TYPE_SUBSCRIBE);
-		putEquityToActivityMap(BlogsEntry.class, ActionKeys.UPDATE, 3);
 		putEquityToActivityMap(
-			BlogsEntry.class, ActionKeys.VIEW,
-			SocialActivityConstants.TYPE_VIEW);
-
-		putEquityToActivityMap(JournalArticle.class, ActionKeys.ADD_ARTICLE, 1);
+			BlogsEntry.class.getName(), ActionKeys.UPDATE, 3);
 		putEquityToActivityMap(
-			JournalArticle.class, ActionKeys.ADD_DISCUSSION,
-			SocialActivityConstants.TYPE_ADD_COMMENT);
-		putEquityToActivityMap(JournalArticle.class, ActionKeys.UPDATE, 2);
-		putEquityToActivityMap(
-			JournalArticle.class, ActionKeys.VIEW,
+			BlogsEntry.class.getName(), ActionKeys.VIEW,
 			SocialActivityConstants.TYPE_VIEW);
 
 		putEquityToActivityMap(
-			MBCategory.class, ActionKeys.SUBSCRIBE,
+			MBCategory.class.getName(), ActionKeys.SUBSCRIBE,
 			SocialActivityConstants.TYPE_SUBSCRIBE);
-		putEquityToActivityMap(MBMessage.class, ActionKeys.ADD_MESSAGE, 1);
 		putEquityToActivityMap(
-			MBMessage.class, ActionKeys.ADD_VOTE,
+			MBMessage.class.getName(), ActionKeys.ADD_MESSAGE, 1);
+		putEquityToActivityMap(
+			MBMessage.class.getName(), ActionKeys.ADD_VOTE,
 			SocialActivityConstants.TYPE_ADD_VOTE);
-		putEquityToActivityMap(MBMessage.class, ActionKeys.REPLY_TO_MESSAGE, 2);
 		putEquityToActivityMap(
-			MBMessage.class, ActionKeys.VIEW,
+			MBMessage.class.getName(), ActionKeys.REPLY_TO_MESSAGE, 2);
+		putEquityToActivityMap(
+			MBMessage.class.getName(), ActionKeys.VIEW,
 			SocialActivityConstants.TYPE_VIEW);
 		putEquityToActivityMap(
-			MBThread.class, ActionKeys.SUBSCRIBE, MBMessage.class,
-			SocialActivityConstants.TYPE_SUBSCRIBE);
+			MBThread.class.getName(), ActionKeys.SUBSCRIBE,
+			MBMessage.class.getName(), SocialActivityConstants.TYPE_SUBSCRIBE);
 
 		putEquityToActivityMap(
-			WikiNode.class, ActionKeys.SUBSCRIBE,
+			"com.liferay.portlet.journal.model.JournalArticle",
+			ActionKeys.ADD_ARTICLE, 1);
+		putEquityToActivityMap(
+			"com.liferay.portlet.journal.model.JournalArticle",
+			ActionKeys.ADD_DISCUSSION,
+			SocialActivityConstants.TYPE_ADD_COMMENT);
+		putEquityToActivityMap(
+			"com.liferay.portlet.journal.model.JournalArticle",
+			ActionKeys.UPDATE, 2);
+		putEquityToActivityMap(
+			"com.liferay.portlet.journal.model.JournalArticle", ActionKeys.VIEW,
+			SocialActivityConstants.TYPE_VIEW);
+
+		putEquityToActivityMap(
+			"com.liferay.wiki.model.WikiNode", ActionKeys.SUBSCRIBE,
 			SocialActivityConstants.TYPE_SUBSCRIBE);
 		putEquityToActivityMap(
-			WikiPage.class, ActionKeys.ADD_ATTACHMENT,
+			"com.liferay.wiki.model.WikiPage", ActionKeys.ADD_ATTACHMENT,
 			SocialActivityConstants.TYPE_ADD_ATTACHMENT);
 		putEquityToActivityMap(
-			WikiPage.class, ActionKeys.ADD_DISCUSSION,
+			"com.liferay.wiki.model.WikiPage", ActionKeys.ADD_DISCUSSION,
 			SocialActivityConstants.TYPE_ADD_COMMENT);
-		putEquityToActivityMap(WikiPage.class, ActionKeys.ADD_PAGE, 1);
 		putEquityToActivityMap(
-			WikiPage.class, ActionKeys.SUBSCRIBE,
+			"com.liferay.wiki.model.WikiPage", ActionKeys.ADD_PAGE, 1);
+		putEquityToActivityMap(
+			"com.liferay.wiki.model.WikiPage", ActionKeys.SUBSCRIBE,
 			SocialActivityConstants.TYPE_SUBSCRIBE);
-		putEquityToActivityMap(WikiPage.class, ActionKeys.UPDATE, 2);
 		putEquityToActivityMap(
-			WikiPage.class, ActionKeys.VIEW, SocialActivityConstants.TYPE_VIEW);
+			"com.liferay.wiki.model.WikiPage", ActionKeys.UPDATE, 2);
+		putEquityToActivityMap(
+			"com.liferay.wiki.model.WikiPage", ActionKeys.VIEW,
+			SocialActivityConstants.TYPE_VIEW);
 	}
 
 	protected void addActivityCounter(
@@ -125,7 +131,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			StringBundler sb = new StringBundler(5);
 
@@ -186,7 +192,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"insert into SocialActivitySetting (activitySettingId, " +
@@ -248,7 +254,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			StringBundler sb = new StringBundler(4);
 
@@ -283,6 +289,105 @@ public class UpgradeSocial extends UpgradeProcess {
 		}
 	}
 
+	protected long[] getAssetEntryArray(long assetEntryId) throws Exception {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			con = DataAccess.getUpgradeOptimizedConnection();
+
+			ps = con.prepareStatement(
+				"select groupId, companyId, userId, classNameId, classPK " +
+					"from AssetEntry where entryId = " + assetEntryId);
+
+			rs = ps.executeQuery();
+
+			if (rs.next()) {
+				long groupId = rs.getLong("groupId");
+				long companyId = rs.getLong("companyId");
+				long userId = rs.getLong("userId");
+				long classNameId = rs.getLong("classNameId");
+				long classPK = rs.getLong("classPK");
+
+				return new long[] {
+					groupId, companyId, userId, classNameId, classPK
+				};
+			}
+
+			return null;
+		}
+		finally {
+			DataAccess.cleanUp(con, ps, rs);
+		}
+	}
+
+	protected long[] getAssetEntryArray(String className, long classPK)
+		throws Exception {
+
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			con = DataAccess.getUpgradeOptimizedConnection();
+
+			long classNameId = PortalUtil.getClassNameId(className);
+
+			StringBundler sb = new StringBundler(5);
+
+			sb.append("select groupId, companyId, userId from AssetEntry ");
+			sb.append("where classNameId = ");
+			sb.append(classNameId);
+			sb.append(" and classPK = ");
+			sb.append(classPK);
+
+			ps = con.prepareStatement(sb.toString());
+
+			rs = ps.executeQuery();
+
+			if (rs.next()) {
+				long groupId = rs.getLong("groupId");
+				long companyId = rs.getLong("companyId");
+				long userId = rs.getLong("userId");
+
+				return new long[] {
+					groupId, companyId, userId, classNameId, classPK
+				};
+			}
+
+			return null;
+		}
+		finally {
+			DataAccess.cleanUp(con, ps, rs);
+		}
+	}
+
+	protected long getMBThreadRootMessageId(long mbThreadId) throws Exception {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			con = DataAccess.getUpgradeOptimizedConnection();
+
+			ps = con.prepareStatement(
+				"select rootMessageId from MBThread where threadId = " +
+					mbThreadId);
+
+			rs = ps.executeQuery();
+
+			if (rs.next()) {
+				return rs.getLong("rootMessageId");
+			}
+
+			return -1;
+		}
+		finally {
+			DataAccess.cleanUp(con, ps, rs);
+		}
+	}
+
 	protected int getTotalValue(
 			long groupId, long classNameId, long classPK, String name,
 			int ownerType, int startPeriod)
@@ -293,7 +398,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			StringBundler sb = new StringBundler(4);
 
@@ -330,7 +435,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select groupId, companyId, classNameId, enabled from " +
@@ -367,7 +472,7 @@ public class UpgradeSocial extends UpgradeProcess {
 				MBThread.class);
 
 			sb.append(mbThreadClassNameId);
-			sb.append(")");
+			sb.append(StringPool.CLOSE_PARENTHESIS);
 
 			ps = con.prepareStatement(sb.toString());
 
@@ -400,30 +505,32 @@ public class UpgradeSocial extends UpgradeProcess {
 	protected void migrateEquityLog(ResultSet rs) throws Exception {
 		long assetEntryId = rs.getLong("assetEntryId");
 
-		AssetEntry assetEntry = AssetEntryLocalServiceUtil.fetchAssetEntry(
-			assetEntryId);
+		long[] assetEntryArray = getAssetEntryArray(assetEntryId);
 
-		if (assetEntry == null) {
+		if (assetEntryArray == null) {
 			return;
 		}
 
 		String actionId = rs.getString("actionId");
 
 		if (actionId.equals(ActionKeys.SUBSCRIBE)) {
-			String className = assetEntry.getClassName();
+			long classNameId = assetEntryArray[3];
+
+			String className = PortalUtil.getClassName(classNameId);
 
 			if (className.equals(MBThread.class.getName())) {
-				MBThread mbThread = MBThreadLocalServiceUtil.fetchThread(
-					assetEntry.getClassPK());
+				long classPK = assetEntryArray[4];
 
-				if (mbThread == null) {
+				long mbThreadRootMessageId = getMBThreadRootMessageId(classPK);
+
+				if (mbThreadRootMessageId == -1) {
 					return;
 				}
 
-				assetEntry = AssetEntryLocalServiceUtil.fetchEntry(
-					MBMessage.class.getName(), mbThread.getRootMessageId());
+				assetEntryArray = getAssetEntryArray(
+					MBMessage.class.getName(), mbThreadRootMessageId);
 
-				if (assetEntry == null) {
+				if (assetEntryArray == null) {
 					return;
 				}
 			}
@@ -450,17 +557,21 @@ public class UpgradeSocial extends UpgradeProcess {
 		int type = rs.getInt("type_");
 		int value = rs.getInt("value");
 
+		long groupId = assetEntryArray[0];
+		long companyId = assetEntryArray[1];
+
 		if (type == 1) {
+			long userId = assetEntryArray[2];
+
 			name = SocialActivityCounterConstants.NAME_CONTRIBUTION;
 			ownerType = SocialActivityCounterConstants.TYPE_CREATOR;
 
 			updateActivityCounter(
-				increment(), assetEntry.getGroupId(), assetEntry.getCompanyId(),
-				classNameId, assetEntry.getUserId(), name, ownerType,
-				startPeriod, endPeriod, value);
+				increment(), groupId, companyId, classNameId, userId, name,
+				ownerType, startPeriod, endPeriod, value);
 
-			classNameId = assetEntry.getClassNameId();
-			classPK = assetEntry.getClassPK();
+			classNameId = assetEntryArray[3];
+			classPK = assetEntryArray[4];
 			name = SocialActivityCounterConstants.NAME_POPULARITY;
 			ownerType = SocialActivityCounterConstants.TYPE_ASSET;
 		}
@@ -468,9 +579,8 @@ public class UpgradeSocial extends UpgradeProcess {
 		long equityLogId = rs.getLong("equityLogId");
 
 		updateActivityCounter(
-			equityLogId, assetEntry.getGroupId(), assetEntry.getCompanyId(),
-			classNameId, classPK, name, ownerType, startPeriod, endPeriod,
-			value);
+			equityLogId, groupId, companyId, classNameId, classPK, name,
+			ownerType, startPeriod, endPeriod, value);
 	}
 
 	protected void migrateEquityLogs() throws Exception {
@@ -479,7 +589,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			StringBundler sb = new StringBundler(4);
 
@@ -545,7 +655,7 @@ public class UpgradeSocial extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select groupId, companyId, classNameId, actionId, " +
@@ -566,20 +676,21 @@ public class UpgradeSocial extends UpgradeProcess {
 					encodeEquityToActivityKey(classNameId, actionId));
 
 				if (tuple == null) {
-					StringBundler sb = new StringBundler();
-
-					sb.append("Unknown Social Equity setting with action ");
-					sb.append(actionId);
-					sb.append("for ");
-
-					String className = PortalUtil.getClassName(classNameId);
-
-					sb.append(className);
-
-					sb.append(". Please configure this action using the ");
-					sb.append("Social Activity portlet in the Control Panel.");
-
 					if (_log.isWarnEnabled()) {
+						StringBundler sb = new StringBundler(6);
+
+						sb.append("Unknown Social Equity setting with action ");
+						sb.append(actionId);
+						sb.append("for ");
+
+						String className = PortalUtil.getClassName(classNameId);
+
+						sb.append(className);
+
+						sb.append(". Please configure this action using the ");
+						sb.append(
+							"Social Activity portlet in the Control Panel.");
+
 						_log.warn(sb.toString());
 					}
 
@@ -618,22 +729,22 @@ public class UpgradeSocial extends UpgradeProcess {
 	}
 
 	protected void putEquityToActivityMap(
-		Class<?> equityClass, String equityActionId, Class<?> activityClass,
+		String equityClassName, String equityActionId, int activityType) {
+
+		putEquityToActivityMap(
+			equityClassName, equityActionId, equityClassName, activityType);
+	}
+
+	protected void putEquityToActivityMap(
+		String equityClassName, String equityActionId, String activityClassName,
 		int activityType) {
 
-		long equityClassNameId = PortalUtil.getClassNameId(equityClass);
-		long activityClassNameId = PortalUtil.getClassNameId(activityClass);
+		long equityClassNameId = PortalUtil.getClassNameId(equityClassName);
+		long activityClassNameId = PortalUtil.getClassNameId(activityClassName);
 
 		_equityToActivityMap.put(
 			encodeEquityToActivityKey(equityClassNameId, equityActionId),
 			new Tuple(activityClassNameId, activityType));
-	}
-
-	protected void putEquityToActivityMap(
-		Class<?> equityClass, String equityActionId, int activityType) {
-
-		putEquityToActivityMap(
-			equityClass, equityActionId, equityClass, activityType);
 	}
 
 	protected void updateActivityCounter(
@@ -674,9 +785,8 @@ public class UpgradeSocial extends UpgradeProcess {
 		runSQL(sb.toString());
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(UpgradeSocial.class);
+	private static final Log _log = LogFactoryUtil.getLog(UpgradeSocial.class);
 
-	private Map<String, Tuple> _equityToActivityMap =
-		new HashMap<String, Tuple>();
+	private final Map<String, Tuple> _equityToActivityMap = new HashMap<>();
 
 }

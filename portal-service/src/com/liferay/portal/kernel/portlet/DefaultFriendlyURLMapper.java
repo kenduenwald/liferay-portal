@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -40,10 +40,8 @@ import javax.portlet.WindowState;
  * </p>
  *
  * <p>
- * If you do need to extend this class, use {@link
- * com.liferay.util.bridges.alloy.AlloyFriendlyURLMapper} as a guide. The key
- * methods to override are {@link #buildPath(LiferayPortletURL)} and {@link
- * #populateParams(String, Map, Map)}.
+ * If you do need to extend this class, the key methods to override are {@link
+ * #buildPath(LiferayPortletURL)} and {@link #populateParams(String, Map, Map)}.
  * </p>
  *
  * @author Connor McKay
@@ -52,14 +50,14 @@ import javax.portlet.WindowState;
 public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 
 	public DefaultFriendlyURLMapper() {
-		defaultIgnoredParameters = new LinkedHashSet<String>();
+		defaultIgnoredParameters = new LinkedHashSet<>();
 
 		defaultIgnoredParameters.add("p_p_id");
 		defaultIgnoredParameters.add("p_p_col_id");
 		defaultIgnoredParameters.add("p_p_col_pos");
 		defaultIgnoredParameters.add("p_p_col_count");
 
-		defaultReservedParameters = new LinkedHashMap<String, String>();
+		defaultReservedParameters = new LinkedHashMap<>();
 
 		defaultReservedParameters.put("p_p_lifecycle", "0");
 		defaultReservedParameters.put(
@@ -95,8 +93,9 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 		defaultReservedParameters.put(name, value);
 	}
 
+	@Override
 	public String buildPath(LiferayPortletURL liferayPortletURL) {
-		Map<String, String> routeParameters = new HashMap<String, String>();
+		Map<String, String> routeParameters = new HashMap<>();
 
 		buildRouteParameters(liferayPortletURL, routeParameters);
 
@@ -134,6 +133,7 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 		return defaultReservedParameters;
 	}
 
+	@Override
 	public void populateParams(
 		String friendlyURLPath, Map<String, String[]> parameterMap,
 		Map<String, Object> requestContext) {
@@ -145,7 +145,7 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 				0, friendlyURLPath.length() - 1);
 		}
 
-		Map<String, String> routeParameters = new HashMap<String, String>();
+		Map<String, String> routeParameters = new HashMap<>();
 
 		if (!router.urlToParameters(friendlyURLPath, routeParameters)) {
 			if (_log.isWarnEnabled()) {
@@ -156,15 +156,25 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 			return;
 		}
 
+		String namespace = null;
+
 		String portletId = getPortletId(routeParameters);
 
-		if (Validator.isNull(portletId)) {
+		if (Validator.isNotNull(portletId)) {
+			namespace = PortalUtil.getPortletNamespace(portletId);
+
+			addParameter(namespace, parameterMap, "p_p_id", portletId);
+		}
+		else if (isAllPublicRenderParameters(routeParameters)) {
+
+			// Portlet namespace is not needed if all the parameters are public
+			// render parameters
+
+			addParameter(null, parameterMap, "p_p_id", getPortletId());
+		}
+		else {
 			return;
 		}
-
-		String namespace = PortalUtil.getPortletNamespace(portletId);
-
-		addParameter(namespace, parameterMap, "p_p_id", portletId);
 
 		populateParams(parameterMap, namespace, routeParameters);
 	}
@@ -263,26 +273,11 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 
 			routeParameters.put("p_p_id", portletId);
 
-			if (Validator.isNotNull(portletId)) {
-				int x = portletId.indexOf(PortletConstants.INSTANCE_SEPARATOR);
+			if (Validator.isNotNull(portletId) &&
+				PortletConstants.hasInstanceId(portletId)) {
 
-				if (x != -1) {
-					x += PortletConstants.INSTANCE_SEPARATOR.length();
-
-					String instanceId = null;
-
-					int y = portletId.indexOf(portletId, x);
-
-					if (y != -1) {
-						instanceId = portletId.substring(x, y);
-					}
-					else {
-						instanceId = portletId.substring(x);
-					}
-
-					routeParameters.put("instanceId", instanceId);
-				}
-
+				routeParameters.put(
+					"instanceId", PortletConstants.getInstanceId(portletId));
 			}
 		}
 
@@ -314,19 +309,37 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 
 		String instanceId = routeParameters.remove("instanceId");
 
-		if (Validator.isNull(instanceId)) {
-			if (_log.isErrorEnabled()) {
-				_log.error(
-					"Either p_p_id or instanceId must be provided for an " +
-						"instanceable portlet");
-			}
+		if (Validator.isNotNull(instanceId)) {
+			return PortletConstants.assemblePortletId(
+				getPortletId(), instanceId);
+		}
 
-			return null;
+		if (!isAllPublicRenderParameters(routeParameters)) {
+			_log.error(
+				"Either p_p_id or instanceId must be provided for an " +
+					"instanceable portlet");
 		}
-		else {
-			return getPortletId().concat(
-				PortletConstants.INSTANCE_SEPARATOR).concat(instanceId);
-		}
+
+		return null;
+	}
+
+	/**
+	 * Returns <code>true</code> if all the route parameters are public render
+	 * parameters.
+	 *
+	 * @param  routeParameters the parameter map
+	 * @return <code>true</code> if all the route parameters are public render
+	 *         parameters; <code>false</code> otherwise
+	 */
+	protected boolean isAllPublicRenderParameters(
+		Map<String, String> routeParameters) {
+
+		Set<String> routeParameterKeys = routeParameters.keySet();
+
+		Map<String, String> publicRenderParameters =
+			FriendlyURLMapperThreadLocal.getPRPIdentifiers();
+
+		return routeParameterKeys.containsAll(publicRenderParameters.keySet());
 	}
 
 	/**
@@ -367,7 +380,7 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 	protected Set<String> defaultIgnoredParameters;
 	protected Map<String, String> defaultReservedParameters;
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		DefaultFriendlyURLMapper.class);
 
 }

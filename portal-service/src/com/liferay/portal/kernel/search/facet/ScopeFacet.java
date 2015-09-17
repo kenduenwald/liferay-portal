@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -21,16 +21,22 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
-import com.liferay.portal.kernel.search.BooleanQuery;
-import com.liferay.portal.kernel.search.BooleanQueryFactoryUtil;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.ParseException;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.search.filter.TermsFilter;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.Group;
+import com.liferay.portal.model.Layout;
 import com.liferay.portal.service.GroupLocalServiceUtil;
+import com.liferay.portal.service.LayoutLocalServiceUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Raymond Augé
@@ -43,8 +49,41 @@ public class ScopeFacet extends MultiValueFacet {
 		setFieldName(Field.GROUP_ID);
 	}
 
+	protected long[] addScopeGroup(long groupId) {
+		try {
+			List<Long> groupIds = new ArrayList<>();
+
+			groupIds.add(groupId);
+
+			List<Layout> publicLayouts =
+				LayoutLocalServiceUtil.getScopeGroupLayouts(groupId, false);
+
+			for (Layout layout :publicLayouts) {
+				Group group = layout.getScopeGroup();
+
+				groupIds.add(group.getGroupId());
+			}
+
+			List<Layout> privateLayouts =
+				LayoutLocalServiceUtil.getScopeGroupLayouts(groupId, true);
+
+			for (Layout layout : privateLayouts) {
+				Group group = layout.getScopeGroup();
+
+				groupIds.add(group.getGroupId());
+			}
+
+			return ArrayUtil.toLongArray(groupIds);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+		}
+
+		return new long[] {groupId};
+	}
+
 	@Override
-	protected BooleanClause doGetFacetClause() {
+	protected BooleanClause<Filter> doGetFacetFilterBooleanClause() {
 		SearchContext searchContext = getSearchContext();
 
 		FacetConfiguration facetConfiguration = getFacetConfiguration();
@@ -63,7 +102,7 @@ public class ScopeFacet extends MultiValueFacet {
 			}
 		}
 
-		if ((groupIds == null) || (groupIds.length == 0)) {
+		if (ArrayUtil.isEmpty(groupIds)) {
 			groupIds = searchContext.getGroupIds();
 		}
 
@@ -71,27 +110,28 @@ public class ScopeFacet extends MultiValueFacet {
 			searchContext.getAttribute("groupId"));
 
 		if (Validator.isNotNull(groupIdParam)) {
-			groupIds = new long[] {GetterUtil.getLong(groupIdParam)};
+			long groupId = GetterUtil.getLong(groupIdParam);
+
+			groupIds = addScopeGroup(groupId);
 		}
 
-		if ((groupIds == null) || (groupIds.length == 0) ||
+		if (ArrayUtil.isEmpty(groupIds) ||
 			((groupIds.length == 1) && (groupIds[0] == 0))) {
 
 			return null;
 		}
 
-		BooleanQuery facetQuery = BooleanQueryFactoryUtil.create(searchContext);
+		BooleanFilter facetBooleanFilter = new BooleanFilter();
 
 		long ownerUserId = searchContext.getOwnerUserId();
 
 		if (ownerUserId > 0) {
-			facetQuery.addRequiredTerm(Field.USER_ID, ownerUserId);
+			facetBooleanFilter.addRequiredTerm(Field.USER_ID, ownerUserId);
 		}
 
-		BooleanQuery groupIdsQuery = BooleanQueryFactoryUtil.create(
-			searchContext);
-		BooleanQuery scopeGroupIdsQuery = BooleanQueryFactoryUtil.create(
-			searchContext);
+		TermsFilter groupIdsTermsFilter = new TermsFilter(Field.GROUP_ID);
+		TermsFilter scopeGroupIdsTermsFilter = new TermsFilter(
+			Field.SCOPE_GROUP_ID);
 
 		for (int i = 0; i < groupIds.length; i ++) {
 			long groupId = groupIds[i];
@@ -113,43 +153,37 @@ public class ScopeFacet extends MultiValueFacet {
 					parentGroupId = group.getParentGroupId();
 				}
 
-				groupIdsQuery.addTerm(Field.GROUP_ID, parentGroupId);
+				groupIdsTermsFilter.addValue(String.valueOf(parentGroupId));
 
 				groupIds[i] = parentGroupId;
 
 				if (group.isLayout() || searchContext.isScopeStrict()) {
-					scopeGroupIdsQuery.addTerm(Field.SCOPE_GROUP_ID, groupId);
+					scopeGroupIdsTermsFilter.addValue(String.valueOf(groupId));
 				}
 			}
 			catch (Exception e) {
-				continue;
+				if (_log.isDebugEnabled()) {
+					_log.debug(e, e);
+				}
 			}
 		}
 
 		searchContext.setGroupIds(groupIds);
 
-		if (groupIdsQuery.hasClauses()) {
-			try {
-				facetQuery.add(groupIdsQuery, BooleanClauseOccur.MUST);
-			}
-			catch (ParseException pe) {
-				_log.error(pe, pe);
-			}
+		if (!groupIdsTermsFilter.isEmpty()) {
+			facetBooleanFilter.add(
+				groupIdsTermsFilter, BooleanClauseOccur.MUST);
 		}
 
-		if (scopeGroupIdsQuery.hasClauses()) {
-			try {
-				facetQuery.add(scopeGroupIdsQuery, BooleanClauseOccur.MUST);
-			}
-			catch (ParseException pe) {
-				_log.error(pe, pe);
-			}
+		if (!scopeGroupIdsTermsFilter.isEmpty()) {
+			facetBooleanFilter.add(
+				scopeGroupIdsTermsFilter, BooleanClauseOccur.MUST);
 		}
 
-		return BooleanClauseFactoryUtil.create(
-			searchContext, facetQuery, BooleanClauseOccur.MUST.getName());
+		return BooleanClauseFactoryUtil.createFilter(
+			searchContext, facetBooleanFilter, BooleanClauseOccur.MUST);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ScopeFacet.class);
+	private static final Log _log = LogFactoryUtil.getLog(ScopeFacet.class);
 
 }

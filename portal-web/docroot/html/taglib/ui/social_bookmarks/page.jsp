@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,21 +23,50 @@
 	%>
 
 	<div class="taglib-social-bookmarks" id="<%= randomNamespace %>socialBookmarks">
-		<ul class="lfr-component">
+		<c:choose>
+			<c:when test='<%= displayStyle.equals("menu") %>'>
+				<aui:button icon="icon-share" value="share">
 
-			<%
-			for (int i = 0; i < typesArray.length; i++) {
-				String styleClass = "taglib-social-bookmark-" + typesArray[i];
-			%>
+					<%
+					for (int i = 0; i < typesArray.length; i++) {
+					%>
 
-				<li class="<%= styleClass%>">
-					<liferay-ui:social-bookmark target="<%= target %>" title="<%= title %>" type="<%= typesArray[i] %>" url="<%= url %>" />
-				</li>
+						<li>
+							<liferay-ui:social-bookmark contentId="<%= contentId %>" displayStyle="<%= displayStyle %>" target="<%= target %>" title="<%= title %>" type="<%= typesArray[i] %>" url="<%= url %>" />
+						</li>
 
-			<%
-			}
-			%>
+					<%
+					}
+					%>
 
-		</ul>
+				</aui:button>
+
+				<aui:script use="liferay-social-bookmarks">
+					new Liferay.SocialBookmarks(
+						{
+							contentBox: '#<%= randomNamespace %>socialBookmarks'
+						}
+					);
+				</aui:script>
+			</c:when>
+			<c:otherwise>
+				<ul class="list-unstyled <%= displayStyle %>">
+
+					<%
+					for (int i = 0; i < typesArray.length; i++) {
+						String styleClass = "taglib-social-bookmark-" + typesArray[i];
+					%>
+
+						<li class="taglib-social-bookmark <%= styleClass %>">
+							<liferay-ui:social-bookmark contentId="<%= contentId %>" displayStyle="<%= displayStyle %>"  target="<%= target %>" title="<%= title %>" type="<%= typesArray[i] %>" url="<%= url %>" />
+						</li>
+
+					<%
+					}
+					%>
+
+				</ul>
+			</c:otherwise>
+		</c:choose>
 	</div>
 </c:if>

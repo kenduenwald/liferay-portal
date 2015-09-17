@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portlet.softwarecatalog.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.util.MethodCache;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 
 /**
- * The utility for the s c product entry remote service. This utility wraps {@link com.liferay.portlet.softwarecatalog.service.impl.SCProductEntryServiceImpl} and is the primary access point for service operations in application layer code running on a remote server.
- *
- * <p>
- * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
- * </p>
+ * Provides the remote service utility for SCProductEntry. This utility wraps
+ * {@link com.liferay.portlet.softwarecatalog.service.impl.SCProductEntryServiceImpl} and is the
+ * primary access point for service operations in application layer code running
+ * on a remote server. Methods of this service are expected to have security
+ * checks based on the propagated JAAS credentials because this service can be
+ * accessed remotely.
  *
  * @author Brian Wing Shun Chan
  * @see SCProductEntryService
@@ -31,6 +33,7 @@ import com.liferay.portal.kernel.util.ReferenceRegistry;
  * @see com.liferay.portlet.softwarecatalog.service.impl.SCProductEntryServiceImpl
  * @generated
  */
+@ProviderType
 public class SCProductEntryServiceUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -45,8 +48,7 @@ public class SCProductEntryServiceUtil {
 		long[] licenseIds, java.util.List<byte[]> thumbnails,
 		java.util.List<byte[]> fullImages,
 		com.liferay.portal.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .addProductEntry(name, type, tags, shortDescription,
 			longDescription, pageURL, author, repoGroupId, repoArtifactId,
@@ -54,16 +56,32 @@ public class SCProductEntryServiceUtil {
 	}
 
 	public static void deleteProductEntry(long productEntryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().deleteProductEntry(productEntryId);
+	}
+
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	public static java.lang.String getBeanIdentifier() {
+		return getService().getBeanIdentifier();
 	}
 
 	public static com.liferay.portlet.softwarecatalog.model.SCProductEntry getProductEntry(
 		long productEntryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getProductEntry(productEntryId);
+	}
+
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public static void setBeanIdentifier(java.lang.String beanIdentifier) {
+		getService().setBeanIdentifier(beanIdentifier);
 	}
 
 	public static com.liferay.portlet.softwarecatalog.model.SCProductEntry updateProductEntry(
@@ -73,8 +91,7 @@ public class SCProductEntryServiceUtil {
 		java.lang.String author, java.lang.String repoGroupId,
 		java.lang.String repoArtifactId, long[] licenseIds,
 		java.util.List<byte[]> thumbnails, java.util.List<byte[]> fullImages)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .updateProductEntry(productEntryId, name, type, tags,
 			shortDescription, longDescription, pageURL, author, repoGroupId,
@@ -87,20 +104,16 @@ public class SCProductEntryServiceUtil {
 
 			ReferenceRegistry.registerReference(SCProductEntryServiceUtil.class,
 				"_service");
-			MethodCache.remove(SCProductEntryService.class);
 		}
 
 		return _service;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setService(SCProductEntryService service) {
-		MethodCache.remove(SCProductEntryService.class);
-
-		_service = service;
-
-		ReferenceRegistry.registerReference(SCProductEntryServiceUtil.class,
-			"_service");
-		MethodCache.remove(SCProductEntryService.class);
 	}
 
 	private static SCProductEntryService _service;

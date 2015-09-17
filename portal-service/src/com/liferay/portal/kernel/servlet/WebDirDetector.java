@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,9 @@
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.ClassUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -26,13 +28,20 @@ public class WebDirDetector {
 			classLoader, "com.liferay.util.bean.PortletBeanLocatorUtil");
 
 		if (libDir.endsWith("/WEB-INF/classes/")) {
-			libDir = libDir.substring(0, libDir.length() - 8) + "lib/";
+			return libDir.substring(0, libDir.length() - 8) + "lib/";
 		}
-		else {
-			int pos = libDir.indexOf("/WEB-INF/lib/");
+
+		int pos = libDir.indexOf("/WEB-INF/lib/");
+
+		if (pos != -1) {
+			return libDir.substring(0, pos) + "/WEB-INF/lib/";
+		}
+
+		if (libDir.endsWith(".jar!/")) {
+			pos = libDir.lastIndexOf(CharPool.SLASH, libDir.length() - 7);
 
 			if (pos != -1) {
-				libDir = libDir.substring(0, pos) + "/WEB-INF/lib/";
+				return libDir.substring(0, pos + 1);
 			}
 		}
 
@@ -44,7 +53,8 @@ public class WebDirDetector {
 	}
 
 	public static String getRootDir(String libDir) {
-		String rootDir = libDir;
+		String rootDir = StringUtil.replace(
+			libDir, CharPool.BACK_SLASH, CharPool.FORWARD_SLASH);
 
 		if (rootDir.endsWith("/WEB-INF/lib/")) {
 			rootDir = rootDir.substring(0, rootDir.length() - 12);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.asset.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.asset.model.AssetLink;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,7 +37,33 @@ import java.util.Date;
  * @see AssetLink
  * @generated
  */
-public class AssetLinkCacheModel implements CacheModel<AssetLink>, Serializable {
+@ProviderType
+public class AssetLinkCacheModel implements CacheModel<AssetLink>,
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof AssetLinkCacheModel)) {
+			return false;
+		}
+
+		AssetLinkCacheModel assetLinkCacheModel = (AssetLinkCacheModel)obj;
+
+		if (linkId == assetLinkCacheModel.linkId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, linkId);
+	}
+
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(19);
@@ -59,6 +91,7 @@ public class AssetLinkCacheModel implements CacheModel<AssetLink>, Serializable 
 		return sb.toString();
 	}
 
+	@Override
 	public AssetLink toEntityModel() {
 		AssetLinkImpl assetLinkImpl = new AssetLinkImpl();
 
@@ -88,6 +121,40 @@ public class AssetLinkCacheModel implements CacheModel<AssetLink>, Serializable 
 		assetLinkImpl.resetOriginalValues();
 
 		return assetLinkImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		linkId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		entryId1 = objectInput.readLong();
+		entryId2 = objectInput.readLong();
+		type = objectInput.readInt();
+		weight = objectInput.readInt();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(linkId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(entryId1);
+		objectOutput.writeLong(entryId2);
+		objectOutput.writeInt(type);
+		objectOutput.writeInt(weight);
 	}
 
 	public long linkId;

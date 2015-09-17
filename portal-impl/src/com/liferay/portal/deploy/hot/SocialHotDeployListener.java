@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -38,6 +38,7 @@ import javax.servlet.ServletContext;
  */
 public class SocialHotDeployListener extends BaseHotDeployListener {
 
+	@Override
 	public void invokeDeploy(HotDeployEvent hotDeployEvent)
 		throws HotDeployException {
 
@@ -50,6 +51,7 @@ public class SocialHotDeployListener extends BaseHotDeployListener {
 		}
 	}
 
+	@Override
 	public void invokeUndeploy(HotDeployEvent hotDeployEvent)
 		throws HotDeployException {
 
@@ -82,12 +84,14 @@ public class SocialHotDeployListener extends BaseHotDeployListener {
 			return;
 		}
 
-		logRegistration(servletContextName);
+		if (_log.isInfoEnabled()) {
+			_log.info("Registering social for " + servletContextName);
+		}
 
 		List<Object> objects = SocialConfigurationUtil.read(
 			hotDeployEvent.getContextClassLoader(), xmls);
 
-		_vars.put(servletContextName, objects);
+		_objects.put(servletContextName, objects);
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
@@ -106,7 +110,7 @@ public class SocialHotDeployListener extends BaseHotDeployListener {
 			_log.debug("Invoking undeploy for " + servletContextName);
 		}
 
-		List<Object> objects = (List<Object>)_vars.get(servletContextName);
+		List<Object> objects = (List<Object>)_objects.get(servletContextName);
 
 		if (objects == null) {
 			return;
@@ -150,15 +154,9 @@ public class SocialHotDeployListener extends BaseHotDeployListener {
 		}
 	}
 
-	protected void logRegistration(String servletContextName) {
-		if (_log.isInfoEnabled()) {
-			_log.info("Registering social for " + servletContextName);
-		}
-	}
-
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		SocialHotDeployListener.class);
 
-	private static Map<String, Object> _vars = new HashMap<String, Object>();
+	private static final Map<String, Object> _objects = new HashMap<>();
 
 }

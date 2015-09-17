@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,9 +23,13 @@ public interface Constants {
 
 	public static final String ADD = "add";
 
+	public static final String ADD_DYNAMIC = "add_dynamic";
+
 	public static final String ADD_MULTIPLE = "add_multiple";
 
 	public static final String ADD_TEMP = "add_temp";
+
+	public static final String ADD_WEBDAV = "add_webdav";
 
 	public static final String APPROVE = "approve";
 
@@ -34,6 +38,10 @@ public interface Constants {
 	public static final String CANCEL = "cancel";
 
 	public static final String CANCEL_CHECKOUT = "cancel_checkout";
+
+	public static final String CHANGE_PARENT = "change_parent";
+
+	public static final String CHECK = "check";
 
 	public static final String CHECKIN = "checkin";
 
@@ -75,7 +83,11 @@ public interface Constants {
 
 	public static final String MOVE = "move";
 
+	public static final String MOVE_FROM_TRASH = "move_from_trash";
+
 	public static final String MOVE_TO_TRASH = "move_to_trash";
+
+	public static final String OVERRIDE = "override";
 
 	public static final String PREVIEW = "preview";
 
@@ -85,9 +97,21 @@ public interface Constants {
 
 	public static final String PUBLISH = "publish";
 
+	public static final String PUBLISH_TO_LIVE = "publish_to_live";
+
+	public static final String PUBLISH_TO_REMOTE = "publish_to_remote";
+
 	public static final String READ = "read";
 
+	public static final String REDO = "redo";
+
 	public static final String REJECT = "reject";
+
+	public static final String RELAUNCH = "relaunch";
+
+	public static final String REMOVE = "remove";
+
+	public static final String RENAME = "rename";
 
 	public static final String RESET = "reset";
 
@@ -103,6 +127,8 @@ public interface Constants {
 
 	public static final String SIGNAL = "signal";
 
+	public static final String SKIP = "skip";
+
 	public static final String SUBSCRIBE = "subscribe";
 
 	public static final String SUBSCRIBE_TO_COMMENTS = "subscribe_to_comments";
@@ -110,6 +136,8 @@ public interface Constants {
 	public static final String TEST = "test";
 
 	public static final String TRANSLATE = "translate";
+
+	public static final String UNDO = "undo";
 
 	public static final String UNLOCK = "unlock";
 
@@ -121,6 +149,10 @@ public interface Constants {
 	public static final String UPDATE = "update";
 
 	public static final String UPDATE_AND_CHECKIN = "update_and_checkin";
+
+	public static final String UPDATE_WEBDAV = "update_webdav";
+
+	public static final String VALIDATE = "validate";
 
 	public static final String VIEW = "view";
 

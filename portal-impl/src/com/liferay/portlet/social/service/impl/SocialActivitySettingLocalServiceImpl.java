@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,14 +17,15 @@ package com.liferay.portlet.social.service.impl;
 import com.liferay.portal.kernel.cache.MultiVMPoolUtil;
 import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.Group;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.social.model.SocialActivityCounterDefinition;
 import com.liferay.portlet.social.model.SocialActivityDefinition;
 import com.liferay.portlet.social.model.SocialActivitySetting;
@@ -41,14 +42,35 @@ import java.util.List;
 public class SocialActivitySettingLocalServiceImpl
 	extends SocialActivitySettingLocalServiceBaseImpl {
 
+	@Override
+	public void deleteActivitySetting(
+		long groupId, String className, long classPK) {
+
+		long classNameId = classNameLocalService.getClassNameId(className);
+		String name = _PREFIX_CLASS_PK.concat(String.valueOf(classPK));
+
+		SocialActivitySetting activitySetting =
+			socialActivitySettingPersistence.fetchByG_C_A_N(
+				groupId, classNameId, 0, name);
+
+		if (activitySetting != null) {
+			socialActivitySettingPersistence.remove(activitySetting);
+		}
+	}
+
+	@Override
+	public void deleteActivitySettings(long groupId) {
+		socialActivitySettingPersistence.removeByGroupId(groupId);
+	}
+
+	@Override
 	public SocialActivityDefinition getActivityDefinition(
-			long groupId, String className, int activityType)
-		throws SystemException {
+		long groupId, String className, int activityType) {
 
 		String key = encodeKey(groupId, className, activityType);
 
-		SocialActivityDefinition activityDefinition =
-			(SocialActivityDefinition)_activityDefinitions.get(key);
+		SocialActivityDefinition activityDefinition = _activityDefinitions.get(
+			key);
 
 		if (activityDefinition != null) {
 			return activityDefinition;
@@ -70,12 +92,11 @@ public class SocialActivitySettingLocalServiceImpl
 		return activityDefinition;
 	}
 
+	@Override
 	public List<SocialActivityDefinition> getActivityDefinitions(
-			long groupId, String className)
-		throws SystemException {
+		long groupId, String className) {
 
-		List<SocialActivityDefinition> activityDefinitions =
-			new ArrayList<SocialActivityDefinition>();
+		List<SocialActivityDefinition> activityDefinitions = new ArrayList<>();
 
 		List<SocialActivityDefinition> defaultActivityDefinitions =
 			SocialConfigurationUtil.getActivityDefinitions(className);
@@ -93,15 +114,13 @@ public class SocialActivitySettingLocalServiceImpl
 		return activityDefinitions;
 	}
 
-	public List<SocialActivitySetting> getActivitySettings(long groupId)
-		throws SystemException {
-
+	@Override
+	public List<SocialActivitySetting> getActivitySettings(long groupId) {
 		return socialActivitySettingPersistence.findByG_A(groupId, 0);
 	}
 
-	public boolean isEnabled(long groupId, long classNameId)
-		throws SystemException {
-
+	@Override
+	public boolean isEnabled(long groupId, long classNameId) {
 		SocialActivitySetting activitySetting =
 			socialActivitySettingPersistence.fetchByG_C_A_N(
 				groupId, classNameId, 0,
@@ -114,11 +133,39 @@ public class SocialActivitySettingLocalServiceImpl
 		return GetterUtil.getBoolean(activitySetting.getValue());
 	}
 
+	@Override
+	public boolean isEnabled(long groupId, long classNameId, long classPK) {
+		String name = _PREFIX_CLASS_PK.concat(String.valueOf(classPK));
+
+		SocialActivitySetting activitySetting =
+			socialActivitySettingPersistence.fetchByG_C_A_N(
+				groupId, classNameId, 0, name);
+
+		if (activitySetting == null) {
+			return true;
+		}
+
+		try {
+			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+				activitySetting.getValue());
+
+			return jsonObject.getBoolean("enabled");
+		}
+		catch (JSONException jsone) {
+			_log.error(
+				"Unable to create JSON object from " +
+					activitySetting.getValue());
+
+			return false;
+		}
+	}
+
+	@Override
 	public void updateActivitySetting(
 			long groupId, String className, boolean enabled)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		long classNameId = PortalUtil.getClassNameId(className);
+		long classNameId = classNameLocalService.getClassNameId(className);
 
 		SocialActivitySetting activitySetting =
 			socialActivitySettingPersistence.fetchByG_C_A_N(
@@ -142,15 +189,16 @@ public class SocialActivitySettingLocalServiceImpl
 
 		activitySetting.setValue(String.valueOf(enabled));
 
-		socialActivitySettingPersistence.update(activitySetting, false);
+		socialActivitySettingPersistence.update(activitySetting);
 	}
 
+	@Override
 	public void updateActivitySetting(
 			long groupId, String className, int activityType,
 			SocialActivityCounterDefinition activityCounterDefinition)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		long classNameId = PortalUtil.getClassNameId(className);
+		long classNameId = classNameLocalService.getClassNameId(className);
 
 		SocialActivityDefinition defaultActivityDefinition =
 			SocialConfigurationUtil.getActivityDefinition(
@@ -195,17 +243,53 @@ public class SocialActivitySettingLocalServiceImpl
 			activitySetting.setValue(toJSON(activityCounterDefinition));
 		}
 
-		socialActivitySettingPersistence.update(activitySetting, false);
+		socialActivitySettingPersistence.update(activitySetting);
 
 		String key = encodeKey(groupId, className, activityType);
 
 		_activityDefinitions.remove(key);
 	}
 
+	@Override
+	public void updateActivitySetting(
+			long groupId, String className, long classPK, boolean enabled)
+		throws PortalException {
+
+		long classNameId = classNameLocalService.getClassNameId(className);
+		String name = _PREFIX_CLASS_PK.concat(String.valueOf(classPK));
+
+		SocialActivitySetting activitySetting =
+			socialActivitySettingPersistence.fetchByG_C_A_N(
+				groupId, classNameId, 0, name);
+
+		if (activitySetting == null) {
+			Group group = groupLocalService.getGroup(groupId);
+
+			long activitySettingId = counterLocalService.increment();
+
+			activitySetting = socialActivitySettingPersistence.create(
+				activitySettingId);
+
+			activitySetting.setGroupId(groupId);
+			activitySetting.setCompanyId(group.getCompanyId());
+			activitySetting.setClassNameId(classNameId);
+			activitySetting.setName(name);
+		}
+
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
+		jsonObject.put("enabled", enabled);
+
+		activitySetting.setValue(jsonObject.toString());
+
+		socialActivitySettingPersistence.update(activitySetting);
+	}
+
+	@Override
 	public void updateActivitySettings(
 			long groupId, String className, int activityType,
 			List<SocialActivityCounterDefinition> activityCounterDefinitions)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		for (SocialActivityCounterDefinition activityCounterDefinition :
 				activityCounterDefinitions) {
@@ -230,9 +314,8 @@ public class SocialActivitySettingLocalServiceImpl
 	}
 
 	protected SocialActivityDefinition getActivityDefinition(
-			long groupId, String className, int activityType,
-			SocialActivityDefinition defaultActivityDefinition)
-		throws SystemException {
+		long groupId, String className, int activityType,
+		SocialActivityDefinition defaultActivityDefinition) {
 
 		SocialActivityDefinition activityDefinition =
 			defaultActivityDefinition.clone();
@@ -244,10 +327,10 @@ public class SocialActivitySettingLocalServiceImpl
 			String name = activitySetting.getName();
 
 			if (name.equals(SocialActivitySettingConstants.NAME_ENABLED)) {
-				activityDefinition.setEnabled(
+				activityDefinition.setCountersEnabled(
 					GetterUtil.getBoolean(
 						activitySetting.getValue(),
-						defaultActivityDefinition.isEnabled()));
+						defaultActivityDefinition.isCountersEnabled()));
 			}
 			else if (name.equals(
 						SocialActivitySettingConstants.NAME_LOG_ENABLED)) {
@@ -299,10 +382,9 @@ public class SocialActivitySettingLocalServiceImpl
 	}
 
 	protected List<SocialActivitySetting> getActivitySettings(
-			long groupId, String className, int activityType)
-		throws SystemException {
+		long groupId, String className, int activityType) {
 
-		long classNameId = PortalUtil.getClassNameId(className);
+		long classNameId = classNameLocalService.getClassNameId(className);
 
 		List<SocialActivitySetting> activitySettings =
 			socialActivitySettingPersistence.findByG_C_A(
@@ -328,7 +410,13 @@ public class SocialActivitySettingLocalServiceImpl
 		return jsonObject.toString();
 	}
 
-	private static PortalCache _activityDefinitions = MultiVMPoolUtil.getCache(
-		SocialActivitySettingLocalServiceImpl.class.getName());
+	private static final String _PREFIX_CLASS_PK = "_LFR_CLASS_PK_";
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SocialActivitySettingLocalServiceImpl.class);
+
+	private static final PortalCache<String, SocialActivityDefinition>
+		_activityDefinitions = MultiVMPoolUtil.getPortalCache(
+			SocialActivitySettingLocalServiceImpl.class.getName());
 
 }

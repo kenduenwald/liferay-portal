@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,6 @@ package com.liferay.portal.service;
 
 import com.liferay.portal.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
@@ -25,8 +24,12 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.model.Group;
+import com.liferay.portal.model.GroupConstants;
 import com.liferay.portal.model.PortletPreferencesIds;
 import com.liferay.portal.model.User;
+import com.liferay.portal.service.permission.ModelPermissions;
+import com.liferay.portal.service.permission.ModelPermissionsFactory;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
@@ -52,7 +55,7 @@ import javax.servlet.http.HttpServletRequest;
 public class ServiceContextFactory {
 
 	public static ServiceContext getInstance(HttpServletRequest request)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -67,16 +70,15 @@ public class ServiceContextFactory {
 			serviceContext.setLayoutFullURL(
 				PortalUtil.getCanonicalURL(
 					PortalUtil.getLayoutFullURL(themeDisplay), themeDisplay,
-					themeDisplay.getLayout()));
+					themeDisplay.getLayout(), true));
 			serviceContext.setLayoutURL(
 				PortalUtil.getCanonicalURL(
 					PortalUtil.getLayoutURL(themeDisplay), themeDisplay,
-					themeDisplay.getLayout()));
-			serviceContext.setPathMain(PortalUtil.getPathMain());
+					themeDisplay.getLayout(), true));
 			serviceContext.setPlid(themeDisplay.getPlid());
-			serviceContext.setPortalURL(PortalUtil.getPortalURL(request));
 			serviceContext.setScopeGroupId(themeDisplay.getScopeGroupId());
 			serviceContext.setSignedIn(themeDisplay.isSignedIn());
+			serviceContext.setTimeZone(themeDisplay.getTimeZone());
 
 			User user = themeDisplay.getUser();
 
@@ -88,7 +90,15 @@ public class ServiceContextFactory {
 
 			serviceContext.setCompanyId(companyId);
 
-			serviceContext.setPathMain(PortalUtil.getPathMain());
+			Group guestGroup = GroupLocalServiceUtil.getGroup(
+				serviceContext.getCompanyId(), GroupConstants.GUEST);
+
+			serviceContext.setScopeGroupId(guestGroup.getGroupId());
+
+			long plid = LayoutLocalServiceUtil.getDefaultPlid(
+				serviceContext.getScopeGroupId(), false);
+
+			serviceContext.setPlid(plid);
 
 			User user = null;
 
@@ -110,10 +120,18 @@ public class ServiceContextFactory {
 			}
 		}
 
+		serviceContext.setPortalURL(PortalUtil.getPortalURL(request));
+		serviceContext.setPathMain(PortalUtil.getPathMain());
+		serviceContext.setPathFriendlyURLPrivateGroup(
+			PortalUtil.getPathFriendlyURLPrivateGroup());
+		serviceContext.setPathFriendlyURLPrivateUser(
+			PortalUtil.getPathFriendlyURLPrivateUser());
+		serviceContext.setPathFriendlyURLPublic(
+			PortalUtil.getPathFriendlyURLPublic());
+
 		// Attributes
 
-		Map<String, Serializable> attributes =
-			new HashMap<String, Serializable>();
+		Map<String, Serializable> attributes = new HashMap<>();
 
 		Map<String, String[]> parameters = request.getParameterMap();
 
@@ -121,7 +139,7 @@ public class ServiceContextFactory {
 			String name = entry.getKey();
 			String[] values = entry.getValue();
 
-			if ((values != null) && (values.length > 0)) {
+			if (ArrayUtil.isNotEmpty(values)) {
 				if (values.length == 1) {
 					attributes.put(name, values[0]);
 				}
@@ -157,17 +175,25 @@ public class ServiceContextFactory {
 
 		// Permissions
 
-		boolean addGroupPermissions = ParamUtil.getBoolean(
-			request, "addGroupPermissions");
-		boolean addGuestPermissions = ParamUtil.getBoolean(
-			request, "addGuestPermissions");
-		String[] groupPermissions = PortalUtil.getGroupPermissions(request);
-		String[] guestPermissions = PortalUtil.getGuestPermissions(request);
+		ModelPermissions modelPermissions = ModelPermissionsFactory.create(
+			request);
 
-		serviceContext.setAddGroupPermissions(addGroupPermissions);
-		serviceContext.setAddGuestPermissions(addGuestPermissions);
-		serviceContext.setGroupPermissions(groupPermissions);
-		serviceContext.setGuestPermissions(guestPermissions);
+		if (!modelPermissions.isEmpty()) {
+			serviceContext.setModelPermissions(modelPermissions);
+		}
+		else {
+			boolean addGroupPermissions = ParamUtil.getBoolean(
+				request, "addGroupPermissions");
+			boolean addGuestPermissions = ParamUtil.getBoolean(
+				request, "addGuestPermissions");
+			String[] groupPermissions = PortalUtil.getGroupPermissions(request);
+			String[] guestPermissions = PortalUtil.getGuestPermissions(request);
+
+			serviceContext.setAddGroupPermissions(addGroupPermissions);
+			serviceContext.setAddGuestPermissions(addGuestPermissions);
+			serviceContext.setGroupPermissions(groupPermissions);
+			serviceContext.setGuestPermissions(guestPermissions);
+		}
 
 		// Portlet preferences ids
 
@@ -183,7 +209,7 @@ public class ServiceContextFactory {
 
 		// Request
 
-		Map<String, String> headerMap = new HashMap<String, String>();
+		Map<String, String> headerMap = new HashMap<>();
 
 		Enumeration<String> enu = request.getHeaderNames();
 
@@ -205,7 +231,7 @@ public class ServiceContextFactory {
 
 		Map<String, String[]> parameterMap = request.getParameterMap();
 
-		List<Long> assetCategoryIdsList = new ArrayList<Long>();
+		List<Long> assetCategoryIdsList = new ArrayList<>();
 
 		boolean updateAssetCategoryIds = false;
 
@@ -237,11 +263,19 @@ public class ServiceContextFactory {
 
 		serviceContext.setAssetEntryVisible(assetEntryVisible);
 
-		long[] assetLinkEntryIds = StringUtil.split(
-			ParamUtil.getString(
-				request, "assetLinksSearchContainerPrimaryKeys"), 0L);
+		String assetLinkEntryIdsString = request.getParameter(
+			"assetLinksSearchContainerPrimaryKeys");
 
-		serviceContext.setAssetLinkEntryIds(assetLinkEntryIds);
+		if (assetLinkEntryIdsString != null) {
+			long[] assetLinkEntryIds = StringUtil.split(
+				assetLinkEntryIdsString, 0L);
+
+			serviceContext.setAssetLinkEntryIds(assetLinkEntryIds);
+		}
+
+		Double assetPriority = ParamUtil.getDouble(request, "assetPriority");
+
+		serviceContext.setAssetPriority(assetPriority);
 
 		String assetTagNamesString = request.getParameter("assetTagNames");
 
@@ -262,15 +296,15 @@ public class ServiceContextFactory {
 	}
 
 	public static ServiceContext getInstance(PortletRequest portletRequest)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		// Theme display
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)portletRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		if (serviceContext != null) {
 			serviceContext = (ServiceContext)serviceContext.clone();
@@ -283,11 +317,18 @@ public class ServiceContextFactory {
 			serviceContext.setLayoutFullURL(
 				PortalUtil.getLayoutFullURL(themeDisplay));
 			serviceContext.setLayoutURL(PortalUtil.getLayoutURL(themeDisplay));
+			serviceContext.setPathFriendlyURLPrivateGroup(
+				PortalUtil.getPathFriendlyURLPrivateGroup());
+			serviceContext.setPathFriendlyURLPrivateUser(
+				PortalUtil.getPathFriendlyURLPrivateUser());
+			serviceContext.setPathFriendlyURLPublic(
+				PortalUtil.getPathFriendlyURLPublic());
 			serviceContext.setPathMain(PortalUtil.getPathMain());
 			serviceContext.setPlid(themeDisplay.getPlid());
 			serviceContext.setPortalURL(
 				PortalUtil.getPortalURL(portletRequest));
 			serviceContext.setSignedIn(themeDisplay.isSignedIn());
+			serviceContext.setTimeZone(themeDisplay.getTimeZone());
 
 			User user = themeDisplay.getUser();
 
@@ -299,8 +340,7 @@ public class ServiceContextFactory {
 
 		// Attributes
 
-		Map<String, Serializable> attributes =
-			new HashMap<String, Serializable>();
+		Map<String, Serializable> attributes = new HashMap<>();
 
 		Enumeration<String> enu = portletRequest.getParameterNames();
 
@@ -309,7 +349,7 @@ public class ServiceContextFactory {
 
 			String[] values = portletRequest.getParameterValues(param);
 
-			if ((values != null) && (values.length > 0)) {
+			if (ArrayUtil.isNotEmpty(values)) {
 				if (values.length == 1) {
 					attributes.put(param, values[0]);
 				}
@@ -345,19 +385,27 @@ public class ServiceContextFactory {
 
 		// Permissions
 
-		boolean addGroupPermissions = ParamUtil.getBoolean(
-			portletRequest, "addGroupPermissions");
-		boolean addGuestPermissions = ParamUtil.getBoolean(
-			portletRequest, "addGuestPermissions");
-		String[] groupPermissions = PortalUtil.getGroupPermissions(
-			portletRequest);
-		String[] guestPermissions = PortalUtil.getGuestPermissions(
+		ModelPermissions modelPermissions = ModelPermissionsFactory.create(
 			portletRequest);
 
-		serviceContext.setAddGroupPermissions(addGroupPermissions);
-		serviceContext.setAddGuestPermissions(addGuestPermissions);
-		serviceContext.setGroupPermissions(groupPermissions);
-		serviceContext.setGuestPermissions(guestPermissions);
+		if (!modelPermissions.isEmpty()) {
+			serviceContext.setModelPermissions(modelPermissions);
+		}
+		else {
+			boolean addGroupPermissions = ParamUtil.getBoolean(
+				portletRequest, "addGroupPermissions");
+			boolean addGuestPermissions = ParamUtil.getBoolean(
+				portletRequest, "addGuestPermissions");
+			String[] groupPermissions = PortalUtil.getGroupPermissions(
+				portletRequest);
+			String[] guestPermissions = PortalUtil.getGuestPermissions(
+				portletRequest);
+
+			serviceContext.setAddGroupPermissions(addGroupPermissions);
+			serviceContext.setAddGuestPermissions(addGuestPermissions);
+			serviceContext.setGroupPermissions(groupPermissions);
+			serviceContext.setGuestPermissions(guestPermissions);
+		}
 
 		// Portlet preferences ids
 
@@ -374,7 +422,7 @@ public class ServiceContextFactory {
 
 		// Request
 
-		Map<String, String> headerMap = new HashMap<String, String>();
+		Map<String, String> headerMap = new HashMap<>();
 
 		enu = request.getHeaderNames();
 
@@ -396,7 +444,7 @@ public class ServiceContextFactory {
 
 		Map<String, String[]> parameterMap = portletRequest.getParameterMap();
 
-		List<Long> assetCategoryIdsList = new ArrayList<Long>();
+		List<Long> assetCategoryIdsList = new ArrayList<>();
 
 		boolean updateAssetCategoryIds = false;
 
@@ -428,11 +476,19 @@ public class ServiceContextFactory {
 
 		serviceContext.setAssetEntryVisible(assetEntryVisible);
 
-		long[] assetLinkEntryIds = StringUtil.split(
-			ParamUtil.getString(
-				portletRequest, "assetLinksSearchContainerPrimaryKeys"), 0L);
+		String assetLinkEntryIdsString = request.getParameter(
+			"assetLinksSearchContainerPrimaryKeys");
 
-		serviceContext.setAssetLinkEntryIds(assetLinkEntryIds);
+		if (assetLinkEntryIdsString != null) {
+			long[] assetLinkEntryIds = StringUtil.split(
+				assetLinkEntryIdsString, 0L);
+
+			serviceContext.setAssetLinkEntryIds(assetLinkEntryIds);
+		}
+
+		Double assetPriority = ParamUtil.getDouble(request, "assetPriority");
+
+		serviceContext.setAssetPriority(assetPriority);
 
 		String assetTagNamesString = request.getParameter("assetTagNames");
 
@@ -453,10 +509,59 @@ public class ServiceContextFactory {
 	}
 
 	public static ServiceContext getInstance(
+			String className, HttpServletRequest request)
+		throws PortalException {
+
+		ServiceContext serviceContext = getInstance(request);
+
+		// Permissions
+
+		String[] groupPermissions = PortalUtil.getGroupPermissions(
+			request, className);
+		String[] guestPermissions = PortalUtil.getGuestPermissions(
+			request, className);
+
+		if (groupPermissions != null) {
+			serviceContext.setGroupPermissions(groupPermissions);
+		}
+
+		if (guestPermissions != null) {
+			serviceContext.setGuestPermissions(guestPermissions);
+		}
+
+		// Expando
+
+		Map<String, Serializable> expandoBridgeAttributes =
+			PortalUtil.getExpandoBridgeAttributes(
+				ExpandoBridgeFactoryUtil.getExpandoBridge(
+					serviceContext.getCompanyId(), className),
+				request);
+
+		serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
+
+		return serviceContext;
+	}
+
+	public static ServiceContext getInstance(
 			String className, PortletRequest portletRequest)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		ServiceContext serviceContext = getInstance(portletRequest);
+
+		// Permissions
+
+		String[] groupPermissions = PortalUtil.getGroupPermissions(
+			portletRequest, className);
+		String[] guestPermissions = PortalUtil.getGuestPermissions(
+			portletRequest, className);
+
+		if (groupPermissions != null) {
+			serviceContext.setGroupPermissions(groupPermissions);
+		}
+
+		if (guestPermissions != null) {
+			serviceContext.setGuestPermissions(guestPermissions);
+		}
 
 		// Expando
 
@@ -473,9 +578,24 @@ public class ServiceContextFactory {
 
 	public static ServiceContext getInstance(
 			String className, UploadPortletRequest uploadPortletRequest)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		ServiceContext serviceContext = getInstance(uploadPortletRequest);
+
+		// Permissions
+
+		String[] groupPermissions = PortalUtil.getGroupPermissions(
+			uploadPortletRequest, className);
+		String[] guestPermissions = PortalUtil.getGuestPermissions(
+			uploadPortletRequest, className);
+
+		if (groupPermissions != null) {
+			serviceContext.setGroupPermissions(groupPermissions);
+		}
+
+		if (guestPermissions != null) {
+			serviceContext.setGuestPermissions(guestPermissions);
+		}
 
 		// Expando
 

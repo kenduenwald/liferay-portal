@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portlet.ratings.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.util.MethodCache;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 
 /**
- * The utility for the ratings entry remote service. This utility wraps {@link com.liferay.portlet.ratings.service.impl.RatingsEntryServiceImpl} and is the primary access point for service operations in application layer code running on a remote server.
- *
- * <p>
- * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
- * </p>
+ * Provides the remote service utility for RatingsEntry. This utility wraps
+ * {@link com.liferay.portlet.ratings.service.impl.RatingsEntryServiceImpl} and is the
+ * primary access point for service operations in application layer code running
+ * on a remote server. Methods of this service are expected to have security
+ * checks based on the propagated JAAS credentials because this service can be
+ * accessed remotely.
  *
  * @author Brian Wing Shun Chan
  * @see RatingsEntryService
@@ -31,6 +33,7 @@ import com.liferay.portal.kernel.util.ReferenceRegistry;
  * @see com.liferay.portlet.ratings.service.impl.RatingsEntryServiceImpl
  * @generated
  */
+@ProviderType
 public class RatingsEntryServiceUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -38,15 +41,31 @@ public class RatingsEntryServiceUtil {
 	 * Never modify this class directly. Add custom service methods to {@link com.liferay.portlet.ratings.service.impl.RatingsEntryServiceImpl} and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static void deleteEntry(java.lang.String className, long classPK)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().deleteEntry(className, classPK);
+	}
+
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	public static java.lang.String getBeanIdentifier() {
+		return getService().getBeanIdentifier();
+	}
+
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public static void setBeanIdentifier(java.lang.String beanIdentifier) {
+		getService().setBeanIdentifier(beanIdentifier);
 	}
 
 	public static com.liferay.portlet.ratings.model.RatingsEntry updateEntry(
 		java.lang.String className, long classPK, double score)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().updateEntry(className, classPK, score);
 	}
 
@@ -56,20 +75,16 @@ public class RatingsEntryServiceUtil {
 
 			ReferenceRegistry.registerReference(RatingsEntryServiceUtil.class,
 				"_service");
-			MethodCache.remove(RatingsEntryService.class);
 		}
 
 		return _service;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setService(RatingsEntryService service) {
-		MethodCache.remove(RatingsEntryService.class);
-
-		_service = service;
-
-		ReferenceRegistry.registerReference(RatingsEntryServiceUtil.class,
-			"_service");
-		MethodCache.remove(RatingsEntryService.class);
 	}
 
 	private static RatingsEntryService _service;

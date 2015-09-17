@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.documentlibrary.model.DLFileVersion;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,11 +37,36 @@ import java.util.Date;
  * @see DLFileVersion
  * @generated
  */
+@ProviderType
 public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof DLFileVersionCacheModel)) {
+			return false;
+		}
+
+		DLFileVersionCacheModel dlFileVersionCacheModel = (DLFileVersionCacheModel)obj;
+
+		if (fileVersionId == dlFileVersionCacheModel.fileVersionId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, fileVersionId);
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(49);
+		StringBundler sb = new StringBundler(57);
 
 		sb.append("{uuid=");
 		sb.append(uuid);
@@ -59,6 +90,10 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 		sb.append(folderId);
 		sb.append(", fileEntryId=");
 		sb.append(fileEntryId);
+		sb.append(", treePath=");
+		sb.append(treePath);
+		sb.append(", fileName=");
+		sb.append(fileName);
 		sb.append(", extension=");
 		sb.append(extension);
 		sb.append(", mimeType=");
@@ -77,6 +112,10 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 		sb.append(version);
 		sb.append(", size=");
 		sb.append(size);
+		sb.append(", checksum=");
+		sb.append(checksum);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
 		sb.append(", status=");
 		sb.append(status);
 		sb.append(", statusByUserId=");
@@ -90,6 +129,7 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 		return sb.toString();
 	}
 
+	@Override
 	public DLFileVersion toEntityModel() {
 		DLFileVersionImpl dlFileVersionImpl = new DLFileVersionImpl();
 
@@ -129,6 +169,20 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 		dlFileVersionImpl.setRepositoryId(repositoryId);
 		dlFileVersionImpl.setFolderId(folderId);
 		dlFileVersionImpl.setFileEntryId(fileEntryId);
+
+		if (treePath == null) {
+			dlFileVersionImpl.setTreePath(StringPool.BLANK);
+		}
+		else {
+			dlFileVersionImpl.setTreePath(treePath);
+		}
+
+		if (fileName == null) {
+			dlFileVersionImpl.setFileName(StringPool.BLANK);
+		}
+		else {
+			dlFileVersionImpl.setFileName(fileName);
+		}
 
 		if (extension == null) {
 			dlFileVersionImpl.setExtension(StringPool.BLANK);
@@ -182,6 +236,21 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 		}
 
 		dlFileVersionImpl.setSize(size);
+
+		if (checksum == null) {
+			dlFileVersionImpl.setChecksum(StringPool.BLANK);
+		}
+		else {
+			dlFileVersionImpl.setChecksum(checksum);
+		}
+
+		if (lastPublishDate == Long.MIN_VALUE) {
+			dlFileVersionImpl.setLastPublishDate(null);
+		}
+		else {
+			dlFileVersionImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
+
 		dlFileVersionImpl.setStatus(status);
 		dlFileVersionImpl.setStatusByUserId(statusByUserId);
 
@@ -204,6 +273,154 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 		return dlFileVersionImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
+		fileVersionId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		repositoryId = objectInput.readLong();
+		folderId = objectInput.readLong();
+		fileEntryId = objectInput.readLong();
+		treePath = objectInput.readUTF();
+		fileName = objectInput.readUTF();
+		extension = objectInput.readUTF();
+		mimeType = objectInput.readUTF();
+		title = objectInput.readUTF();
+		description = objectInput.readUTF();
+		changeLog = objectInput.readUTF();
+		extraSettings = objectInput.readUTF();
+		fileEntryTypeId = objectInput.readLong();
+		version = objectInput.readUTF();
+		size = objectInput.readLong();
+		checksum = objectInput.readUTF();
+		lastPublishDate = objectInput.readLong();
+		status = objectInput.readInt();
+		statusByUserId = objectInput.readLong();
+		statusByUserName = objectInput.readUTF();
+		statusDate = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		objectOutput.writeLong(fileVersionId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+		objectOutput.writeLong(repositoryId);
+		objectOutput.writeLong(folderId);
+		objectOutput.writeLong(fileEntryId);
+
+		if (treePath == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(treePath);
+		}
+
+		if (fileName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(fileName);
+		}
+
+		if (extension == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(extension);
+		}
+
+		if (mimeType == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(mimeType);
+		}
+
+		if (title == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(title);
+		}
+
+		if (description == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
+		if (changeLog == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(changeLog);
+		}
+
+		if (extraSettings == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(extraSettings);
+		}
+
+		objectOutput.writeLong(fileEntryTypeId);
+
+		if (version == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(version);
+		}
+
+		objectOutput.writeLong(size);
+
+		if (checksum == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(checksum);
+		}
+
+		objectOutput.writeLong(lastPublishDate);
+		objectOutput.writeInt(status);
+		objectOutput.writeLong(statusByUserId);
+
+		if (statusByUserName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(statusByUserName);
+		}
+
+		objectOutput.writeLong(statusDate);
+	}
+
 	public String uuid;
 	public long fileVersionId;
 	public long groupId;
@@ -215,6 +432,8 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 	public long repositoryId;
 	public long folderId;
 	public long fileEntryId;
+	public String treePath;
+	public String fileName;
 	public String extension;
 	public String mimeType;
 	public String title;
@@ -224,6 +443,8 @@ public class DLFileVersionCacheModel implements CacheModel<DLFileVersion>,
 	public long fileEntryTypeId;
 	public String version;
 	public long size;
+	public String checksum;
+	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;
 	public String statusByUserName;

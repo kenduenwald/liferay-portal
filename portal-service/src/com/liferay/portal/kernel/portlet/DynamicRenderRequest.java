@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -38,14 +38,14 @@ public class DynamicRenderRequest extends RenderRequestWrapper {
 		this(renderRequest, null, true);
 	}
 
+	public DynamicRenderRequest(RenderRequest renderRequest, boolean inherit) {
+		this(renderRequest, null, inherit);
+	}
+
 	public DynamicRenderRequest(
 		RenderRequest renderRequest, Map<String, String[]> params) {
 
 		this(renderRequest, params, true);
-	}
-
-	public DynamicRenderRequest(RenderRequest renderRequest, boolean inherit) {
-		this(renderRequest, null, inherit);
 	}
 
 	public DynamicRenderRequest(
@@ -54,7 +54,7 @@ public class DynamicRenderRequest extends RenderRequestWrapper {
 
 		super(renderRequest);
 
-		_params = new HashMap<String, String[]>();
+		_params = new HashMap<>();
 		_inherit = inherit;
 
 		if (params != null) {
@@ -99,7 +99,7 @@ public class DynamicRenderRequest extends RenderRequestWrapper {
 			return super.getParameter(name);
 		}
 
-		if ((values != null) && (values.length > 0)) {
+		if (ArrayUtil.isNotEmpty(values)) {
 			return values[0];
 		}
 		else {
@@ -109,7 +109,7 @@ public class DynamicRenderRequest extends RenderRequestWrapper {
 
 	@Override
 	public Map<String, String[]> getParameterMap() {
-		Map<String, String[]> map = new HashMap<String, String[]>();
+		Map<String, String[]> map = new HashMap<>();
 
 		if (_inherit) {
 			map.putAll(super.getParameterMap());
@@ -122,7 +122,7 @@ public class DynamicRenderRequest extends RenderRequestWrapper {
 
 	@Override
 	public Enumeration<String> getParameterNames() {
-		Set<String> names = new LinkedHashSet<String>();
+		Set<String> names = new LinkedHashSet<>();
 
 		if (_inherit) {
 			Enumeration<String> enu = super.getParameterNames();
@@ -156,7 +156,7 @@ public class DynamicRenderRequest extends RenderRequestWrapper {
 		_params.put(name, values);
 	}
 
-	private boolean _inherit;
-	private Map<String, String[]> _params;
+	private final boolean _inherit;
+	private final Map<String, String[]> _params;
 
 }

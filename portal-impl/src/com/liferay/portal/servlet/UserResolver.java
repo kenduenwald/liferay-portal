@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,7 +15,6 @@
 package com.liferay.portal.servlet;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.model.User;
@@ -30,33 +29,39 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class UserResolver {
 
-	public UserResolver(HttpServletRequest request)
-		throws PortalException, SystemException {
-
-		_companyId = ParamUtil.getLong(request, "companyId");
+	public UserResolver(HttpServletRequest request) throws PortalException {
+		long companyId = ParamUtil.getLong(request, "companyId");
+		User user = null;
 
 		String remoteUser = request.getRemoteUser();
+
+		long userId = GetterUtil.getLong(remoteUser);
+
+		if (userId == 0) {
+			remoteUser = null;
+		}
 
 		if (remoteUser != null) {
 			PrincipalThreadLocal.setName(remoteUser);
 
-			long userId = GetterUtil.getLong(remoteUser);
+			user = UserLocalServiceUtil.getUserById(userId);
 
-			_user = UserLocalServiceUtil.getUserById(userId);
-
-			if (_companyId == 0) {
-				_companyId = _user.getCompanyId();
+			if (companyId == 0) {
+				companyId = user.getCompanyId();
 			}
 		}
 		else {
-			if (_companyId == 0) {
-				_companyId = PortalInstances.getCompanyId(request);
+			if (companyId == 0) {
+				companyId = PortalInstances.getCompanyId(request);
 			}
 
-			if (_companyId != 0) {
-				_user = UserLocalServiceUtil.getDefaultUser(_companyId);
+			if (companyId != 0) {
+				user = UserLocalServiceUtil.getDefaultUser(companyId);
 			}
 		}
+
+		_companyId = companyId;
+		_user = user;
 	}
 
 	public long getCompanyId() {
@@ -67,7 +72,7 @@ public class UserResolver {
 		return _user;
 	}
 
-	private long _companyId;
-	private User _user;
+	private final long _companyId;
+	private final User _user;
 
 }

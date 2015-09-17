@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,10 +14,10 @@
 
 package com.liferay.portlet.documentlibrary.util;
 
-import com.liferay.portal.kernel.lar.PortletDataContext;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
 
 import java.io.InputStream;
 
@@ -37,15 +37,16 @@ public interface ImageProcessor {
 			Element fileEntryElement)
 		throws Exception;
 
-	public void generateImages(FileVersion fileVersion);
+	public void generateImages(
+			FileVersion sourceFileVersion, FileVersion destinationFileVersion)
+		throws Exception;
 
 	public Set<String> getImageMimeTypes();
 
 	public InputStream getPreviewAsStream(FileVersion fileVersion)
 		throws Exception;
 
-	public long getPreviewFileSize(FileVersion fileVersion)
-		throws Exception;
+	public long getPreviewFileSize(FileVersion fileVersion) throws Exception;
 
 	public String getPreviewType(FileVersion fileVersion);
 
@@ -76,6 +77,7 @@ public interface ImageProcessor {
 			String type)
 		throws Exception;
 
-	public void trigger(FileVersion fileVersion);
+	public void trigger(
+		FileVersion sourceFileVersion, FileVersion destinationFileVersion);
 
 }

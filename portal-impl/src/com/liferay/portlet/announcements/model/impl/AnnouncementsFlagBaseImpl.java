@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.announcements.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.announcements.model.AnnouncementsFlag;
 import com.liferay.portlet.announcements.service.AnnouncementsFlagLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.announcements.service.AnnouncementsFlagLocalServiceUt
  *
  * @author Brian Wing Shun Chan
  * @see AnnouncementsFlagImpl
- * @see com.liferay.portlet.announcements.model.AnnouncementsFlag
+ * @see AnnouncementsFlag
  * @generated
  */
+@ProviderType
 public abstract class AnnouncementsFlagBaseImpl
 	extends AnnouncementsFlagModelImpl implements AnnouncementsFlag {
 	/*
@@ -38,7 +39,8 @@ public abstract class AnnouncementsFlagBaseImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a announcements flag model instance should use the {@link AnnouncementsFlag} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			AnnouncementsFlagLocalServiceUtil.addAnnouncementsFlag(this);
 		}

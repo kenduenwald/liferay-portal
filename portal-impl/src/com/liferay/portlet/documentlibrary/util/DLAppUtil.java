@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.File;
-import java.io.InputStream;
 
 /**
  * @author Alexander Chow
@@ -40,29 +39,14 @@ public class DLAppUtil {
 	}
 
 	public static String getMimeType(
-		String sourceFileName, String mimeType, String title, File file,
-		InputStream is) {
+		String sourceFileName, String mimeType, String title, File file) {
 
 		if (Validator.isNull(mimeType) ||
-			!mimeType.equals(ContentTypes.APPLICATION_OCTET_STREAM)) {
+			mimeType.equals(ContentTypes.APPLICATION_OCTET_STREAM)) {
 
-			return mimeType;
-		}
+			String extension = getExtension(title, sourceFileName);
 
-		if (Validator.isNull(title)) {
-			title = sourceFileName;
-		}
-
-		String extension = getExtension(title, sourceFileName);
-
-		String titleWithExtension = DLUtil.getTitleWithExtension(
-			title, extension);
-
-		if (file != null) {
-			mimeType = MimeTypesUtil.getContentType(file, titleWithExtension);
-		}
-		else {
-			mimeType = MimeTypesUtil.getContentType(is, titleWithExtension);
+			mimeType = MimeTypesUtil.getContentType(file, "A." + extension);
 		}
 
 		return mimeType;

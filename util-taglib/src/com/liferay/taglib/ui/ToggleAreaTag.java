@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,9 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.kernel.servlet.taglib.FileAvailabilityUtil;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.taglib.FileAvailabilityUtil;
 import com.liferay.taglib.util.IncludeTag;
 
 import javax.servlet.http.HttpServletRequest;
@@ -32,14 +32,14 @@ public class ToggleAreaTag extends IncludeTag {
 	public int doEndTag() throws JspException {
 		try {
 			if (!FileAvailabilityUtil.isAvailable(
-					getServletContext(), getEndPage())) {
+					servletContext, getEndPage())) {
 
 				JspWriter jspWriter = pageContext.getOut();
 
 				jspWriter.write("</div>");
 			}
 			else {
-				include(_endPage);
+				include(_endPage, false);
 			}
 
 			return EVAL_PAGE;
@@ -82,7 +82,7 @@ public class ToggleAreaTag extends IncludeTag {
 			request.setAttribute("liferay-ui:toggle-area:stateVar", _stateVar);
 			request.setAttribute("liferay-ui:toggle-area:align", _align);
 
-			include(getStartPage());
+			include(getStartPage(), true);
 
 			return EVAL_BODY_INCLUDE;
 		}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -26,12 +26,28 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class InputFieldTag extends IncludeTag {
 
+	public void setAutoComplete(boolean autoComplete) {
+		_autoComplete = autoComplete;
+	}
+
+	public void setAutoFocus(boolean autoFocus) {
+		_autoFocus = autoFocus;
+	}
+
+	public void setAutoSize(boolean autoSize) {
+		_autoSize = autoSize;
+	}
+
 	public void setBean(Object bean) {
 		_bean = bean;
 	}
 
 	public void setCssClass(String cssClass) {
 		_cssClass = cssClass;
+	}
+
+	public void setDateTogglerCheckboxLabel(String dateTogglerCheckboxLabel) {
+		_dateTogglerCheckboxLabel = dateTogglerCheckboxLabel;
 	}
 
 	public void setDefaultLanguageId(String defaultLanguageId) {
@@ -84,8 +100,12 @@ public class InputFieldTag extends IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		_autoComplete = true;
+		_autoFocus = false;
+		_autoSize = false;
 		_bean = null;
 		_cssClass = null;
+		_dateTogglerCheckboxLabel = null;
 		_defaultLanguageId = null;
 		_defaultValue = null;
 		_disabled = false;
@@ -119,8 +139,18 @@ public class InputFieldTag extends IncludeTag {
 			id = fieldParam;
 		}
 
+		request.setAttribute(
+			"liferay-ui:input-field:autoComplete",
+			String.valueOf(_autoComplete));
+		request.setAttribute(
+			"liferay-ui:input-field:autoFocus", String.valueOf(_autoFocus));
+		request.setAttribute(
+			"liferay-ui:input-field:autoSize", String.valueOf(_autoSize));
 		request.setAttribute("liferay-ui:input-field:bean", _bean);
 		request.setAttribute("liferay-ui:input-field:cssClass", _cssClass);
+		request.setAttribute(
+			"liferay-ui:input-field:dateTogglerCheckboxLabel",
+			_dateTogglerCheckboxLabel);
 		request.setAttribute(
 			"liferay-ui:input-field:defaultLanguageId", _defaultLanguageId);
 		request.setAttribute(
@@ -143,8 +173,12 @@ public class InputFieldTag extends IncludeTag {
 
 	private static final String _PAGE = "/html/taglib/ui/input_field/page.jsp";
 
+	private boolean _autoComplete = true;
+	private boolean _autoFocus;
+	private boolean _autoSize;
 	private Object _bean;
 	private String _cssClass;
+	private String _dateTogglerCheckboxLabel;
 	private String _defaultLanguageId;
 	private Object _defaultValue;
 	private boolean _disabled;

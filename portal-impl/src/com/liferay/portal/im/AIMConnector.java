@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -51,10 +51,10 @@ public class AIMConnector {
 
 		ses.setSN(login);
 
-		Oscar oscar = new Oscar();
+		_oscar = new Oscar();
 
-		oscar.setSN(login);
-		oscar.setPassword(password);
+		_oscar.setPassword(password);
+		_oscar.setSN(login);
 
 		ses.init();
 	}
@@ -85,9 +85,9 @@ public class AIMConnector {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(AIMConnector.class);
+	private static final Log _log = LogFactoryUtil.getLog(AIMConnector.class);
 
-	private static AIMConnector _instance = new AIMConnector();
+	private static final AIMConnector _instance = new AIMConnector();
 
 	private AIMSession _aim;
 	private Oscar _oscar;

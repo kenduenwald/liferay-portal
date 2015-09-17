@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -34,17 +34,11 @@ import java.util.BitSet;
 public class URLCodec {
 
 	public static String decodeURL(String encodedURLString) {
-		return decodeURL(encodedURLString, StringPool.UTF8, false);
+		return decodeURL(encodedURLString, StringPool.UTF8);
 	}
 
 	public static String decodeURL(
-		String encodedURLString, boolean unescapeSpaces) {
-
-		return decodeURL(encodedURLString, StringPool.UTF8, unescapeSpaces);
-	}
-
-	public static String decodeURL(
-		String encodedURLString, String charsetName, boolean unescapeSpaces) {
+		String encodedURLString, String charsetName) {
 
 		if (encodedURLString == null) {
 			return null;
@@ -53,11 +47,6 @@ public class URLCodec {
 		if (encodedURLString.length() == 0) {
 			return StringPool.BLANK;
 		}
-
-		/*if (unescapeSpaces) {
-			encodedURLString = StringUtil.replace(
-				encodedURLString, "%20", StringPool.PLUS);
-		}*/
 
 		StringBuilder sb = null;
 
@@ -144,7 +133,7 @@ public class URLCodec {
 			return null;
 		}
 
-		if (rawURLString.length() == 0) {
+		if (rawURLString.isEmpty()) {
 			return StringPool.BLANK;
 		}
 
@@ -168,7 +157,7 @@ public class URLCodec {
 			if (sb == null) {
 				sb = new StringBuilder(rawURLString.length());
 
-				sb.append(rawURLString.substring(0, i));
+				sb.append(rawURLString, 0, i);
 			}
 
 			// The cases are ordered by frequency and not alphabetically
@@ -204,6 +193,11 @@ public class URLCodec {
 
 					continue;
 
+				case CharPool.PLUS :
+					sb.append("%2B");
+
+					continue;
+
 				case CharPool.COLON :
 					sb.append("%3A");
 
@@ -215,7 +209,8 @@ public class URLCodec {
 					continue;
 			}
 
-			CharBuffer charBuffer = _getRawCharBuffer(rawURLString, i);
+			CharBuffer charBuffer = _getRawCharBuffer(
+				rawURLString, i, escapeSpaces);
 
 			if (charsetEncoder == null) {
 				charsetEncoder = CharsetEncoderUtil.getCharsetEncoder(
@@ -252,11 +247,11 @@ public class URLCodec {
 	}
 
 	private static int _charToHex(char c) {
-		if ((c >= CharPool.LOWER_CASE_A) && (c <= CharPool.LOWER_CASE_Z)) {
+		if ((c >= CharPool.LOWER_CASE_A) && (c <= CharPool.LOWER_CASE_F)) {
 			return c - CharPool.LOWER_CASE_A + 10;
 		}
 
-		if ((c >= CharPool.UPPER_CASE_A) && (c <= CharPool.UPPER_CASE_Z)) {
+		if ((c >= CharPool.UPPER_CASE_A) && (c <= CharPool.UPPER_CASE_F)) {
 			return c - CharPool.UPPER_CASE_A + 10;
 		}
 
@@ -281,6 +276,11 @@ public class URLCodec {
 			}
 		}
 
+		if (encodedString.length() < (start + count * 3)) {
+			throw new IllegalArgumentException(
+				"Invalid URL encoding " + encodedString);
+		}
+
 		ByteBuffer byteBuffer = ByteBuffer.allocate(count);
 
 		for (int i = start; i < start + count * 3; i += 3) {
@@ -295,19 +295,24 @@ public class URLCodec {
 		return byteBuffer;
 	}
 
-	private static CharBuffer _getRawCharBuffer(String rawString, int start) {
+	private static CharBuffer _getRawCharBuffer(
+		String rawString, int start, boolean escapeSpaces) {
+
 		int count = 0;
 
 		for (int i = start; i < rawString.length(); i++) {
 			char rawChar = rawString.charAt(i);
 
-			if (!_validChars.get(rawChar)) {
+			if (!_validChars.get(rawChar) &&
+				(escapeSpaces || (rawChar != CharPool.SPACE))) {
+
 				count++;
 
 				if (Character.isHighSurrogate(rawChar)) {
 					if (((i + 1) < rawString.length()) &&
 						Character.isLowSurrogate(rawString.charAt(i + 1))) {
 
+						i++;
 						count++;
 					}
 				}
@@ -320,9 +325,9 @@ public class URLCodec {
 		return CharBuffer.wrap(rawString, start, start + count);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(URLCodec.class);
+	private static final Log _log = LogFactoryUtil.getLog(URLCodec.class);
 
-	private static BitSet _validChars = new BitSet(256);
+	private static final BitSet _validChars = new BitSet(256);
 
 	static {
 		for (int i = 'a'; i <= 'z'; i++) {

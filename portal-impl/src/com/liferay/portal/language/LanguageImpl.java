@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,43 +14,63 @@
 
 package com.liferay.portal.language;
 
+import com.liferay.portal.kernel.cache.MultiVMPool;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.PortalCacheMapSynchronizeUtil;
+import com.liferay.portal.kernel.cache.PortalCacheMapSynchronizeUtil.Synchronizer;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageWrapper;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.util.CookieKeys;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.model.Portlet;
+import com.liferay.portal.model.Group;
+import com.liferay.portal.model.GroupConstants;
 import com.liferay.portal.security.auth.CompanyThreadLocal;
-import com.liferay.portal.service.PortletLocalServiceUtil;
+import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.CookieKeys;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.WebKeys;
-import com.liferay.portlet.PortletConfigFactoryUtil;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.dependency.ServiceDependencyListener;
+import com.liferay.registry.dependency.ServiceDependencyManager;
+
+import java.io.Serializable;
 
 import java.text.MessageFormat;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.portlet.PortletConfig;
 import javax.portlet.PortletRequest;
@@ -58,97 +78,87 @@ import javax.portlet.PortletRequest;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Andrius Vitkauskas
+ * @author Eduardo Lundgren
  */
-public class LanguageImpl implements Language {
+@DoPrivileged
+public class LanguageImpl implements Language, Serializable {
 
-	public String format(Locale locale, String pattern, Object argument) {
-		return format(locale, pattern, new Object[] {argument}, true);
-	}
+	public void afterPropertiesSet() {
+		ServiceDependencyManager serviceDependencyManager =
+			new ServiceDependencyManager();
 
-	public String format(
-		Locale locale, String pattern, Object argument,
-		boolean translateArguments) {
+		serviceDependencyManager.addServiceDependencyListener(
+			new ServiceDependencyListener() {
 
-		return format(
-			locale, pattern, new Object[] {argument}, translateArguments);
-	}
+				@Override
+				public void dependenciesFulfilled() {
+					Registry registry = RegistryUtil.getRegistry();
 
-	public String format(Locale locale, String pattern, Object[] arguments) {
-		return format(locale, pattern, arguments, true);
-	}
+					MultiVMPool multiVMPool = registry.getService(
+						MultiVMPool.class);
 
-	public String format(
-		Locale locale, String pattern, Object[] arguments,
-		boolean translateArguments) {
+					_portalCache =
+						(PortalCache<Long, Serializable>)
+							multiVMPool.getPortalCache(
+								LanguageImpl.class.getName());
 
-		if (PropsValues.TRANSLATIONS_DISABLED) {
-			return pattern;
-		}
+					PortalCacheMapSynchronizeUtil.synchronize(
+						_portalCache, _companyLocalesBags,
+						new Synchronizer<Long, Serializable>() {
 
-		String value = null;
+							@Override
+							public void onSynchronize(
+								Map<? extends Long, ? extends Serializable> map,
+								Long key, Serializable value, int timeToLive) {
 
-		try {
-			pattern = get(locale, pattern);
+								_companyLocalesBags.remove(key);
+							}
 
-			if ((arguments != null) && (arguments.length > 0)) {
-				pattern = _escapePattern(pattern);
-
-				Object[] formattedArguments = new Object[arguments.length];
-
-				for (int i = 0; i < arguments.length; i++) {
-					if (translateArguments) {
-						formattedArguments[i] = get(
-							locale, arguments[i].toString());
-					}
-					else {
-						formattedArguments[i] = arguments[i];
-					}
+						});
 				}
 
-				value = MessageFormat.format(pattern, formattedArguments);
-			}
-			else {
-				value = pattern;
-			}
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
+				@Override
+				public void destroy() {
+				}
 
-		return value;
+			}
+		);
+
+		serviceDependencyManager.registerDependencies(MultiVMPool.class);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, LanguageWrapper argument) {
+		HttpServletRequest request, String pattern, LanguageWrapper argument) {
 
-		return format(
-			pageContext, pattern, new LanguageWrapper[] {argument}, true);
+		return format(request, pattern, new LanguageWrapper[] {argument}, true);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, LanguageWrapper argument,
+		HttpServletRequest request, String pattern, LanguageWrapper argument,
 		boolean translateArguments) {
 
 		return format(
-			pageContext, pattern, new LanguageWrapper[] {argument},
+			request, pattern, new LanguageWrapper[] {argument},
 			translateArguments);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, LanguageWrapper[] arguments) {
+		HttpServletRequest request, String pattern,
+		LanguageWrapper[] arguments) {
 
-		return format(pageContext, pattern, arguments, true);
+		return format(request, pattern, arguments, true);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, LanguageWrapper[] arguments,
+		HttpServletRequest request, String pattern, LanguageWrapper[] arguments,
 		boolean translateArguments) {
 
 		if (PropsValues.TRANSLATIONS_DISABLED) {
@@ -158,9 +168,9 @@ public class LanguageImpl implements Language {
 		String value = null;
 
 		try {
-			pattern = get(pageContext, pattern);
+			pattern = get(request, pattern);
 
-			if ((arguments != null) && (arguments.length > 0)) {
+			if (ArrayUtil.isNotEmpty(arguments)) {
 				pattern = _escapePattern(pattern);
 
 				Object[] formattedArguments = new Object[arguments.length];
@@ -169,7 +179,7 @@ public class LanguageImpl implements Language {
 					if (translateArguments) {
 						formattedArguments[i] =
 							arguments[i].getBefore() +
-							get(pageContext, arguments[i].getText()) +
+							get(request, arguments[i].getText()) +
 							arguments[i].getAfter();
 					}
 					else {
@@ -195,28 +205,32 @@ public class LanguageImpl implements Language {
 		return value;
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, Object argument) {
+		HttpServletRequest request, String pattern, Object argument) {
 
-		return format(pageContext, pattern, new Object[] {argument}, true);
+		return format(request, pattern, new Object[] {argument}, true);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, Object argument,
+		HttpServletRequest request, String pattern, Object argument,
 		boolean translateArguments) {
 
 		return format(
-			pageContext, pattern, new Object[] {argument}, translateArguments);
+			request, pattern, new Object[] {argument}, translateArguments);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, Object[] arguments) {
+		HttpServletRequest request, String pattern, Object[] arguments) {
 
-		return format(pageContext, pattern, arguments, true);
+		return format(request, pattern, arguments, true);
 	}
 
+	@Override
 	public String format(
-		PageContext pageContext, String pattern, Object[] arguments,
+		HttpServletRequest request, String pattern, Object[] arguments,
 		boolean translateArguments) {
 
 		if (PropsValues.TRANSLATIONS_DISABLED) {
@@ -226,9 +240,9 @@ public class LanguageImpl implements Language {
 		String value = null;
 
 		try {
-			pattern = get(pageContext, pattern);
+			pattern = get(request, pattern);
 
-			if ((arguments != null) && (arguments.length > 0)) {
+			if (ArrayUtil.isNotEmpty(arguments)) {
 				pattern = _escapePattern(pattern);
 
 				Object[] formattedArguments = new Object[arguments.length];
@@ -236,7 +250,7 @@ public class LanguageImpl implements Language {
 				for (int i = 0; i < arguments.length; i++) {
 					if (translateArguments) {
 						formattedArguments[i] = get(
-							pageContext, arguments[i].toString());
+							request, arguments[i].toString());
 					}
 					else {
 						formattedArguments[i] = arguments[i];
@@ -258,33 +272,36 @@ public class LanguageImpl implements Language {
 		return value;
 	}
 
+	@Override
 	public String format(
-		PortletConfig portletConfig, Locale locale, String pattern,
-		Object argument) {
+		Locale locale, String pattern, List<Object> arguments) {
+
+		return format(locale, pattern, arguments.toArray(), true);
+	}
+
+	@Override
+	public String format(Locale locale, String pattern, Object argument) {
+		return format(locale, pattern, new Object[] {argument}, true);
+	}
+
+	@Override
+	public String format(
+		Locale locale, String pattern, Object argument,
+		boolean translateArguments) {
 
 		return format(
-			portletConfig, locale, pattern, new Object[] {argument}, true);
+			locale, pattern, new Object[] {argument}, translateArguments);
 	}
 
-	public String format(
-		PortletConfig portletConfig, Locale locale, String pattern,
-		Object argument, boolean translateArguments) {
-
-		return format(
-			portletConfig, locale, pattern, new Object[] {argument},
-			translateArguments);
+	@Override
+	public String format(Locale locale, String pattern, Object[] arguments) {
+		return format(locale, pattern, arguments, true);
 	}
 
+	@Override
 	public String format(
-		PortletConfig portletConfig, Locale locale, String pattern,
-		Object[] arguments) {
-
-		return format(portletConfig, locale, pattern, arguments, true);
-	}
-
-	public String format(
-		PortletConfig portletConfig, Locale locale, String pattern,
-		Object[] arguments, boolean translateArguments) {
+		Locale locale, String pattern, Object[] arguments,
+		boolean translateArguments) {
 
 		if (PropsValues.TRANSLATIONS_DISABLED) {
 			return pattern;
@@ -293,9 +310,9 @@ public class LanguageImpl implements Language {
 		String value = null;
 
 		try {
-			pattern = get(portletConfig, locale, pattern);
+			pattern = get(locale, pattern);
 
-			if ((arguments != null) && (arguments.length > 0)) {
+			if (ArrayUtil.isNotEmpty(arguments)) {
 				pattern = _escapePattern(pattern);
 
 				Object[] formattedArguments = new Object[arguments.length];
@@ -325,22 +342,148 @@ public class LanguageImpl implements Language {
 		return value;
 	}
 
+	@Override
+	public String format(
+		ResourceBundle resourceBundle, String pattern, Object argument) {
+
+		return format(resourceBundle, pattern, new Object[] {argument}, true);
+	}
+
+	@Override
+	public String format(
+		ResourceBundle resourceBundle, String pattern, Object argument,
+		boolean translateArguments) {
+
+		return format(
+			resourceBundle, pattern, new Object[] {argument},
+			translateArguments);
+	}
+
+	@Override
+	public String format(
+		ResourceBundle resourceBundle, String pattern, Object[] arguments) {
+
+		return format(resourceBundle, pattern, arguments, true);
+	}
+
+	@Override
+	public String format(
+		ResourceBundle resourceBundle, String pattern, Object[] arguments,
+		boolean translateArguments) {
+
+		if (PropsValues.TRANSLATIONS_DISABLED) {
+			return pattern;
+		}
+
+		String value = null;
+
+		try {
+			pattern = get(resourceBundle, pattern);
+
+			if (ArrayUtil.isNotEmpty(arguments)) {
+				pattern = _escapePattern(pattern);
+
+				Object[] formattedArguments = new Object[arguments.length];
+
+				for (int i = 0; i < arguments.length; i++) {
+					if (translateArguments) {
+						formattedArguments[i] = get(
+							resourceBundle, arguments[i].toString());
+					}
+					else {
+						formattedArguments[i] = arguments[i];
+					}
+				}
+
+				value = MessageFormat.format(pattern, formattedArguments);
+			}
+			else {
+				value = pattern;
+			}
+		}
+		catch (Exception e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(e, e);
+			}
+		}
+
+		return value;
+	}
+
+	@Override
+	public String get(
+		HttpServletRequest request, ResourceBundle resourceBundle, String key) {
+
+		return get(request, resourceBundle, key, key);
+	}
+
+	@Override
+	public String get(
+		HttpServletRequest request, ResourceBundle resourceBundle, String key,
+		String defaultValue) {
+
+		String value = _get(resourceBundle, key);
+
+		if (value != null) {
+			return value;
+		}
+
+		return get(request, key, defaultValue);
+	}
+
+	@Override
+	public String get(HttpServletRequest request, String key) {
+		return get(request, key, key);
+	}
+
+	@Override
+	public String get(
+		HttpServletRequest request, String key, String defaultValue) {
+
+		if ((request == null) || (key == null)) {
+			return defaultValue;
+		}
+
+		PortletConfig portletConfig = (PortletConfig)request.getAttribute(
+			JavaConstants.JAVAX_PORTLET_CONFIG);
+
+		Locale locale = _getLocale(request);
+
+		if (portletConfig == null) {
+			return get(locale, key, defaultValue);
+		}
+
+		ResourceBundle resourceBundle = portletConfig.getResourceBundle(locale);
+
+		if (resourceBundle.containsKey(key)) {
+			return _get(resourceBundle, key);
+		}
+
+		return get(locale, key, defaultValue);
+	}
+
+	@Override
 	public String get(Locale locale, String key) {
 		return get(locale, key, key);
 	}
 
+	@Override
 	public String get(Locale locale, String key, String defaultValue) {
 		if (PropsValues.TRANSLATIONS_DISABLED) {
 			return key;
 		}
 
-		if (key == null) {
-			return null;
+		if ((locale == null) || (key == null)) {
+			return defaultValue;
 		}
 
 		String value = LanguageResources.getMessage(locale, key);
 
-		while ((value == null) || value.equals(defaultValue)) {
+		if (value != null) {
+			return LanguageResources.fixValue(value);
+		}
+
+		if (value == null) {
 			if ((key.length() > 0) &&
 				(key.charAt(key.length() - 1) == CharPool.CLOSE_BRACKET)) {
 
@@ -349,75 +492,87 @@ public class LanguageImpl implements Language {
 				if (pos != -1) {
 					key = key.substring(0, pos);
 
-					value = LanguageResources.getMessage(locale, key);
-
-					continue;
+					return get(locale, key, defaultValue);
 				}
 			}
-
-			break;
 		}
 
-		if (value == null) {
-			value = defaultValue;
-		}
-
-		return value;
+		return defaultValue;
 	}
 
-	public String get(PageContext pageContext, String key) {
-		return get(pageContext, key, key);
+	@Override
+	public String get(ResourceBundle resourceBundle, String key) {
+		return get(resourceBundle, key, key);
 	}
 
+	@Override
 	public String get(
-		PageContext pageContext, String key, String defaultValue) {
+		ResourceBundle resourceBundle, String key, String defaultValue) {
+
+		String value = _get(resourceBundle, key);
+
+		if (value != null) {
+			return value;
+		}
+
+		return defaultValue;
+	}
+
+	@Override
+	public Set<Locale> getAvailableLocales() {
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
+
+		return companyLocalesBag.getAvailableLocales();
+	}
+
+	@Override
+	public Set<Locale> getAvailableLocales(long groupId) {
+		if (groupId <= 0) {
+			return getAvailableLocales();
+		}
 
 		try {
-			return _get(pageContext, null, null, key, defaultValue);
+			if (isInheritLocales(groupId)) {
+				return getAvailableLocales();
+			}
 		}
 		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-
-			return defaultValue;
 		}
+
+		Map<String, Locale> groupLanguageIdLocalesMap =
+			_getGroupLanguageIdLocalesMap(groupId);
+
+		return new HashSet<>(groupLanguageIdLocalesMap.values());
 	}
 
-	public String get(PortletConfig portletConfig, Locale locale, String key) {
-		return get(portletConfig, locale, key, key);
+	@Override
+	public String getBCP47LanguageId(HttpServletRequest request) {
+		Locale locale = PortalUtil.getLocale(request);
+
+		return getBCP47LanguageId(locale);
 	}
 
-	public String get(
-		PortletConfig portletConfig, Locale locale, String key,
-		String defaultValue) {
-
-		try {
-			return _get(null, portletConfig, locale, key, defaultValue);
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-
-			return defaultValue;
-		}
+	@Override
+	public String getBCP47LanguageId(Locale locale) {
+		return LocaleUtil.toBCP47LanguageId(locale);
 	}
 
-	public Locale[] getAvailableLocales() {
-		return _getInstance()._locales;
+	@Override
+	public String getBCP47LanguageId(PortletRequest portletRequest) {
+		Locale locale = PortalUtil.getLocale(portletRequest);
+
+		return getBCP47LanguageId(locale);
 	}
 
-	public String getCharset(Locale locale) {
-		return _getInstance()._getCharset(locale);
-	}
-
+	@Override
 	public String getLanguageId(HttpServletRequest request) {
 		String languageId = ParamUtil.getString(request, "languageId");
 
 		if (Validator.isNotNull(languageId)) {
-			if (_localesMap.containsKey(languageId) ||
-				_charEncodings.containsKey(languageId)) {
+			CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
+
+			if (companyLocalesBag.containsLanguageCode(languageId) ||
+				companyLocalesBag.containsLanguageId(languageId)) {
 
 				return languageId;
 			}
@@ -428,10 +583,12 @@ public class LanguageImpl implements Language {
 		return getLanguageId(locale);
 	}
 
+	@Override
 	public String getLanguageId(Locale locale) {
 		return LocaleUtil.toLanguageId(locale);
 	}
 
+	@Override
 	public String getLanguageId(PortletRequest portletRequest) {
 		HttpServletRequest request = PortalUtil.getHttpServletRequest(
 			portletRequest);
@@ -439,14 +596,76 @@ public class LanguageImpl implements Language {
 		return getLanguageId(request);
 	}
 
-	public Locale getLocale(String languageCode) {
-		return _getInstance()._getLocale(languageCode);
+	@Override
+	public Locale getLocale(long groupId, String languageCode) {
+		Map<String, Locale> groupLanguageCodeLocalesMap =
+			_getGroupLanguageCodeLocalesMap(groupId);
+
+		return groupLanguageCodeLocalesMap.get(languageCode);
 	}
 
+	@Override
+	public Locale getLocale(String languageCode) {
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
+
+		return companyLocalesBag.getByLanguageCode(languageCode);
+	}
+
+	@Override
+	public Set<Locale> getSupportedLocales() {
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
+
+		return companyLocalesBag._supportedLocalesSet;
+	}
+
+	@Override
+	public String getTimeDescription(
+		HttpServletRequest request, long milliseconds) {
+
+		return getTimeDescription(request, milliseconds, false);
+	}
+
+	@Override
+	public String getTimeDescription(
+		HttpServletRequest request, long milliseconds, boolean approximate) {
+
+		String description = Time.getDescription(milliseconds, approximate);
+
+		String value = null;
+
+		try {
+			int pos = description.indexOf(CharPool.SPACE);
+
+			String x = description.substring(0, pos);
+
+			value = x.concat(StringPool.SPACE).concat(
+				get(
+					request,
+					StringUtil.toLowerCase(
+						description.substring(pos + 1, description.length()))));
+		}
+		catch (Exception e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(e, e);
+			}
+		}
+
+		return value;
+	}
+
+	@Override
+	public String getTimeDescription(
+		HttpServletRequest request, Long milliseconds) {
+
+		return getTimeDescription(request, milliseconds.longValue());
+	}
+
+	@Override
 	public String getTimeDescription(Locale locale, long milliseconds) {
 		return getTimeDescription(locale, milliseconds, false);
 	}
 
+	@Override
 	public String getTimeDescription(
 		Locale locale, long milliseconds, boolean approximate) {
 
@@ -462,8 +681,8 @@ public class LanguageImpl implements Language {
 			value = x.concat(StringPool.SPACE).concat(
 				get(
 					locale,
-					description.substring(
-						pos + 1, description.length()).toLowerCase()));
+					StringUtil.toLowerCase(
+						description.substring(pos + 1, description.length()))));
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
@@ -474,69 +693,134 @@ public class LanguageImpl implements Language {
 		return value;
 	}
 
+	@Override
 	public String getTimeDescription(Locale locale, Long milliseconds) {
 		return getTimeDescription(locale, milliseconds.longValue());
 	}
 
-	public String getTimeDescription(
-		PageContext pageContext, long milliseconds) {
-
-		return getTimeDescription(pageContext, milliseconds, false);
+	@Override
+	public void init() {
+		_companyLocalesBags.clear();
 	}
 
-	public String getTimeDescription(
-		PageContext pageContext, long milliseconds, boolean approximate) {
+	@Override
+	public boolean isAvailableLanguageCode(String languageCode) {
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
 
-		String description = Time.getDescription(milliseconds, approximate);
+		return companyLocalesBag.containsLanguageCode(languageCode);
+	}
 
-		String value = null;
+	@Override
+	public boolean isAvailableLocale(Locale locale) {
+		return isAvailableLocale(LocaleUtil.toLanguageId(locale));
+	}
+
+	@Override
+	public boolean isAvailableLocale(long groupId, Locale locale) {
+		return isAvailableLocale(groupId, LocaleUtil.toLanguageId(locale));
+	}
+
+	@Override
+	public boolean isAvailableLocale(long groupId, String languageId) {
+		if (groupId <= 0) {
+			return isAvailableLocale(languageId);
+		}
 
 		try {
-			int pos = description.indexOf(CharPool.SPACE);
-
-			String x = description.substring(0, pos);
-
-			value = x.concat(StringPool.SPACE).concat(
-				get(
-					pageContext,
-					description.substring(
-						pos + 1, description.length()).toLowerCase()));
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+			if (isInheritLocales(groupId)) {
+				return isAvailableLocale(languageId);
 			}
 		}
+		catch (Exception e) {
+		}
 
-		return value;
+		Map<String, Locale> groupLanguageIdLocalesMap =
+			_getGroupLanguageIdLocalesMap(groupId);
+
+		return groupLanguageIdLocalesMap.containsKey(languageId);
 	}
 
-	public String getTimeDescription(
-		PageContext pageContext, Long milliseconds) {
+	@Override
+	public boolean isAvailableLocale(String languageId) {
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
 
-		return getTimeDescription(pageContext, milliseconds.longValue());
+		return companyLocalesBag.containsLanguageId(languageId);
 	}
 
-	public void init() {
-		_instances.clear();
-	}
-
-	public boolean isAvailableLocale(Locale locale) {
-		return _getInstance()._localesSet.contains(locale);
-	}
-
+	@Override
 	public boolean isBetaLocale(Locale locale) {
-		return _getInstance()._localesBetaSet.contains(locale);
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
+
+		return companyLocalesBag.isBetaLocale(locale);
 	}
 
+	@Override
 	public boolean isDuplicateLanguageCode(String languageCode) {
-		return _getInstance()._duplicateLanguageCodes.contains(languageCode);
+		CompanyLocalesBag companyLocalesBag = _getCompanyLocalesBag();
+
+		return companyLocalesBag.isDuplicateLanguageCode(languageCode);
 	}
 
+	@Override
+	public boolean isInheritLocales(long groupId) throws PortalException {
+		Group group = GroupLocalServiceUtil.getGroup(groupId);
+
+		if (group.isStagingGroup()) {
+			group = group.getLiveGroup();
+		}
+
+		if (!group.isSite() || group.isCompany()) {
+			return true;
+		}
+
+		return GetterUtil.getBoolean(
+			group.getTypeSettingsProperty(
+				GroupConstants.TYPE_SETTINGS_KEY_INHERIT_LOCALES),
+			true);
+	}
+
+	@Override
+	public String process(
+		ResourceBundle resourceBundle, Locale locale, String content) {
+
+		StringBundler sb = new StringBundler();
+
+		Matcher matcher = _pattern.matcher(content);
+
+		int x = 0;
+
+		while (matcher.find()) {
+			int y = matcher.start(0);
+
+			String key = matcher.group(1);
+
+			sb.append(content.substring(x, y));
+			sb.append(StringPool.APOSTROPHE);
+
+			String value = get(resourceBundle, key);
+
+			sb.append(HtmlUtil.escapeJS(value));
+			sb.append(StringPool.APOSTROPHE);
+
+			x = matcher.end(0);
+		}
+
+		sb.append(content.substring(x));
+
+		return sb.toString();
+	}
+
+	@Override
+	public void resetAvailableGroupLocales(long groupId) {
+		_resetAvailableGroupLocales(groupId);
+	}
+
+	@Override
 	public void resetAvailableLocales(long companyId) {
-		 _resetAvailableLocales(companyId);
+		_resetAvailableLocales(companyId);
 	}
 
+	@Override
 	public void updateCookie(
 		HttpServletRequest request, HttpServletResponse response,
 		Locale locale) {
@@ -552,81 +836,65 @@ public class LanguageImpl implements Language {
 		CookieKeys.addCookie(request, response, languageIdCookie);
 	}
 
-	private static LanguageImpl _getInstance() {
+	private static CompanyLocalesBag _getCompanyLocalesBag() {
 		Long companyId = CompanyThreadLocal.getCompanyId();
 
-		LanguageImpl instance = _instances.get(companyId);
+		CompanyLocalesBag companyLocalesBag = _companyLocalesBags.get(
+			companyId);
 
-		if (instance == null) {
-			instance = new LanguageImpl(companyId);
+		if (companyLocalesBag == null) {
+			companyLocalesBag = new CompanyLocalesBag(companyId);
 
-			_instances.put(companyId, instance);
+			_companyLocalesBags.put(companyId, companyLocalesBag);
 		}
 
-		return instance;
+		return companyLocalesBag;
 	}
 
-	private LanguageImpl() {
-		this(CompanyConstants.SYSTEM);
-	}
+	private ObjectValuePair<Map<String, Locale>, Map<String, Locale>>
+		_createGroupLocales(long groupId) {
 
-	private LanguageImpl(long companyId) {
-		String[] localesArray = PropsValues.LOCALES;
+		String[] languageIds = PropsValues.LOCALES_ENABLED;
 
-		if (companyId != CompanyConstants.SYSTEM) {
-			try {
-				localesArray = PrefsPropsUtil.getStringArray(
-					companyId, PropsKeys.LOCALES, StringPool.COMMA,
-					PropsValues.LOCALES);
-			}
-			catch (SystemException se) {
-				localesArray = PropsValues.LOCALES;
-			}
+		try {
+			Group group = GroupLocalServiceUtil.getGroup(groupId);
+
+			UnicodeProperties typeSettingsProperties =
+				group.getTypeSettingsProperties();
+
+			languageIds = StringUtil.split(
+				typeSettingsProperties.getProperty(PropsKeys.LOCALES));
+		}
+		catch (Exception e) {
 		}
 
-		_charEncodings = new HashMap<String, String>();
-		_duplicateLanguageCodes = new HashSet<String>();
-		_locales = new Locale[localesArray.length];
-		_localesMap = new HashMap<String, Locale>(localesArray.length);
-		_localesSet = new HashSet<Locale>(localesArray.length);
+		Map<String, Locale> groupLanguageCodeLocalesMap = new HashMap<>();
+		Map<String, Locale> groupLanguageIdLocalesMap = new HashMap<>();
 
-		for (int i = 0; i < localesArray.length; i++) {
-			String languageId = localesArray[i];
+		for (String languageId : languageIds) {
+			Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 
-			Locale locale = LocaleUtil.fromLanguageId(languageId);
-
-			_charEncodings.put(locale.toString(), StringPool.UTF8);
-
-			String language = languageId;
+			String languageCode = languageId;
 
 			int pos = languageId.indexOf(CharPool.UNDERLINE);
 
 			if (pos > 0) {
-				language = languageId.substring(0, pos);
+				languageCode = languageId.substring(0, pos);
 			}
 
-			if (_localesMap.containsKey(language)) {
-				_duplicateLanguageCodes.add(language);
+			if (!groupLanguageCodeLocalesMap.containsKey(languageCode)) {
+				groupLanguageCodeLocalesMap.put(languageCode, locale);
 			}
 
-			_locales[i] = locale;
-
-			if (!_localesMap.containsKey(language)) {
-				_localesMap.put(language, locale);
-			}
-
-			_localesSet.add(locale);
+			groupLanguageIdLocalesMap.put(languageId, locale);
 		}
 
-		String[] localesBetaArray = PropsValues.LOCALES_BETA;
+		_groupLanguageCodeLocalesMapMap.put(
+			groupId, groupLanguageCodeLocalesMap);
+		_groupLanguageIdLocalesMap.put(groupId, groupLanguageIdLocalesMap);
 
-		_localesBetaSet = new HashSet<Locale>(localesBetaArray.length);
-
-		for (String languageId : localesBetaArray) {
-			Locale locale = LocaleUtil.fromLanguageId(languageId);
-
-			_localesBetaSet.add(locale);
-		}
+		return new ObjectValuePair<>(
+			groupLanguageCodeLocalesMap, groupLanguageIdLocalesMap);
 	}
 
 	private String _escapePattern(String pattern) {
@@ -634,130 +902,186 @@ public class LanguageImpl implements Language {
 			pattern, StringPool.APOSTROPHE, StringPool.DOUBLE_APOSTROPHE);
 	}
 
-	private String _get(
-			PageContext pageContext, PortletConfig portletConfig, Locale locale,
-			String key, String defaultValue)
-		throws Exception {
-
+	private String _get(ResourceBundle resourceBundle, String key) {
 		if (PropsValues.TRANSLATIONS_DISABLED) {
 			return key;
 		}
 
-		if (key == null) {
+		if ((resourceBundle == null) || (key == null)) {
 			return null;
 		}
 
-		String value = null;
+		String value = ResourceBundleUtil.getString(resourceBundle, key);
 
-		if (pageContext != null) {
-			HttpServletRequest request =
-				(HttpServletRequest)pageContext.getRequest();
+		if (value != null) {
+			return LanguageResources.fixValue(value);
+		}
 
-			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-				WebKeys.THEME_DISPLAY);
+		if ((key.length() > 0) &&
+			(key.charAt(key.length() - 1) == CharPool.CLOSE_BRACKET)) {
 
+			int pos = key.lastIndexOf(CharPool.OPEN_BRACKET);
+
+			if (pos != -1) {
+				key = key.substring(0, pos);
+
+				return _get(resourceBundle, key);
+			}
+		}
+
+		return null;
+	}
+
+	private Map<String, Locale> _getGroupLanguageCodeLocalesMap(long groupId) {
+		Map<String, Locale> groupLanguageCodeLocalesMap =
+			_groupLanguageCodeLocalesMapMap.get(groupId);
+
+		if (groupLanguageCodeLocalesMap == null) {
+			ObjectValuePair<Map<String, Locale>, Map<String, Locale>>
+				objectValuePair = _createGroupLocales(groupId);
+
+			groupLanguageCodeLocalesMap = objectValuePair.getKey();
+		}
+
+		return groupLanguageCodeLocalesMap;
+	}
+
+	private Map<String, Locale> _getGroupLanguageIdLocalesMap(long groupId) {
+		Map<String, Locale> groupLanguageIdLocalesMap =
+			_groupLanguageIdLocalesMap.get(groupId);
+
+		if (groupLanguageIdLocalesMap == null) {
+			ObjectValuePair<Map<String, Locale>, Map<String, Locale>>
+				objectValuePair = _createGroupLocales(groupId);
+
+			groupLanguageIdLocalesMap = objectValuePair.getValue();
+		}
+
+		return groupLanguageIdLocalesMap;
+	}
+
+	private Locale _getLocale(HttpServletRequest request) {
+		Locale locale = null;
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		if (themeDisplay != null) {
 			locale = themeDisplay.getLocale();
-
-			portletConfig = (PortletConfig)request.getAttribute(
-				JavaConstants.JAVAX_PORTLET_CONFIG);
 		}
+		else {
+			locale = request.getLocale();
 
-		if (portletConfig != null) {
-			ResourceBundle resourceBundle = portletConfig.getResourceBundle(
-				locale);
-
-			value = ResourceBundleUtil.getString(resourceBundle, key);
-
-			// LEP-7393
-
-			String portletName = portletConfig.getPortletName();
-
-			if (((value == null) || value.equals(defaultValue)) &&
-				portletName.equals(PortletKeys.PORTLET_CONFIGURATION)) {
-
-				value = _getPortletConfigurationValue(pageContext, locale, key);
-			}
-
-			if (value != null) {
-				value = LanguageResources.fixValue(value);
+			if (!isAvailableLocale(locale)) {
+				locale = LocaleUtil.getDefault();
 			}
 		}
 
-		if ((value == null) || value.equals(defaultValue)) {
-			value = LanguageResources.getMessage(locale, key);
-		}
-
-		if ((value == null) || value.equals(defaultValue)) {
-			if ((key.length() > 0) &&
-				(key.charAt(key.length() - 1) == CharPool.CLOSE_BRACKET)) {
-
-				int pos = key.lastIndexOf(CharPool.OPEN_BRACKET);
-
-				if (pos != -1) {
-					key = key.substring(0, pos);
-
-					return _get(
-						pageContext, portletConfig, locale, key, defaultValue);
-				}
-			}
-		}
-
-		if ((value == null) || value.equals(key)) {
-			value = defaultValue;
-		}
-
-		return value;
+		return locale;
 	}
 
-	private String _getCharset(Locale locale) {
-		return StringPool.UTF8;
-	}
-
-	private Locale _getLocale(String languageCode) {
-		return _localesMap.get(languageCode);
-	}
-
-	private String _getPortletConfigurationValue(
-			PageContext pageContext, Locale locale, String key)
-		throws Exception {
-
-		if (PropsValues.TRANSLATIONS_DISABLED) {
-			return key;
-		}
-
-		HttpServletRequest request =
-			(HttpServletRequest)pageContext.getRequest();
-
-		String portletResource = ParamUtil.getString(
-			request, "portletResource");
-
-		long companyId = PortalUtil.getCompanyId(request);
-
-		Portlet portlet = PortletLocalServiceUtil.getPortletById(
-			companyId, portletResource);
-
-		PortletConfig portletConfig = PortletConfigFactoryUtil.create(
-			portlet, pageContext.getServletContext());
-
-		ResourceBundle resourceBundle = portletConfig.getResourceBundle(locale);
-
-		return ResourceBundleUtil.getString(resourceBundle, key);
+	private void _resetAvailableGroupLocales(long groupId) {
+		_groupLanguageCodeLocalesMapMap.remove(groupId);
+		_groupLanguageIdLocalesMap.remove(groupId);
 	}
 
 	private void _resetAvailableLocales(long companyId) {
-		_instances.remove(companyId);
+		_portalCache.remove(companyId);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(LanguageImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(LanguageImpl.class);
 
-	private static Map<Long, LanguageImpl> _instances =
-		new ConcurrentHashMap<Long, LanguageImpl>();
+	private static final Map<Long, CompanyLocalesBag> _companyLocalesBags =
+		new ConcurrentHashMap<>();
+	private static final Pattern _pattern = Pattern.compile(
+		"Liferay\\.Language\\.get\\([\"']([^)]+)[\"']\\)");
+	private static PortalCache<Long, Serializable> _portalCache;
 
-	private Map<String, String> _charEncodings;
-	private Set<String> _duplicateLanguageCodes;
-	private Locale[] _locales;
-	private Set<Locale> _localesBetaSet;
-	private Map<String, Locale> _localesMap;
-	private Set<Locale> _localesSet;
+	private final Map<Long, Map<String, Locale>>
+		_groupLanguageCodeLocalesMapMap = new ConcurrentHashMap<>();
+	private final Map<Long, Map<String, Locale>> _groupLanguageIdLocalesMap =
+		new ConcurrentHashMap<>();
+
+	private static class CompanyLocalesBag implements Serializable {
+
+		public boolean containsLanguageCode(String languageCode) {
+			return _languageCodeLocalesMap.containsKey(languageCode);
+		}
+
+		public boolean containsLanguageId(String languageId) {
+			return _languageIdLocalesMap.containsKey(languageId);
+		}
+
+		public Set<Locale> getAvailableLocales() {
+			return new HashSet<>(_languageIdLocalesMap.values());
+		}
+
+		public Locale getByLanguageCode(String languageCode) {
+			return _languageCodeLocalesMap.get(languageCode);
+		}
+
+		public boolean isBetaLocale(Locale locale) {
+			return _localesBetaSet.contains(locale);
+		}
+
+		public boolean isDuplicateLanguageCode(String languageCode) {
+			return _duplicateLanguageCodes.contains(languageCode);
+		}
+
+		private CompanyLocalesBag(long companyId) {
+			String[] languageIds = PropsValues.LOCALES;
+
+			if (companyId != CompanyConstants.SYSTEM) {
+				try {
+					languageIds = PrefsPropsUtil.getStringArray(
+						companyId, PropsKeys.LOCALES, StringPool.COMMA,
+						PropsValues.LOCALES_ENABLED);
+				}
+				catch (SystemException se) {
+					languageIds = PropsValues.LOCALES_ENABLED;
+				}
+			}
+
+			for (String languageId : languageIds) {
+				Locale locale = LocaleUtil.fromLanguageId(languageId, false);
+
+				String languageCode = languageId;
+
+				int pos = languageId.indexOf(CharPool.UNDERLINE);
+
+				if (pos > 0) {
+					languageCode = languageId.substring(0, pos);
+				}
+
+				if (_languageCodeLocalesMap.containsKey(languageCode)) {
+					_duplicateLanguageCodes.add(languageCode);
+				}
+				else {
+					_languageCodeLocalesMap.put(languageCode, locale);
+				}
+
+				_languageIdLocalesMap.put(languageId, locale);
+			}
+
+			for (String languageId : PropsValues.LOCALES_BETA) {
+				_localesBetaSet.add(
+					LocaleUtil.fromLanguageId(languageId, false));
+			}
+
+			_supportedLocalesSet = new HashSet<>(
+				_languageIdLocalesMap.values());
+
+			_supportedLocalesSet.removeAll(_localesBetaSet);
+		}
+
+		private final Set<String> _duplicateLanguageCodes = new HashSet<>();
+		private final Map<String, Locale> _languageCodeLocalesMap =
+			new HashMap<>();
+		private final Map<String, Locale> _languageIdLocalesMap =
+			new HashMap<>();
+		private final Set<Locale> _localesBetaSet = new HashSet<>();
+		private final Set<Locale> _supportedLocalesSet;
+
+	}
 
 }

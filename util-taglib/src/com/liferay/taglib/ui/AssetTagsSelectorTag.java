@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,12 @@
 
 package com.liferay.taglib.ui;
 
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.model.Group;
+import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.taglib.util.IncludeTag;
 
@@ -26,6 +30,18 @@ import javax.servlet.http.HttpServletRequest;
  * @author Jorge Ferrer
  */
 public class AssetTagsSelectorTag extends IncludeTag {
+
+	public void setAddCallback(String addCallback) {
+		_addCallback = addCallback;
+	}
+
+	public void setAllowAddEntry(boolean allowAddEntry) {
+		_allowAddEntry = allowAddEntry;
+	}
+
+	public void setAutoFocus(boolean autoFocus) {
+		_autoFocus = autoFocus;
+	}
 
 	public void setClassName(String className) {
 		_className = className;
@@ -43,8 +59,8 @@ public class AssetTagsSelectorTag extends IncludeTag {
 		_curTags = curTags;
 	}
 
-	public void setFocus(boolean focus) {
-		_focus = focus;
+	public void setGroupIds(long[] groupIds) {
+		_groupIds = groupIds;
 	}
 
 	public void setHiddenInput(String hiddenInput) {
@@ -55,15 +71,28 @@ public class AssetTagsSelectorTag extends IncludeTag {
 		_id = id;
 	}
 
+	public void setIgnoreRequestValue(boolean ignoreRequestValue) {
+		_ignoreRequestValue = ignoreRequestValue;
+	}
+
+	public void setRemoveCallback(String removeCallback) {
+		_removeCallback = removeCallback;
+	}
+
 	@Override
 	protected void cleanUp() {
+		_addCallback = null;
+		_allowAddEntry = true;
+		_autoFocus = false;
 		_className = null;
 		_classPK = 0;
 		_contentCallback = null;
 		_curTags = null;
-		_focus = false;
+		_groupIds = null;
 		_hiddenInput = "assetTagNames";
 		_id = null;
+		_ignoreRequestValue = false;
+		_removeCallback = null;
 	}
 
 	@Override
@@ -82,6 +111,15 @@ public class AssetTagsSelectorTag extends IncludeTag {
 		}
 
 		request.setAttribute(
+			"liferay-ui:asset-tags-selector:addCallback",
+			String.valueOf(_addCallback));
+		request.setAttribute(
+			"liferay-ui:asset-tags-selector:allowAddEntry",
+			String.valueOf(_allowAddEntry));
+		request.setAttribute(
+			"liferay-ui:asset-tags-selector:autoFocus",
+			String.valueOf(_autoFocus));
+		request.setAttribute(
 			"liferay-ui:asset-tags-selector:className", _className);
 		request.setAttribute(
 			"liferay-ui:asset-tags-selector:classPK", String.valueOf(_classPK));
@@ -91,21 +129,57 @@ public class AssetTagsSelectorTag extends IncludeTag {
 		request.setAttribute(
 			"liferay-ui:asset-tags-selector:curTags", _curTags);
 		request.setAttribute(
-			"liferay-ui:asset-tags-selector:focus", String.valueOf(_focus));
+			"liferay-ui:asset-tags-selector:removeCallback",
+			String.valueOf(_removeCallback));
+
+		if (_groupIds == null) {
+			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+			long[] groupIds = null;
+
+			Group group = themeDisplay.getScopeGroup();
+
+			if (group.isLayout()) {
+				groupIds = new long[] {group.getParentGroupId()};
+			}
+			else {
+				groupIds = new long[] {group.getGroupId()};
+			}
+
+			if (group.getParentGroupId() != themeDisplay.getCompanyGroupId()) {
+				groupIds = ArrayUtil.append(
+					groupIds, themeDisplay.getCompanyGroupId());
+			}
+
+			_groupIds = groupIds;
+		}
+
+		request.setAttribute(
+			"liferay-ui:asset-tags-selector:groupIds", _groupIds);
+
 		request.setAttribute(
 			"liferay-ui:asset-tags-selector:hiddenInput", _hiddenInput);
 		request.setAttribute("liferay-ui:asset-tags-selector:id", id);
+		request.setAttribute(
+			"liferay-ui:asset-tags-selector:ignoreRequestValue",
+			_ignoreRequestValue);
 	}
 
 	private static final String _PAGE =
 		"/html/taglib/ui/asset_tags_selector/page.jsp";
 
+	private String _addCallback;
+	private boolean _allowAddEntry = true;
+	private boolean _autoFocus;
 	private String _className;
 	private long _classPK;
 	private String _contentCallback;
 	private String _curTags;
-	private boolean _focus;
+	private long[] _groupIds;
 	private String _hiddenInput = "assetTagNames";
 	private String _id;
+	private boolean _ignoreRequestValue;
+	private String _removeCallback;
 
 }

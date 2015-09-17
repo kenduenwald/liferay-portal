@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,107 +14,85 @@
 
 package com.liferay.portal.kernel.cache;
 
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.util.ProxyFactory;
+
 import java.io.Serializable;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Michael Young
  */
+@OSGiBeanProperties(service = SingleVMPoolUtil.class)
 public class SingleVMPoolUtil {
 
 	public static void clear() {
-		getSingleVMPool().clear();
-	}
-
-	public static void clear(String name) {
-		getSingleVMPool().clear(name);
+		_singleVMPool.clear();
 	}
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCache(String)}
 	 */
-	public static Object get(PortalCache portalCache, String key) {
-		return getSingleVMPool().get(portalCache, key);
-	}
+	@Deprecated
+	public static <K extends Serializable, V> PortalCache<K, V> getCache(
+		String portalCacheName) {
 
-	public static Object get(String name, String key) {
-		return getSingleVMPool().get(name, key);
-	}
-
-	public static PortalCache getCache(String name) {
-		return getSingleVMPool().getCache(name);
-	}
-
-	public static PortalCache getCache(String name, boolean blocking) {
-		return getSingleVMPool().getCache(name, blocking);
-	}
-
-	public static SingleVMPool getSingleVMPool() {
-		return _singleVMPool;
+		return getPortalCache(portalCacheName);
 	}
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCache(String,
+	 *             boolean)}
 	 */
-	public static void put(PortalCache portalCache, String key, Object value) {
-		getSingleVMPool().put(portalCache, key, value);
+	@Deprecated
+	public static <K extends Serializable, V> PortalCache<K, V> getCache(
+		String portalCacheName, boolean blocking) {
+
+		return getPortalCache(portalCacheName, blocking);
 	}
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCacheManager()}
 	 */
-	public static void put(
-		PortalCache portalCache, String key, Object value, int timeToLive) {
+	@Deprecated
+	public static <K extends Serializable, V> PortalCacheManager<K, V>
+		getCacheManager() {
 
-		getSingleVMPool().put(portalCache, key, value, timeToLive);
+		return getPortalCacheManager();
+	}
+
+	public static <K extends Serializable, V> PortalCache<K, V> getPortalCache(
+		String portalCacheName) {
+
+		return (PortalCache<K, V>)_singleVMPool.getPortalCache(portalCacheName);
+	}
+
+	public static <K extends Serializable, V> PortalCache<K, V> getPortalCache(
+		String portalCacheName, boolean blocking) {
+
+		return (PortalCache<K, V>)_singleVMPool.getPortalCache(
+			portalCacheName, blocking);
+	}
+
+	public static <K extends Serializable, V> PortalCacheManager<K, V>
+		getPortalCacheManager() {
+
+		return (PortalCacheManager<K, V>)_singleVMPool.getPortalCacheManager();
 	}
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #removePortalCache(String)}
 	 */
-	public static void put(
-		PortalCache portalCache, String key, Serializable value) {
-
-		getSingleVMPool().put(portalCache, key, value);
+	@Deprecated
+	public static void removeCache(String portalCacheName) {
+		removePortalCache(portalCacheName);
 	}
 
-	/**
-	 * @deprecated
-	 */
-	public static void put(
-		PortalCache portalCache, String key, Serializable value,
-		int timeToLive) {
-
-		getSingleVMPool().put(portalCache, key, value, timeToLive);
+	public static void removePortalCache(String portalCacheName) {
+		_singleVMPool.removePortalCache(portalCacheName);
 	}
 
-	public static void put(String name, String key, Object value) {
-		getSingleVMPool().put(name, key, value);
-	}
-
-	public static void put(String name, String key, Serializable value) {
-		getSingleVMPool().put(name, key, value);
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public static void remove(PortalCache portalCache, String key) {
-		getSingleVMPool().remove(portalCache, key);
-	}
-
-	public static void remove(String name, String key) {
-		getSingleVMPool().remove(name, key);
-	}
-
-	public static void removeCache(String name) {
-		getSingleVMPool().removeCache(name);
-	}
-
-	public void setSingleVMPool(SingleVMPool singleVMPool) {
-		_singleVMPool = singleVMPool;
-	}
-
-	private static SingleVMPool _singleVMPool;
+	private static final SingleVMPool _singleVMPool =
+		ProxyFactory.newServiceTrackedInstance(SingleVMPool.class);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.expando.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.expando.model.ExpandoValue;
 import com.liferay.portlet.expando.service.ExpandoValueLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.expando.service.ExpandoValueLocalServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see ExpandoValueImpl
- * @see com.liferay.portlet.expando.model.ExpandoValue
+ * @see ExpandoValue
  * @generated
  */
+@ProviderType
 public abstract class ExpandoValueBaseImpl extends ExpandoValueModelImpl
 	implements ExpandoValue {
 	/*
@@ -38,7 +39,8 @@ public abstract class ExpandoValueBaseImpl extends ExpandoValueModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a expando value model instance should use the {@link ExpandoValue} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			ExpandoValueLocalServiceUtil.addExpandoValue(this);
 		}

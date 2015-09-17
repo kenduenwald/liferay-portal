@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,12 @@
 
 package com.liferay.portal.kernel.process;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.process.ProcessConfig.Builder;
 import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.ServerDetector;
@@ -26,11 +29,19 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 
 import java.io.File;
+import java.io.FileFilter;
 
 import java.lang.reflect.Method;
 
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLConnection;
+
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -38,14 +49,66 @@ import javax.servlet.ServletException;
 /**
  * @author Shuyang Zhou
  */
+@ProviderType
 public class ClassPathUtil {
+
+	public static Set<URL> getClassPathURLs(ClassLoader classLoader) {
+		Set<URL> urls = new LinkedHashSet<>();
+
+		while (classLoader != null) {
+			if (classLoader instanceof URLClassLoader) {
+				URLClassLoader urlClassLoader = (URLClassLoader)classLoader;
+
+				urls.addAll(Arrays.asList(urlClassLoader.getURLs()));
+			}
+
+			classLoader = classLoader.getParent();
+		}
+
+		return urls;
+	}
+
+	public static URL[] getClassPathURLs(String classPath)
+		throws MalformedURLException {
+
+		String[] paths = StringUtil.split(classPath, File.pathSeparatorChar);
+
+		Set<URL> urls = new LinkedHashSet<>();
+
+		for (String path : paths) {
+			File file = new File(path);
+
+			URI uri = file.toURI();
+
+			urls.add(uri.toURL());
+		}
+
+		return urls.toArray(new URL[urls.size()]);
+	}
 
 	public static String getGlobalClassPath() {
 		return _globalClassPath;
 	}
 
+	public static String getJVMClassPath(boolean includeBootClassPath) {
+		String jvmClassPath = System.getProperty("java.class.path");
+
+		if (includeBootClassPath) {
+			String bootClassPath = System.getProperty("sun.boot.class.path");
+
+			jvmClassPath = jvmClassPath.concat(File.pathSeparator).concat(
+				bootClassPath);
+		}
+
+		return jvmClassPath;
+	}
+
 	public static String getPortalClassPath() {
 		return _portalClassPath;
+	}
+
+	public static ProcessConfig getPortalProcessConfig() {
+		return _portalProcessConfig;
 	}
 
 	public static void initializeClassPaths(ServletContext servletContext) {
@@ -57,7 +120,7 @@ public class ClassPathUtil {
 			return;
 		}
 
-		StringBundler sb = new StringBundler(7);
+		StringBundler sb = new StringBundler(8);
 
 		String appServerGlobalClassPath = _buildClassPath(
 			classLoader, ServletException.class.getName());
@@ -77,9 +140,19 @@ public class ClassPathUtil {
 			_buildClassPath(
 				classLoader, "com.liferay.portal.servlet.MainServlet"));
 		sb.append(File.pathSeparator);
-		sb.append(servletContext.getRealPath("").concat("/WEB-INF/classes"));
+		sb.append(servletContext.getRealPath(""));
+		sb.append("/WEB-INF/classes");
 
 		_portalClassPath = sb.toString();
+
+		Builder builder = new Builder();
+
+		builder.setArguments(Arrays.asList("-Djava.awt.headless=true"));
+		builder.setBootstrapClassPath(_globalClassPath);
+		builder.setReactClassLoader(PortalClassLoaderUtil.getClassLoader());
+		builder.setRuntimeClassPath(_portalClassPath);
+
+		_portalProcessConfig = builder.build();
 	}
 
 	private static String _buildClassPath(
@@ -134,7 +207,7 @@ public class ClassPathUtil {
 			path = "file:".concat(path);
 		}
 
-		if (ServerDetector.isJBoss() &&
+		if ((ServerDetector.isJBoss() || ServerDetector.isWildfly()) &&
 			(protocol.equals("vfs") || protocol.equals("vfsfile"))) {
 
 			int pos = path.indexOf(".jar/");
@@ -196,7 +269,27 @@ public class ClassPathUtil {
 			return StringPool.BLANK;
 		}
 
-		File[] files = dir.listFiles();
+		File[] files = dir.listFiles(
+			new FileFilter() {
+
+				@Override
+				public boolean accept(File file) {
+					if (file.isDirectory()) {
+						return false;
+					}
+
+					String name = file.getName();
+
+					return name.endsWith(".jar");
+				}
+
+			});
+
+		if (files == null) {
+			return StringPool.BLANK;
+		}
+
+		Arrays.sort(files);
 
 		StringBundler sb = new StringBundler(files.length * 2);
 
@@ -210,9 +303,10 @@ public class ClassPathUtil {
 		return sb.toString();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ClassPathUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(ClassPathUtil.class);
 
 	private static String _globalClassPath;
 	private static String _portalClassPath;
+	private static ProcessConfig _portalProcessConfig;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,7 +32,7 @@ public class PortletTitleComparator
 	implements Comparator<Portlet>, Serializable {
 
 	public PortletTitleComparator(Locale locale) {
-		_locale = locale;
+		this(null, locale);
 	}
 
 	public PortletTitleComparator(
@@ -42,6 +42,7 @@ public class PortletTitleComparator
 		_locale = locale;
 	}
 
+	@Override
 	public int compare(Portlet portlet1, Portlet portlet2) {
 		String portletTitle1 = StringPool.BLANK;
 		String portletTitle2 = StringPool.BLANK;
@@ -60,7 +61,7 @@ public class PortletTitleComparator
 		return portletTitle1.compareTo(portletTitle2);
 	}
 
-	private Locale _locale;
-	private ServletContext _servletContext;
+	private final Locale _locale;
+	private final ServletContext _servletContext;
 
 }

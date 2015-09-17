@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portal.kernel.parsers.bbcode;
 
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
+
 /**
  * @author Iliyan Peychev
  * @author Miguel Pastor
  */
 public class BBCodeTranslatorUtil {
 
-	public static final String NEW_THREAD_URL = "${newThreadURL}";
-
 	public static BBCodeTranslator getBBCodeTranslator() {
-		return _bbCodeTranslator;
+		return _instance._getBBCodeTranslator();
 	}
 
 	public static String[] getEmoticonDescriptions() {
@@ -50,10 +52,22 @@ public class BBCodeTranslatorUtil {
 		return getBBCodeTranslator().parse(message);
 	}
 
-	public void setBBCodeTranslator(BBCodeTranslator bbCodeTranslator) {
-		_bbCodeTranslator = bbCodeTranslator;
+	private BBCodeTranslatorUtil() {
+		Registry registry = RegistryUtil.getRegistry();
+
+		_serviceTracker = registry.trackServices(BBCodeTranslator.class);
+
+		_serviceTracker.open();
 	}
 
-	private static BBCodeTranslator _bbCodeTranslator;
+	private BBCodeTranslator _getBBCodeTranslator() {
+		return _serviceTracker.getService();
+	}
+
+	private static final BBCodeTranslatorUtil _instance =
+		new BBCodeTranslatorUtil();
+
+	private final ServiceTracker<BBCodeTranslator, BBCodeTranslator>
+		_serviceTracker;
 
 }

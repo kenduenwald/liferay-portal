@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,6 +20,8 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
@@ -40,8 +42,10 @@ import java.util.List;
 /**
  * @author Raymond Augé
  */
+@DoPrivileged
 public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 
+	@Override
 	public void addAttributes(Document document, ExpandoBridge expandoBridge) {
 		if (expandoBridge == null) {
 			return;
@@ -55,13 +59,15 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 		}
 	}
 
+	@Override
 	public String encodeFieldName(String columnName) {
 		StringBundler sb = new StringBundler(3);
 
 		sb.append(FIELD_NAMESPACE);
-		sb.append(StringPool.FORWARD_SLASH);
-		sb.append(ExpandoTableConstants.DEFAULT_TABLE_NAME.toLowerCase());
-		sb.append(StringPool.FORWARD_SLASH);
+		sb.append(StringPool.DOUBLE_UNDERLINE);
+		sb.append(
+			StringUtil.toLowerCase(ExpandoTableConstants.DEFAULT_TABLE_NAME));
+		sb.append(StringPool.DOUBLE_UNDERLINE);
 		sb.append(columnName);
 
 		return sb.toString();
@@ -70,7 +76,7 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 	protected void addAttribute(
 			Document document, ExpandoColumn expandoColumn,
 			List<ExpandoValue> expandoValues)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		String fieldName = encodeFieldName(expandoColumn.getName());
 
@@ -158,6 +164,19 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 				document.addKeyword(fieldName, new long[0]);
 			}
 		}
+		else if (type == ExpandoColumnConstants.NUMBER) {
+			document.addKeyword(fieldName, expandoValue.getNumber().toString());
+		}
+		else if (type == ExpandoColumnConstants.NUMBER_ARRAY) {
+			if (!defaultValue) {
+				document.addKeyword(
+					fieldName,
+					ArrayUtil.toStringArray(expandoValue.getNumberArray()));
+			}
+			else {
+				document.addKeyword(fieldName, new long[0]);
+			}
+		}
 		else if (type == ExpandoColumnConstants.SHORT) {
 			document.addKeyword(fieldName, expandoValue.getShort());
 		}
@@ -199,11 +218,22 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 				}
 			}
 		}
+		else if (type == ExpandoColumnConstants.STRING_LOCALIZED) {
+			if (!defaultValue) {
+				if (indexType == ExpandoColumnConstants.INDEX_TYPE_KEYWORD) {
+					document.addLocalizedKeyword(
+						fieldName, expandoValue.getStringMap());
+				}
+				else {
+					document.addLocalizedText(
+						fieldName, expandoValue.getStringMap());
+				}
+			}
+		}
 	}
 
 	protected void doAddAttributes(
-			Document document, ExpandoBridge expandoBridge)
-		throws SystemException {
+		Document document, ExpandoBridge expandoBridge) {
 
 		List<ExpandoColumn> expandoColumns =
 			ExpandoColumnLocalServiceUtil.getDefaultTableColumns(
@@ -213,7 +243,7 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 			return;
 		}
 
-		List<ExpandoColumn> indexedColumns = new ArrayList<ExpandoColumn>();
+		List<ExpandoColumn> indexedColumns = new ArrayList<>();
 
 		for (ExpandoColumn expandoColumn : expandoColumns) {
 			UnicodeProperties properties =
@@ -250,7 +280,7 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 
 	protected static final String FIELD_NAMESPACE = "expando";
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		ExpandoBridgeIndexerImpl.class);
 
 }

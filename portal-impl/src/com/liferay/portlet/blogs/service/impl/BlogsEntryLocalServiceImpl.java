@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,18 +14,35 @@
 
 package com.liferay.portlet.blogs.service.impl;
 
+import com.liferay.portal.kernel.comment.CommentManager;
+import com.liferay.portal.kernel.comment.CommentManagerUtil;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.search.Indexer;
-import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.repository.capabilities.TemporaryFileEntriesCapability;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector;
+import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.social.SocialActivityManagerUtil;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -33,39 +50,51 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TempFileEntryUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
-import com.liferay.portal.kernel.workflow.WorkflowInstance;
-import com.liferay.portal.kernel.workflow.WorkflowInstanceManagerUtil;
 import com.liferay.portal.model.Group;
+import com.liferay.portal.model.ModelHintsUtil;
+import com.liferay.portal.model.Repository;
 import com.liferay.portal.model.ResourceConstants;
+import com.liferay.portal.model.SystemEventConstants;
 import com.liferay.portal.model.User;
-import com.liferay.portal.model.WorkflowInstanceLink;
+import com.liferay.portal.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.service.ServiceContext;
-import com.liferay.portal.service.ServiceContextUtil;
+import com.liferay.portal.service.permission.ModelPermissions;
+import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portal.util.GroupSubscriptionCheckSubscriptionSender;
+import com.liferay.portal.util.LayoutURLUtil;
 import com.liferay.portal.util.Portal;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.SubscriptionSender;
 import com.liferay.portlet.asset.model.AssetEntry;
 import com.liferay.portlet.asset.model.AssetLinkConstants;
+import com.liferay.portlet.blogs.BlogsEntryAttachmentFileEntryHelper;
+import com.liferay.portlet.blogs.BlogsGroupServiceSettings;
 import com.liferay.portlet.blogs.EntryContentException;
 import com.liferay.portlet.blogs.EntryDisplayDateException;
 import com.liferay.portlet.blogs.EntrySmallImageNameException;
 import com.liferay.portlet.blogs.EntrySmallImageSizeException;
 import com.liferay.portlet.blogs.EntryTitleException;
+import com.liferay.portlet.blogs.constants.BlogsConstants;
 import com.liferay.portlet.blogs.model.BlogsEntry;
 import com.liferay.portlet.blogs.service.base.BlogsEntryLocalServiceBaseImpl;
+import com.liferay.portlet.blogs.service.permission.BlogsPermission;
 import com.liferay.portlet.blogs.social.BlogsActivityKeys;
 import com.liferay.portlet.blogs.util.BlogsUtil;
 import com.liferay.portlet.blogs.util.LinkbackProducerUtil;
 import com.liferay.portlet.blogs.util.comparator.EntryDisplayDateComparator;
+import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
 import com.liferay.portlet.social.model.SocialActivityConstants;
 import com.liferay.portlet.trash.model.TrashEntry;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -74,18 +103,21 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import javax.portlet.PortletPreferences;
+import javax.portlet.PortletRequest;
+import javax.portlet.PortletURL;
+
+import javax.servlet.http.HttpServletRequest;
 
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.StartTag;
 
 /**
+ * Provides the local service for accessing, adding, checking, deleting,
+ * subscription handling of, trash handling of, and updating blog entries.
+ *
  * @author Brian Wing Shun Chan
  * @author Wilson S. Man
  * @author Raymond Augé
@@ -95,6 +127,45 @@ import net.htmlparser.jericho.StartTag;
  */
 public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
+	@Override
+	public Folder addAttachmentsFolder(long userId, long groupId)
+		throws PortalException {
+
+		return doAddFolder(userId, groupId, BlogsConstants.SERVICE_NAME);
+	}
+
+	@Override
+	public BlogsEntry addEntry(
+			long userId, String title, String content, Date displayDate,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return addEntry(
+			userId, title, StringPool.BLANK, StringPool.BLANK, content,
+			displayDate, true, true, new String[0], StringPool.BLANK, null,
+			null, serviceContext);
+	}
+
+	@Override
+	public BlogsEntry addEntry(
+			long userId, String title, String content,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return addEntry(
+			userId, title, StringPool.BLANK, StringPool.BLANK, content,
+			new Date(), true, true, new String[0], StringPool.BLANK, null, null,
+			serviceContext);
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #addEntry(long, String,
+	 *             String, String, String, int, int, int, int, int, boolean,
+	 *             boolean, String[], String, ImageSelector, ImageSelector,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
+	@Override
 	public BlogsEntry addEntry(
 			long userId, String title, String description, String content,
 			int displayDateMonth, int displayDateDay, int displayDateYear,
@@ -102,35 +173,51 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			boolean allowTrackbacks, String[] trackbacks, boolean smallImage,
 			String smallImageURL, String smallImageFileName,
 			InputStream smallImageInputStream, ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
+
+		ImageSelector coverImageImageSelector = null;
+		ImageSelector smallImageImageSelector = null;
+
+		if (smallImage && Validator.isNotNull(smallImageFileName) &&
+			(smallImageInputStream != null)) {
+
+			FileEntry tempFileEntry = TempFileEntryUtil.addTempFileEntry(
+				serviceContext.getScopeGroupId(), userId,
+				BlogsEntry.class.getName(), smallImageFileName,
+				smallImageInputStream,
+				MimeTypesUtil.getContentType(smallImageFileName));
+
+			smallImageImageSelector = new ImageSelector(
+				tempFileEntry.getFileEntryId(), smallImageURL, null);
+		}
+
+		return addEntry(
+			userId, title, StringPool.BLANK, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			StringPool.BLANK, coverImageImageSelector, smallImageImageSelector,
+			serviceContext);
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public BlogsEntry addEntry(
+			long userId, String title, String subtitle, String description,
+			String content, Date displayDate, boolean allowPingbacks,
+			boolean allowTrackbacks, String[] trackbacks,
+			String coverImageCaption, ImageSelector coverImageImageSelector,
+			ImageSelector smallImageImageSelector,
+			ServiceContext serviceContext)
+		throws PortalException {
 
 		// Entry
 
 		User user = userPersistence.findByPrimaryKey(userId);
 		long groupId = serviceContext.getScopeGroupId();
 
-		Date displayDate = PortalUtil.getDate(
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, user.getTimeZone(),
-			new EntryDisplayDateException());
-
-		byte[] smallImageBytes = null;
-
-		try {
-			if ((smallImageInputStream != null) && smallImage) {
-				smallImageBytes = FileUtil.getBytes(smallImageInputStream);
-			}
-		}
-		catch (IOException ioe) {
-		}
-
-		Date now = new Date();
-
-		validate(
-			title, content, smallImage, smallImageURL, smallImageFileName,
-			smallImageBytes);
-
 		long entryId = counterLocalService.increment();
+
+		validate(title, content);
 
 		BlogsEntry entry = blogsEntryPersistence.create(entryId);
 
@@ -139,9 +226,8 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		entry.setCompanyId(user.getCompanyId());
 		entry.setUserId(user.getUserId());
 		entry.setUserName(user.getFullName());
-		entry.setCreateDate(serviceContext.getCreateDate(now));
-		entry.setModifiedDate(serviceContext.getModifiedDate(now));
 		entry.setTitle(title);
+		entry.setSubtitle(subtitle);
 		entry.setUrlTitle(
 			getUniqueUrlTitle(entryId, title, null, serviceContext));
 		entry.setDescription(description);
@@ -149,14 +235,12 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		entry.setDisplayDate(displayDate);
 		entry.setAllowPingbacks(allowPingbacks);
 		entry.setAllowTrackbacks(allowTrackbacks);
-		entry.setSmallImage(smallImage);
-		entry.setSmallImageId(counterLocalService.increment());
-		entry.setSmallImageURL(smallImageURL);
 		entry.setStatus(WorkflowConstants.STATUS_DRAFT);
-		entry.setStatusDate(serviceContext.getModifiedDate(now));
+		entry.setStatusByUserId(userId);
+		entry.setStatusDate(serviceContext.getModifiedDate(null));
 		entry.setExpandoBridgeAttributes(serviceContext);
 
-		blogsEntryPersistence.update(entry, false);
+		blogsEntryPersistence.update(entry);
 
 		// Resources
 
@@ -168,14 +252,8 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 				serviceContext.isAddGuestPermissions());
 		}
 		else {
-			addEntryResources(
-				entry, serviceContext.getGroupPermissions(),
-				serviceContext.getGuestPermissions());
+			addEntryResources(entry, serviceContext.getModelPermissions());
 		}
-
-		// Small image
-
-		saveImages(smallImage, entry.getSmallImageId(), smallImageBytes);
 
 		// Asset
 
@@ -184,35 +262,115 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			serviceContext.getAssetTagNames(),
 			serviceContext.getAssetLinkEntryIds());
 
-		// Message boards
+		// Comment
 
-		if (PropsValues.BLOGS_ENTRY_COMMENTS_ENABLED) {
-			mbMessageLocalService.addDiscussionMessage(
-				userId, entry.getUserName(), groupId,
-				BlogsEntry.class.getName(), entryId,
-				WorkflowConstants.ACTION_PUBLISH);
+		addDiscussion(entry, userId, groupId);
+
+		// Images
+
+		long coverImageFileEntryId = 0;
+		String coverImageURL = null;
+
+		if (coverImageImageSelector != null) {
+			coverImageFileEntryId = coverImageImageSelector.getImageId();
+			coverImageURL = coverImageImageSelector.getImageURL();
 		}
+
+		if (coverImageFileEntryId != 0) {
+			coverImageFileEntryId = addCoverImage(
+				userId, groupId, entryId, coverImageImageSelector);
+		}
+
+		boolean smallImage = false;
+		long smallImageFileEntryId = 0;
+		String smallImageURL = null;
+
+		if (smallImageImageSelector != null) {
+			smallImage = !smallImageImageSelector.isRemoveSmallImage();
+			smallImageFileEntryId = smallImageImageSelector.getImageId();
+			smallImageURL = smallImageImageSelector.getImageURL();
+		}
+
+		FileEntry tempSmallImageFileEntry = null;
+
+		if (smallImageFileEntryId != 0) {
+			tempSmallImageFileEntry =
+				PortletFileRepositoryUtil.getPortletFileEntry(
+					smallImageFileEntryId);
+
+			smallImageFileEntryId = addSmallImageFileEntry(
+				userId, groupId, entryId, tempSmallImageFileEntry.getMimeType(),
+				tempSmallImageFileEntry.getTitle(),
+				tempSmallImageFileEntry.getContentStream());
+		}
+
+		validate(smallImageFileEntryId);
+
+		entry.setCoverImageCaption(coverImageCaption);
+		entry.setCoverImageFileEntryId(coverImageFileEntryId);
+		entry.setCoverImageURL(coverImageURL);
+		entry.setSmallImage(smallImage);
+		entry.setSmallImageFileEntryId(smallImageFileEntryId);
+		entry.setSmallImageURL(smallImageURL);
+
+		blogsEntryPersistence.update(entry);
 
 		// Workflow
 
-		if ((trackbacks != null) && (trackbacks.length > 0)) {
+		if (ArrayUtil.isNotEmpty(trackbacks)) {
 			serviceContext.setAttribute("trackbacks", trackbacks);
 		}
 		else {
 			serviceContext.setAttribute("trackbacks", null);
 		}
 
-		WorkflowHandlerRegistryUtil.startWorkflowInstance(
-			user.getCompanyId(), groupId, userId, BlogsEntry.class.getName(),
-			entry.getEntryId(), entry, serviceContext);
+		entry = startWorkflowInstance(userId, entry, serviceContext);
+
+		if ((coverImageImageSelector != null) &&
+			(coverImageImageSelector.getImageId() != 0)) {
+
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				coverImageImageSelector.getImageId());
+		}
+
+		if (tempSmallImageFileEntry != null) {
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				tempSmallImageFileEntry.getFileEntryId());
+		}
 
 		return entry;
 	}
 
+	@Override
+	public BlogsEntry addEntry(
+			long userId, String title, String subtitle, String description,
+			String content, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			boolean allowPingbacks, boolean allowTrackbacks,
+			String[] trackbacks, String coverImageCaption,
+			ImageSelector coverImageImageSelector,
+			ImageSelector smallImageImageSelector,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		User user = userPersistence.findByPrimaryKey(userId);
+
+		Date displayDate = PortalUtil.getDate(
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, user.getTimeZone(),
+			EntryDisplayDateException.class);
+
+		return addEntry(
+			userId, title, subtitle, description, content, displayDate,
+			allowPingbacks, allowTrackbacks, trackbacks, coverImageCaption,
+			coverImageImageSelector, smallImageImageSelector, serviceContext);
+	}
+
+	@Override
 	public void addEntryResources(
 			BlogsEntry entry, boolean addGroupPermissions,
 			boolean addGuestPermissions)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		resourceLocalService.addResources(
 			entry.getCompanyId(), entry.getGroupId(), entry.getUserId(),
@@ -220,46 +378,90 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			addGroupPermissions, addGuestPermissions);
 	}
 
+	@Override
 	public void addEntryResources(
-			BlogsEntry entry, String[] groupPermissions,
-			String[] guestPermissions)
-		throws PortalException, SystemException {
+			BlogsEntry entry, ModelPermissions modelPermissions)
+		throws PortalException {
 
 		resourceLocalService.addModelResources(
 			entry.getCompanyId(), entry.getGroupId(), entry.getUserId(),
-			BlogsEntry.class.getName(), entry.getEntryId(), groupPermissions,
-			guestPermissions);
+			BlogsEntry.class.getName(), entry.getEntryId(), modelPermissions);
 	}
 
+	@Override
 	public void addEntryResources(
 			long entryId, boolean addGroupPermissions,
 			boolean addGuestPermissions)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
 
 		addEntryResources(entry, addGroupPermissions, addGuestPermissions);
 	}
 
+	@Override
 	public void addEntryResources(
-			long entryId, String[] groupPermissions, String[] guestPermissions)
-		throws PortalException, SystemException {
+			long entryId, ModelPermissions modelPermissions)
+		throws PortalException {
 
 		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
 
-		addEntryResources(entry, groupPermissions, guestPermissions);
+		addEntryResources(entry, modelPermissions);
 	}
 
-	public void deleteEntries(long groupId)
-		throws PortalException, SystemException {
+	@Override
+	public void checkEntries() throws PortalException {
+		Date now = new Date();
 
-		for (BlogsEntry entry : blogsEntryPersistence.findByGroupId(groupId)) {
-			deleteEntry(entry);
+		int count = blogsEntryPersistence.countByLtD_S(
+			now, WorkflowConstants.STATUS_SCHEDULED);
+
+		if (count == 0) {
+			return;
+		}
+
+		List<BlogsEntry> entries = blogsEntryPersistence.findByLtD_S(
+			now, WorkflowConstants.STATUS_SCHEDULED);
+
+		for (BlogsEntry entry : entries) {
+			ServiceContext serviceContext = new ServiceContext();
+
+			String[] trackbacks = StringUtil.split(entry.getTrackbacks());
+
+			serviceContext.setAttribute("trackbacks", trackbacks);
+
+			serviceContext.setCommand(Constants.UPDATE);
+
+			String portletId = PortletProviderUtil.getPortletId(
+				BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
+
+			if (Validator.isNotNull(portletId)) {
+				String layoutFullURL = PortalUtil.getLayoutFullURL(
+					entry.getGroupId(), portletId);
+
+				serviceContext.setLayoutFullURL(layoutFullURL);
+			}
+
+			serviceContext.setScopeGroupId(entry.getGroupId());
+
+			blogsEntryLocalService.updateStatus(
+				entry.getStatusByUserId(), entry.getEntryId(),
+				WorkflowConstants.STATUS_APPROVED, serviceContext,
+				new HashMap<String, Serializable>());
 		}
 	}
 
-	public void deleteEntry(BlogsEntry entry)
-		throws PortalException, SystemException {
+	@Override
+	public void deleteEntries(long groupId) throws PortalException {
+		for (BlogsEntry entry : blogsEntryPersistence.findByGroupId(groupId)) {
+			blogsEntryLocalService.deleteEntry(entry);
+		}
+	}
+
+	@Indexable(type = IndexableType.DELETE)
+	@Override
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	public BlogsEntry deleteEntry(BlogsEntry entry) throws PortalException {
 
 		// Entry
 
@@ -284,22 +486,29 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		// Statistics
 
 		blogsStatsUserLocalService.updateStatsUser(
-			entry.getGroupId(), entry.getUserId());
+			entry.getGroupId(), entry.getUserId(), entry.getDisplayDate());
 
 		// Asset
 
 		assetEntryLocalService.deleteEntry(
 			BlogsEntry.class.getName(), entry.getEntryId());
 
+		// Attachments
+
+		long coverImageFileEntryId = entry.getCoverImageFileEntryId();
+
+		if (coverImageFileEntryId != 0) {
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				coverImageFileEntryId);
+		}
+
+		// Comment
+
+		deleteDiscussion(entry);
+
 		// Expando
 
-		expandoValueLocalService.deleteValues(
-			BlogsEntry.class.getName(), entry.getEntryId());
-
-		// Message boards
-
-		mbMessageLocalService.deleteDiscussionMessages(
-			BlogsEntry.class.getName(), entry.getEntryId());
+		expandoRowLocalService.deleteRows(entry.getEntryId());
 
 		// Ratings
 
@@ -311,61 +520,85 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		trashEntryLocalService.deleteEntry(
 			BlogsEntry.class.getName(), entry.getEntryId());
 
-		// Indexer
-
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-			BlogsEntry.class);
-
-		indexer.delete(entry);
-
 		// Workflow
 
 		workflowInstanceLinkLocalService.deleteWorkflowInstanceLinks(
 			entry.getCompanyId(), entry.getGroupId(),
 			BlogsEntry.class.getName(), entry.getEntryId());
+
+		return entry;
 	}
 
-	public void deleteEntry(long entryId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void deleteEntry(long entryId) throws PortalException {
 		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
 
-		deleteEntry(entry);
+		blogsEntryLocalService.deleteEntry(entry);
+	}
+
+	@Override
+	public Folder fetchAttachmentsFolder(long userId, long groupId) {
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setAddGuestPermissions(true);
+
+		Repository repository =
+			PortletFileRepositoryUtil.fetchPortletRepository(
+				groupId, BlogsConstants.SERVICE_NAME);
+
+		try {
+			Folder folder = PortletFileRepositoryUtil.getPortletFolder(
+				repository.getRepositoryId(),
+				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+				BlogsConstants.SERVICE_NAME);
+
+			return folder;
+		}
+		catch (Exception e) {
+		}
+
+		return null;
 	}
 
 	/**
-	 * @deprecated {@link #getCompanyEntries(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getCompanyEntries(long,
+	 *             Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getCompanyEntries(
-			long companyId, Date displayDate, int status, int start, int end)
-		throws SystemException {
+		long companyId, Date displayDate, int status, int start, int end) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, null);
 
 		return getCompanyEntries(companyId, displayDate, queryDefinition);
 	}
 
 	/**
-	 * @deprecated {@link #getCompanyEntries(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getCompanyEntries(long,
+	 *             Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getCompanyEntries(
-			long companyId, Date displayDate, int status, int start, int end,
-			OrderByComparator obc)
-		throws SystemException {
+		long companyId, Date displayDate, int status, int start, int end,
+		OrderByComparator<BlogsEntry> obc) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, obc);
 
 		return getCompanyEntries(companyId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public List<BlogsEntry> getCompanyEntries(
-			long companyId, Date displayDate, QueryDefinition queryDefinition)
-		throws SystemException {
+		long companyId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.findByC_LtD_NeS(
+			return blogsEntryPersistence.findByC_LtD_NotS(
 				companyId, displayDate, queryDefinition.getStatus(),
 				queryDefinition.getStart(), queryDefinition.getEnd(),
 				queryDefinition.getOrderByComparator());
@@ -379,23 +612,27 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getCompanyEntriesCount(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getCompanyEntriesCount(long,
+	 *             Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public int getCompanyEntriesCount(
-			long companyId, Date displayDate, int status)
-		throws SystemException {
+		long companyId, Date displayDate, int status) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(status);
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
+			status);
 
 		return getCompanyEntriesCount(companyId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public int getCompanyEntriesCount(
-			long companyId, Date displayDate, QueryDefinition queryDefinition)
-		throws SystemException {
+		long companyId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.countByC_LtD_NeS(
+			return blogsEntryPersistence.countByC_LtD_NotS(
 				companyId, displayDate, queryDefinition.getStatus());
 		}
 		else {
@@ -404,8 +641,9 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		}
 	}
 
+	@Override
 	public BlogsEntry[] getEntriesPrevAndNext(long entryId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
 
@@ -415,51 +653,56 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			new EntryDisplayDateComparator(true));
 	}
 
-	public BlogsEntry getEntry(long entryId)
-		throws PortalException, SystemException {
-
+	@Override
+	public BlogsEntry getEntry(long entryId) throws PortalException {
 		return blogsEntryPersistence.findByPrimaryKey(entryId);
 	}
 
+	@Override
 	public BlogsEntry getEntry(long groupId, String urlTitle)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return blogsEntryPersistence.findByG_UT(groupId, urlTitle);
 	}
 
 	/**
-	 * @deprecated {@link #getGroupEntries(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupEntries(long, Date,
+	 *             QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, Date displayDate, int status, int start, int end)
-		throws SystemException {
+		long groupId, Date displayDate, int status, int start, int end) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, null);
 
 		return getGroupEntries(groupId, displayDate, queryDefinition);
 	}
 
 	/**
-	 * @deprecated {@link #getGroupEntries(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupEntries(long, Date,
+	 *             QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, Date displayDate, int status, int start, int end,
-			OrderByComparator obc)
-		throws SystemException {
+		long groupId, Date displayDate, int status, int start, int end,
+		OrderByComparator<BlogsEntry> obc) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, obc);
 
 		return getGroupEntries(groupId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, Date displayDate, QueryDefinition queryDefinition)
-		throws SystemException {
+		long groupId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.findByG_LtD_NeS(
+			return blogsEntryPersistence.findByG_LtD_NotS(
 				groupId, displayDate, queryDefinition.getStatus(),
 				queryDefinition.getStart(), queryDefinition.getEnd(),
 				queryDefinition.getOrderByComparator());
@@ -473,37 +716,42 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getGroupEntries(long, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupEntries(long,
+	 *             QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, int status, int start, int end)
-		throws SystemException {
+		long groupId, int status, int start, int end) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, null);
 
 		return getGroupEntries(groupId, queryDefinition);
 	}
 
 	/**
-	 * @deprecated {@link #getGroupEntries(long, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupEntries(long,
+	 *             QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, int status, int start, int end, OrderByComparator obc)
-		throws SystemException {
+		long groupId, int status, int start, int end,
+		OrderByComparator<BlogsEntry> obc) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, obc);
 
 		return getGroupEntries(groupId, queryDefinition);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, QueryDefinition queryDefinition)
-		throws SystemException {
+		long groupId, QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.findByG_NeS(
+			return blogsEntryPersistence.findByG_NotS(
 				groupId, queryDefinition.getStatus(),
 				queryDefinition.getStart(), queryDefinition.getEnd(),
 				queryDefinition.getOrderByComparator());
@@ -517,22 +765,27 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getGroupEntriesCount(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupEntriesCount(long,
+	 *             Date, QueryDefinition)}
 	 */
-	public int getGroupEntriesCount(long groupId, Date displayDate, int status)
-		throws SystemException {
+	@Deprecated
+	@Override
+	public int getGroupEntriesCount(
+		long groupId, Date displayDate, int status) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(status);
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
+			status);
 
 		return getGroupEntriesCount(groupId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public int getGroupEntriesCount(
-			long groupId, Date displayDate, QueryDefinition queryDefinition)
-		throws SystemException {
+		long groupId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.countByG_LtD_NeS(
+			return blogsEntryPersistence.countByG_LtD_NotS(
 				groupId, displayDate, queryDefinition.getStatus());
 		}
 		else {
@@ -542,22 +795,24 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getGroupEntriesCount(long, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupEntriesCount(long,
+	 *             QueryDefinition)}
 	 */
-	public int getGroupEntriesCount(long groupId, int status)
-		throws SystemException {
-
-		QueryDefinition queryDefinition = new QueryDefinition(status);
+	@Deprecated
+	@Override
+	public int getGroupEntriesCount(long groupId, int status) {
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
+			status);
 
 		return getGroupEntriesCount(groupId, queryDefinition);
 	}
 
+	@Override
 	public int getGroupEntriesCount(
-			long groupId, QueryDefinition queryDefinition)
-		throws SystemException {
+		long groupId, QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.countByG_NeS(
+			return blogsEntryPersistence.countByG_NotS(
 				groupId, queryDefinition.getStatus());
 		}
 		else {
@@ -567,39 +822,42 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getGroupsEntries(long, long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupsEntries(long, long,
+	 *             Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupsEntries(
-			long companyId, long groupId, Date displayDate, int status,
-			int start, int end)
-		throws SystemException {
+		long companyId, long groupId, Date displayDate, int status, int start,
+		int end) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, null);
 
 		return getGroupsEntries(
 			companyId, groupId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupsEntries(
-			long companyId, long groupId, Date displayDate,
-			QueryDefinition queryDefinition)
-		throws SystemException {
+		long companyId, long groupId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		return blogsEntryFinder.findByGroupIds(
 			companyId, groupId, displayDate, queryDefinition);
 	}
 
 	/**
-	 * @deprecated {@link #getGroupUserEntries(long, long, Date,
-	 *             QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupUserEntries(long,
+	 *             long, Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupUserEntries(
-			long groupId, long userId, Date displayDate, int status, int start,
-			int end)
-		throws SystemException {
+		long groupId, long userId, Date displayDate, int status, int start,
+		int end) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, null);
 
 		return getGroupUserEntries(
@@ -607,28 +865,29 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getGroupUserEntries(long, long, Date,
-	 *             QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getGroupUserEntries(long,
+	 *             long, Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getGroupUserEntries(
-			long groupId, long userId, Date displayDate, int status, int start,
-			int end, OrderByComparator obc)
-		throws SystemException {
+		long groupId, long userId, Date displayDate, int status, int start,
+		int end, OrderByComparator<BlogsEntry> obc) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, obc);
 
 		return getGroupUserEntries(
 			groupId, userId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupUserEntries(
-			long groupId, long userId, Date displayDate,
-			QueryDefinition queryDefinition)
-		throws SystemException {
+		long groupId, long userId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.findByG_U_NeS(
+			return blogsEntryPersistence.findByG_U_NotS(
 				groupId, userId, queryDefinition.getStatus(),
 				queryDefinition.getStart(), queryDefinition.getEnd(),
 				queryDefinition.getOrderByComparator());
@@ -642,26 +901,28 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getGroupUserEntriesCount(long, long, Date,
-	 *             QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link
+	 *             #getGroupUserEntriesCount(long, long, Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public int getGroupUserEntriesCount(
-			long groupId, long userId, Date displayDate, int status)
-		throws SystemException {
+		long groupId, long userId, Date displayDate, int status) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(status);
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
+			status);
 
 		return getGroupUserEntriesCount(
 			groupId, userId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public int getGroupUserEntriesCount(
-			long groupId, long userId, Date displayDate,
-			QueryDefinition queryDefinition)
-		throws SystemException {
+		long groupId, long userId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		if (queryDefinition.isExcludeStatus()) {
-			return blogsEntryPersistence.countByG_U_LtD_NeS(
+			return blogsEntryPersistence.countByG_U_LtD_NotS(
 				groupId, userId, displayDate, queryDefinition.getStatus());
 		}
 		else {
@@ -670,19 +931,21 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		}
 	}
 
-	public List<BlogsEntry> getNoAssetEntries() throws SystemException {
+	@Override
+	public List<BlogsEntry> getNoAssetEntries() {
 		return blogsEntryFinder.findByNoAssets();
 	}
 
 	/**
-	 * @deprecated {@link #getOrganizationEntries(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getOrganizationEntries(long,
+	 *             Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getOrganizationEntries(
-			long organizationId, Date displayDate, int status, int start,
-			int end)
-		throws SystemException {
+		long organizationId, Date displayDate, int status, int start, int end) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, null);
 
 		return getOrganizationEntries(
@@ -690,174 +953,191 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated {@link #getOrganizationEntries(long, Date, QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link #getOrganizationEntries(long,
+	 *             Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public List<BlogsEntry> getOrganizationEntries(
-			long organizationId, Date displayDate, int status, int start,
-			int end, OrderByComparator obc)
-		throws SystemException {
+		long organizationId, Date displayDate, int status, int start, int end,
+		OrderByComparator<BlogsEntry> obc) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, start, end, obc);
 
 		return getOrganizationEntries(
 			organizationId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public List<BlogsEntry> getOrganizationEntries(
-			long organizationId, Date displayDate,
-			QueryDefinition queryDefinition)
-		throws SystemException {
+		long organizationId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		return blogsEntryFinder.findByOrganizationId(
 			organizationId, displayDate, queryDefinition);
 	}
 
 	/**
-	 * @deprecated {@link #getOrganizationEntriesCount(long, Date,
-	 *             QueryDefinition)}
+	 * @deprecated As of 6.2.0, replaced by {@link
+	 *             #getOrganizationEntriesCount(long, Date, QueryDefinition)}
 	 */
+	@Deprecated
+	@Override
 	public int getOrganizationEntriesCount(
-			long organizationId, Date displayDate, int status)
-		throws SystemException {
+		long organizationId, Date displayDate, int status) {
 
-		QueryDefinition queryDefinition = new QueryDefinition(status);
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
+			status);
 
 		return getOrganizationEntriesCount(
 			organizationId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public int getOrganizationEntriesCount(
-			long organizationId, Date displayDate,
-			QueryDefinition queryDefinition)
-		throws SystemException {
+		long organizationId, Date displayDate,
+		QueryDefinition<BlogsEntry> queryDefinition) {
 
 		return blogsEntryFinder.countByOrganizationId(
 			organizationId, displayDate, queryDefinition);
 	}
 
+	@Override
 	public void moveEntriesToTrash(long groupId, long userId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		List<BlogsEntry> entries = blogsEntryPersistence.findByGroupId(groupId);
 
 		for (BlogsEntry entry : entries) {
-			moveEntryToTrash(userId, entry);
+			blogsEntryLocalService.moveEntryToTrash(userId, entry);
 		}
 	}
 
+	/**
+	 * Moves the blogs entry to the recycle bin. Social activity counters for
+	 * this entry get disabled.
+	 *
+	 * @param  userId the primary key of the user moving the blogs entry
+	 * @param  entry the blogs entry to be moved
+	 * @return the moved blogs entry
+	 * @throws PortalException if a user with the primary key could not be found
+	 *         or if the blogs entry owner's social activity counter could not
+	 *         be updated
+	 */
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
 	public BlogsEntry moveEntryToTrash(long userId, BlogsEntry entry)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		// Entry
 
 		int oldStatus = entry.getStatus();
 
-		updateStatus(
+		if (oldStatus == WorkflowConstants.STATUS_PENDING) {
+			entry.setStatus(WorkflowConstants.STATUS_DRAFT);
+
+			blogsEntryPersistence.update(entry);
+		}
+
+		entry = updateStatus(
 			userId, entry.getEntryId(), WorkflowConstants.STATUS_IN_TRASH,
 			new ServiceContext());
 
 		// Social
 
-		socialActivityLocalService.addActivity(
-			userId, entry.getGroupId(), BlogsEntry.class.getName(),
-			entry.getEntryId(), SocialActivityConstants.TYPE_MOVE_TO_TRASH,
-			StringPool.BLANK, 0);
+		JSONObject extraDataJSONObject = JSONFactoryUtil.createJSONObject();
 
-		// Trash
+		extraDataJSONObject.put("title", entry.getTitle());
 
-		trashEntryLocalService.addTrashEntry(
-			entry.getCompanyId(), entry.getGroupId(),
-			BlogsEntry.class.getName(), entry.getEntryId(), oldStatus, null);
+		SocialActivityManagerUtil.addActivity(
+			userId, entry, SocialActivityConstants.TYPE_MOVE_TO_TRASH,
+			extraDataJSONObject.toString(), 0);
 
 		// Workflow
 
 		if (oldStatus == WorkflowConstants.STATUS_PENDING) {
-			WorkflowInstanceLink workflowInstanceLink =
-				workflowInstanceLinkLocalService.getWorkflowInstanceLink(
-					entry.getCompanyId(), entry.getGroupId(),
-					BlogsEntry.class.getName(), entry.getEntryId());
-
-			WorkflowInstance workflowInstance =
-				WorkflowInstanceManagerUtil.getWorkflowInstance(
-					entry.getCompanyId(),
-					workflowInstanceLink.getWorkflowInstanceId());
-
-			Map<String, Serializable> workflowContext =
-				workflowInstance.getWorkflowContext();
-
-			ServiceContext serviceContext = (ServiceContext)workflowContext.get(
-				WorkflowConstants.CONTEXT_SERVICE_CONTEXT);
-
-			boolean update = GetterUtil.getBoolean(
-				serviceContext.getAttribute("update"), false);
-
-			if (update) {
-				entry.setStatus(WorkflowConstants.STATUS_DRAFT_FROM_APPROVED);
-			}
-			else {
-				entry.setStatus(WorkflowConstants.STATUS_DRAFT);
-			}
-
 			workflowInstanceLinkLocalService.deleteWorkflowInstanceLink(
-				workflowInstanceLink.getWorkflowInstanceId());
+				entry.getCompanyId(), entry.getGroupId(),
+				BlogsEntry.class.getName(), entry.getEntryId());
 		}
 
 		return entry;
 	}
 
+	/**
+	 * Moves the blogs entry with the ID to the recycle bin.
+	 *
+	 * @param  userId the primary key of the user moving the blogs entry
+	 * @param  entryId the primary key of the blogs entry to be moved
+	 * @return the moved blogs entry
+	 * @throws PortalException if a user or blogs entry with the primary key
+	 *         could not be found or if the blogs entry owner's social activity
+	 *         counter could not be updated
+	 */
+	@Override
 	public BlogsEntry moveEntryToTrash(long userId, long entryId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
 
-		return moveEntryToTrash(userId, entry);
+		return blogsEntryLocalService.moveEntryToTrash(userId, entry);
 	}
 
-	public void restoreEntryFromTrash(long userId, long entryId)
-		throws PortalException, SystemException {
+	/**
+	 * Restores the blogs entry with the ID from the recycle bin. Social
+	 * activity counters for this entry get activated.
+	 *
+	 * @param  userId the primary key of the user restoring the blogs entry
+	 * @param  entryId the primary key of the blogs entry to be restored
+	 * @return the restored blogs entry from the recycle bin
+	 * @throws PortalException if a user or blogs entry with the primary key
+	 *         could not be found or if the blogs entry owner's social activity
+	 *         counter could not be updated
+	 */
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public BlogsEntry restoreEntryFromTrash(long userId, long entryId)
+		throws PortalException {
 
 		// Entry
 
 		TrashEntry trashEntry = trashEntryLocalService.getEntry(
 			BlogsEntry.class.getName(), entryId);
 
-		updateStatus(
+		BlogsEntry entry = updateStatus(
 			userId, entryId, trashEntry.getStatus(), new ServiceContext());
 
 		// Social
 
-		socialActivityCounterLocalService.enableActivityCounters(
-			BlogsEntry.class.getName(), entryId);
+		JSONObject extraDataJSONObject = JSONFactoryUtil.createJSONObject();
 
-		socialActivityLocalService.addActivity(
-			userId, trashEntry.getGroupId(), BlogsEntry.class.getName(),
-			entryId, SocialActivityConstants.TYPE_RESTORE_FROM_TRASH,
-			StringPool.BLANK, 0);
+		extraDataJSONObject.put("title", entry.getTitle());
 
-		// Trash
+		SocialActivityManagerUtil.addActivity(
+			userId, entry, SocialActivityConstants.TYPE_RESTORE_FROM_TRASH,
+			extraDataJSONObject.toString(), 0);
 
-		trashEntryLocalService.deleteTrashEntry(trashEntry.getEntryId());
+		return entry;
 	}
 
-	public void subscribe(long userId, long groupId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void subscribe(long userId, long groupId) throws PortalException {
 		subscriptionLocalService.addSubscription(
 			userId, groupId, BlogsEntry.class.getName(), groupId);
 	}
 
-	public void unsubscribe(long userId, long groupId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void unsubscribe(long userId, long groupId) throws PortalException {
 		subscriptionLocalService.deleteSubscription(
 			userId, BlogsEntry.class.getName(), groupId);
 	}
 
+	@Override
 	public void updateAsset(
 			long userId, BlogsEntry entry, long[] assetCategoryIds,
 			String[] assetTagNames, long[] assetLinkEntryIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		boolean visible = false;
 
@@ -869,17 +1149,41 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			StringUtil.shorten(entry.getContent(), 500));
 
 		AssetEntry assetEntry = assetEntryLocalService.updateEntry(
-			userId, entry.getGroupId(), BlogsEntry.class.getName(),
+			userId, entry.getGroupId(), entry.getCreateDate(),
+			entry.getModifiedDate(), BlogsEntry.class.getName(),
 			entry.getEntryId(), entry.getUuid(), 0, assetCategoryIds,
-			assetTagNames, visible, null, null, entry.getDisplayDate(), null,
-			ContentTypes.TEXT_HTML, entry.getTitle(), null, summary, null, null,
-			0, 0, null, false);
+			assetTagNames, visible, null, null, null, ContentTypes.TEXT_HTML,
+			entry.getTitle(), entry.getDescription(), summary, null, null, 0, 0,
+			null);
 
 		assetLinkLocalService.updateLinks(
 			userId, assetEntry.getEntryId(), assetLinkEntryIds,
 			AssetLinkConstants.TYPE_RELATED);
 	}
 
+	@Override
+	public BlogsEntry updateEntry(
+			long userId, long entryId, String title, String content,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
+
+		return updateEntry(
+			userId, entryId, title, entry.getSubtitle(), entry.getDescription(),
+			content, entry.getDisplayDate(), entry.getAllowPingbacks(),
+			entry.getAllowTrackbacks(), StringUtil.split(entry.getTrackbacks()),
+			StringPool.BLANK, null, null, serviceContext);
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #updateEntry(long, long,
+	 *             String, String, String, String, int, int, int, int, int,
+	 *             boolean, boolean, String[], String, ImageSelector,
+	 *             ImageSelector, ServiceContext)}
+	 */
+	@Deprecated
+	@Override
 	public BlogsEntry updateEntry(
 			long userId, long entryId, String title, String description,
 			String content, int displayDateMonth, int displayDateDay,
@@ -888,37 +1192,59 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			String[] trackbacks, boolean smallImage, String smallImageURL,
 			String smallImageFileName, InputStream smallImageInputStream,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
+
+		ImageSelector coverImageImageSelector = null;
+		ImageSelector smallImageImageSelector = null;
+
+		if (smallImage) {
+			if (Validator.isNotNull(smallImageFileName) &&
+				(smallImageInputStream != null)) {
+
+				FileEntry tempFileEntry = TempFileEntryUtil.addTempFileEntry(
+					serviceContext.getScopeGroupId(), userId,
+					BlogsEntry.class.getName(), smallImageFileName,
+					smallImageInputStream,
+					MimeTypesUtil.getContentType(smallImageFileName));
+
+				smallImageImageSelector = new ImageSelector(
+					tempFileEntry.getFileEntryId(), smallImageURL, null);
+			}
+		}
+		else {
+			smallImageImageSelector = new ImageSelector(0);
+		}
+
+		return updateEntry(
+			userId, entryId, title, StringPool.BLANK, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			StringPool.BLANK, coverImageImageSelector, smallImageImageSelector,
+			serviceContext);
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public BlogsEntry updateEntry(
+			long userId, long entryId, String title, String subtitle,
+			String description, String content, Date displayDate,
+			boolean allowPingbacks, boolean allowTrackbacks,
+			String[] trackbacks, String coverImageCaption,
+			ImageSelector coverImageImageSelector,
+			ImageSelector smallImageImageSelector,
+			ServiceContext serviceContext)
+		throws PortalException {
 
 		// Entry
 
-		User user = userPersistence.findByPrimaryKey(userId);
-
-		Date displayDate = PortalUtil.getDate(
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, user.getTimeZone(),
-			new EntryDisplayDateException());
-
-		byte[] smallImageBytes = null;
-
-		try {
-			if ((smallImageInputStream != null) && smallImage) {
-				smallImageBytes = FileUtil.getBytes(smallImageInputStream);
-			}
-		}
-		catch (IOException ioe) {
-		}
-
-		validate(
-			title, content, smallImage, smallImageURL, smallImageFileName,
-			smallImageBytes);
-
 		BlogsEntry entry = blogsEntryPersistence.findByPrimaryKey(entryId);
+
+		validate(title, content);
 
 		String oldUrlTitle = entry.getUrlTitle();
 
-		entry.setModifiedDate(serviceContext.getModifiedDate(null));
 		entry.setTitle(title);
+		entry.setSubtitle(subtitle);
 		entry.setUrlTitle(
 			getUniqueUrlTitle(entryId, title, oldUrlTitle, serviceContext));
 		entry.setDescription(description);
@@ -926,18 +1252,8 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		entry.setDisplayDate(displayDate);
 		entry.setAllowPingbacks(allowPingbacks);
 		entry.setAllowTrackbacks(allowTrackbacks);
-		entry.setSmallImage(smallImage);
-
-		if (entry.getSmallImageId() == 0) {
-			entry.setSmallImageId(counterLocalService.increment());
-		}
-
-		entry.setSmallImageURL(smallImageURL);
 
 		if (entry.isPending() || entry.isDraft()) {
-		}
-		else if (entry.isApproved()) {
-			entry.setStatus(WorkflowConstants.STATUS_DRAFT_FROM_APPROVED);
 		}
 		else {
 			entry.setStatus(WorkflowConstants.STATUS_DRAFT);
@@ -945,21 +1261,15 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 		entry.setExpandoBridgeAttributes(serviceContext);
 
-		blogsEntryPersistence.update(entry, false);
+		blogsEntryPersistence.update(entry);
 
 		// Resources
 
 		if ((serviceContext.getGroupPermissions() != null) ||
 			(serviceContext.getGuestPermissions() != null)) {
 
-			updateEntryResources(
-				entry, serviceContext.getGroupPermissions(),
-				serviceContext.getGuestPermissions());
+			updateEntryResources(entry, serviceContext.getModelPermissions());
 		}
-
-		// Small image
-
-		saveImages(smallImage, entry.getSmallImageId(), smallImageBytes);
 
 		// Asset
 
@@ -967,6 +1277,89 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			userId, entry, serviceContext.getAssetCategoryIds(),
 			serviceContext.getAssetTagNames(),
 			serviceContext.getAssetLinkEntryIds());
+
+		// Images
+
+		long coverImageFileEntryId = entry.getCoverImageFileEntryId();
+		String coverImageURL = entry.getCoverImageURL();
+
+		long deletePreviousCoverImageFileEntryId = 0;
+
+		if (coverImageImageSelector != null) {
+			coverImageFileEntryId = coverImageImageSelector.getImageId();
+			coverImageURL = coverImageImageSelector.getImageURL();
+
+			if (coverImageImageSelector.getImageId() == 0) {
+				if (entry.getCoverImageFileEntryId() != 0) {
+					deletePreviousCoverImageFileEntryId =
+						entry.getCoverImageFileEntryId();
+				}
+			}
+			else if (coverImageImageSelector.getImageId() !=
+						entry.getCoverImageFileEntryId()) {
+
+				if (entry.getCoverImageFileEntryId() != 0) {
+					deletePreviousCoverImageFileEntryId =
+						entry.getCoverImageFileEntryId();
+				}
+
+				if (coverImageImageSelector.getImageId() != 0) {
+					coverImageFileEntryId = addCoverImage(
+						userId, entry.getGroupId(), entryId,
+						coverImageImageSelector);
+				}
+			}
+		}
+
+		boolean smallImage = entry.isSmallImage();
+		long smallImageFileEntryId = entry.getSmallImageFileEntryId();
+		String smallImageURL = entry.getSmallImageURL();
+
+		FileEntry tempSmallImageFileEntry = null;
+
+		long deletePreviousSmallImageFileEntryId = 0;
+
+		if (smallImageImageSelector != null) {
+			smallImage = !smallImageImageSelector.isRemoveSmallImage();
+			smallImageFileEntryId = smallImageImageSelector.getImageId();
+			smallImageURL = smallImageImageSelector.getImageURL();
+
+			if (smallImageImageSelector.getImageId() == 0) {
+				if (entry.getSmallImageFileEntryId() != 0) {
+					deletePreviousSmallImageFileEntryId =
+						entry.getSmallImageFileEntryId();
+				}
+			}
+			else if (smallImageImageSelector.getImageId() !=
+						entry.getSmallImageFileEntryId()) {
+
+				if (entry.getSmallImageFileEntryId() != 0) {
+					deletePreviousSmallImageFileEntryId =
+						entry.getSmallImageFileEntryId();
+				}
+
+				tempSmallImageFileEntry =
+					PortletFileRepositoryUtil.getPortletFileEntry(
+						smallImageImageSelector.getImageId());
+
+				smallImageFileEntryId = addSmallImageFileEntry(
+					userId, entry.getGroupId(), entry.getEntryId(),
+					tempSmallImageFileEntry.getMimeType(),
+					tempSmallImageFileEntry.getTitle(),
+					tempSmallImageFileEntry.getContentStream());
+			}
+		}
+
+		validate(smallImageFileEntryId);
+
+		entry.setCoverImageCaption(coverImageCaption);
+		entry.setCoverImageFileEntryId(coverImageFileEntryId);
+		entry.setCoverImageURL(coverImageURL);
+		entry.setSmallImage(smallImage);
+		entry.setSmallImageFileEntryId(smallImageFileEntryId);
+		entry.setSmallImageURL(smallImageURL);
+
+		blogsEntryPersistence.update(entry);
 
 		// Workflow
 
@@ -979,29 +1372,82 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		serviceContext.setAttribute(
 			"pingOldTrackbacks", String.valueOf(pingOldTrackbacks));
 
-		if (entry.getStatus() != WorkflowConstants.STATUS_DRAFT) {
-			serviceContext.setAttribute("update", Boolean.TRUE.toString());
-		}
-
-		if (Validator.isNotNull(trackbacks)) {
+		if (ArrayUtil.isNotEmpty(trackbacks)) {
 			serviceContext.setAttribute("trackbacks", trackbacks);
 		}
 		else {
 			serviceContext.setAttribute("trackbacks", null);
 		}
 
-		WorkflowHandlerRegistryUtil.startWorkflowInstance(
-			user.getCompanyId(), entry.getGroupId(), userId,
-			BlogsEntry.class.getName(), entry.getEntryId(), entry,
-			serviceContext);
+		entry = startWorkflowInstance(userId, entry, serviceContext);
+
+		if (deletePreviousCoverImageFileEntryId != 0) {
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				deletePreviousCoverImageFileEntryId);
+		}
+
+		if (deletePreviousSmallImageFileEntryId != 0) {
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				deletePreviousSmallImageFileEntryId);
+		}
+
+		if ((coverImageImageSelector != null) &&
+			(coverImageImageSelector.getImageId() != 0) &&
+			(coverImageImageSelector.getImageId() !=
+				entry.getCoverImageFileEntryId())) {
+
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				coverImageImageSelector.getImageId());
+		}
+
+		if (tempSmallImageFileEntry != null) {
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				tempSmallImageFileEntry.getFileEntryId());
+		}
 
 		return entry;
 	}
 
+	@Override
+	public BlogsEntry updateEntry(
+			long userId, long entryId, String title, String subtitle,
+			String description, String content, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, boolean allowPingbacks,
+			boolean allowTrackbacks, String[] trackbacks,
+			String coverImageCaption, ImageSelector coverImageImageSelector,
+			ImageSelector smallImageImageSelector,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		User user = userPersistence.findByPrimaryKey(userId);
+
+		Date displayDate = PortalUtil.getDate(
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, user.getTimeZone(),
+			EntryDisplayDateException.class);
+
+		return updateEntry(
+			userId, entryId, title, subtitle, description, content, displayDate,
+			allowPingbacks, allowTrackbacks, trackbacks, coverImageCaption,
+			coverImageImageSelector, smallImageImageSelector, serviceContext);
+	}
+
+	@Override
+	public void updateEntryResources(
+			BlogsEntry entry, ModelPermissions modelPermissions)
+		throws PortalException {
+
+		resourceLocalService.updateResources(
+			entry.getCompanyId(), entry.getGroupId(),
+			BlogsEntry.class.getName(), entry.getEntryId(), modelPermissions);
+	}
+
+	@Override
 	public void updateEntryResources(
 			BlogsEntry entry, String[] groupPermissions,
 			String[] guestPermissions)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		resourceLocalService.updateResources(
 			entry.getCompanyId(), entry.getGroupId(),
@@ -1009,10 +1455,29 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			guestPermissions);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #updateStatus(long, long,
+	 *             int, ServiceContext, Map)}
+	 */
+	@Deprecated
+	@Override
 	public BlogsEntry updateStatus(
 			long userId, long entryId, int status,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
+
+		return updateStatus(
+			userId, entryId, status, serviceContext,
+			new HashMap<String, Serializable>());
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public BlogsEntry updateStatus(
+			long userId, long entryId, int status,
+			ServiceContext serviceContext,
+			Map<String, Serializable> workflowContext)
+		throws PortalException {
 
 		// Entry
 
@@ -1023,69 +1488,85 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 		int oldStatus = entry.getStatus();
 
-		entry.setModifiedDate(serviceContext.getModifiedDate(now));
+		if ((status == WorkflowConstants.STATUS_APPROVED) &&
+			now.before(entry.getDisplayDate())) {
+
+			status = WorkflowConstants.STATUS_SCHEDULED;
+		}
+
 		entry.setStatus(status);
 		entry.setStatusByUserId(user.getUserId());
 		entry.setStatusByUserName(user.getFullName());
 		entry.setStatusDate(serviceContext.getModifiedDate(now));
 
-		blogsEntryPersistence.update(entry, false);
+		blogsEntryPersistence.update(entry);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-			BlogsEntry.class);
+		// Statistics
+
+		blogsStatsUserLocalService.updateStatsUser(
+			entry.getGroupId(), entry.getUserId(), entry.getDisplayDate());
+
+		AssetEntry assetEntry = assetEntryLocalService.fetchEntry(
+			BlogsEntry.class.getName(), entryId);
+
+		if ((assetEntry == null) || (assetEntry.getPublishDate() == null)) {
+			serviceContext.setCommand(Constants.ADD);
+		}
+
+		JSONObject extraDataJSONObject = JSONFactoryUtil.createJSONObject();
+
+		extraDataJSONObject.put("title", entry.getTitle());
 
 		if (status == WorkflowConstants.STATUS_APPROVED) {
 
-			// Statistics
+			// Asset
 
-			blogsStatsUserLocalService.updateStatsUser(
-				entry.getGroupId(), user.getUserId(), entry.getDisplayDate());
+			assetEntryLocalService.updateEntry(
+				BlogsEntry.class.getName(), entryId, entry.getDisplayDate(),
+				true);
 
-			if (oldStatus != WorkflowConstants.STATUS_APPROVED) {
+			// Social
 
-				// Asset
+			if ((oldStatus != WorkflowConstants.STATUS_IN_TRASH) &&
+				(oldStatus != WorkflowConstants.STATUS_SCHEDULED)) {
 
-				assetEntryLocalService.updateVisible(
-					BlogsEntry.class.getName(), entryId, true);
-
-				// Social
-
-				if (oldStatus != WorkflowConstants.STATUS_IN_TRASH) {
-					boolean update = ParamUtil.getBoolean(
-						serviceContext, "update");
-
-					if (update) {
-						socialActivityLocalService.addActivity(
-							user.getUserId(), entry.getGroupId(),
-							BlogsEntry.class.getName(), entryId,
-							BlogsActivityKeys.UPDATE_ENTRY, StringPool.BLANK,
-							0);
-					}
-					else {
-						socialActivityLocalService.addUniqueActivity(
-							user.getUserId(), entry.getGroupId(),
-							BlogsEntry.class.getName(), entryId,
-							BlogsActivityKeys.ADD_ENTRY, StringPool.BLANK, 0);
-					}
+				if (serviceContext.isCommandUpdate()) {
+					SocialActivityManagerUtil.addActivity(
+						user.getUserId(), entry, BlogsActivityKeys.UPDATE_ENTRY,
+						extraDataJSONObject.toString(), 0);
+				}
+				else {
+					SocialActivityManagerUtil.addUniqueActivity(
+						user.getUserId(), entry, BlogsActivityKeys.ADD_ENTRY,
+						extraDataJSONObject.toString(), 0);
 				}
 			}
 
-			// Indexer
+			// Trash
 
-			indexer.reindex(entry);
+			if (oldStatus == WorkflowConstants.STATUS_IN_TRASH) {
+				if (PropsValues.BLOGS_ENTRY_COMMENTS_ENABLED) {
+					commentManager.restoreDiscussionFromTrash(
+						BlogsEntry.class.getName(), entryId);
+				}
+
+				trashEntryLocalService.deleteEntry(
+					BlogsEntry.class.getName(), entryId);
+			}
 
 			if (oldStatus != WorkflowConstants.STATUS_IN_TRASH) {
 
 				// Subscriptions
 
-				notifySubscribers(entry, serviceContext);
+				notifySubscribers(
+					userId, entry, serviceContext, workflowContext);
 
 				// Ping
 
 				String[] trackbacks = (String[])serviceContext.getAttribute(
 					"trackbacks");
-				Boolean pingOldTrackbacks = GetterUtil.getBoolean(
-					(String)serviceContext.getAttribute("pingOldTrackbacks"));
+				Boolean pingOldTrackbacks = ParamUtil.getBoolean(
+					serviceContext, "pingOldTrackbacks");
 
 				pingGoogle(entry, serviceContext);
 				pingPingback(entry, serviceContext);
@@ -1097,25 +1578,227 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 			// Asset
 
+			assetEntryLocalService.updateVisible(
+				BlogsEntry.class.getName(), entryId, false);
+
+			// Social
+
+			if ((status == WorkflowConstants.STATUS_SCHEDULED) &&
+				(oldStatus != WorkflowConstants.STATUS_IN_TRASH)) {
+
+				if (serviceContext.isCommandUpdate()) {
+					SocialActivityManagerUtil.addActivity(
+						user.getUserId(), entry, BlogsActivityKeys.UPDATE_ENTRY,
+						extraDataJSONObject.toString(), 0);
+				}
+				else {
+					SocialActivityManagerUtil.addUniqueActivity(
+						user.getUserId(), entry, BlogsActivityKeys.ADD_ENTRY,
+						extraDataJSONObject.toString(), 0);
+				}
+			}
+
+			// Trash
+
 			if (status == WorkflowConstants.STATUS_IN_TRASH) {
-				assetEntryLocalService.moveEntryToTrash(
+				if (PropsValues.BLOGS_ENTRY_COMMENTS_ENABLED) {
+					commentManager.moveDiscussionToTrash(
+						BlogsEntry.class.getName(), entryId);
+				}
+
+				trashEntryLocalService.addTrashEntry(
+					userId, entry.getGroupId(), BlogsEntry.class.getName(),
+					entry.getEntryId(), entry.getUuid(), null, oldStatus, null,
+					null);
+			}
+			else if (oldStatus == WorkflowConstants.STATUS_IN_TRASH) {
+				if (PropsValues.BLOGS_ENTRY_COMMENTS_ENABLED) {
+					commentManager.restoreDiscussionFromTrash(
+						BlogsEntry.class.getName(), entryId);
+				}
+
+				trashEntryLocalService.deleteEntry(
 					BlogsEntry.class.getName(), entryId);
 			}
-			else {
-				assetEntryLocalService.updateVisible(
-					BlogsEntry.class.getName(), entryId, false);
-			}
-
-			// Indexer
-
-			indexer.delete(entry);
 		}
 
 		return entry;
 	}
 
-	protected String getUniqueUrlTitle(long entryId, long groupId, String title)
-		throws SystemException {
+	protected long addCoverImage(
+			long userId, long groupId, long entryId,
+			ImageSelector coverImageImageSelector)
+		throws PortalException {
+
+		FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
+			coverImageImageSelector.getImageId());
+
+		BlogsEntryAttachmentFileEntryHelper
+			blogsEntryAttachmentFileEntryHelper =
+				new BlogsEntryAttachmentFileEntryHelper();
+
+		if (fileEntry.isRepositoryCapabilityProvided(
+				TemporaryFileEntriesCapability.class)) {
+
+			Folder folder = addAttachmentsFolder(userId, groupId);
+
+			blogsEntryAttachmentFileEntryHelper.
+				addBlogsEntryAttachmentFileEntry(
+					groupId, userId, entryId, folder.getFolderId(),
+					fileEntry.getTitle(), fileEntry.getMimeType(),
+					fileEntry.getContentStream());
+		}
+
+		File file = null;
+
+		try {
+			byte[] bytes = coverImageImageSelector.getCroppedImageBytes();
+
+			if (bytes == null) {
+				return 0;
+			}
+
+			file = FileUtil.createTempFile(bytes);
+
+			String title = coverImageImageSelector.getTitle();
+
+			if (Validator.isNull(title)) {
+				title =
+					StringUtil.randomString() + "_tempCroppedImage_" + entryId;
+			}
+
+			Folder folder = addCoverImageFolder(userId, groupId);
+
+			FileEntry coverImageFileEntry =
+				blogsEntryAttachmentFileEntryHelper.
+					addBlogsEntryAttachmentFileEntry(
+						groupId, userId, entryId, folder.getFolderId(), title,
+						coverImageImageSelector.getMimeType(), file);
+
+			return coverImageFileEntry.getFileEntryId();
+		}
+		catch (IOException ioe) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Unable to get cropped image from image selector image " +
+						coverImageImageSelector.getImageId());
+			}
+		}
+		finally {
+			FileUtil.delete(file);
+		}
+
+		return 0;
+	}
+
+	protected Folder addCoverImageFolder(long userId, long groupId)
+		throws PortalException {
+
+		return doAddFolder(userId, groupId, _COVER_IMAGE_FOLDER_NAME);
+	}
+
+	protected void addDiscussion(BlogsEntry entry, long userId, long groupId)
+		throws PortalException {
+
+		if (PropsValues.BLOGS_ENTRY_COMMENTS_ENABLED) {
+			commentManager.addDiscussion(
+				userId, groupId, BlogsEntry.class.getName(), entry.getEntryId(),
+				entry.getUserName());
+		}
+	}
+
+	protected long addSmallImageFileEntry(
+			long userId, long groupId, long entryId, String mimeType,
+			String title, InputStream is)
+		throws PortalException {
+
+		BlogsEntryAttachmentFileEntryHelper
+			blogsEntryAttachmentFileEntryHelper =
+				new BlogsEntryAttachmentFileEntryHelper();
+
+		Folder folder = addAttachmentsFolder(userId, groupId);
+
+		FileEntry fileEntry =
+			blogsEntryAttachmentFileEntryHelper.
+				addBlogsEntryAttachmentFileEntry(
+					groupId, userId, entryId, folder.getFolderId(), title,
+					mimeType, is);
+
+		return fileEntry.getFileEntryId();
+	}
+
+	protected void deleteDiscussion(BlogsEntry entry) throws PortalException {
+		commentManager.deleteDiscussion(
+			BlogsEntry.class.getName(), entry.getEntryId());
+	}
+
+	protected Folder doAddFolder(long userId, long groupId, String folderName)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setAddGuestPermissions(true);
+
+		Repository repository = PortletFileRepositoryUtil.addPortletRepository(
+			groupId, BlogsConstants.SERVICE_NAME, serviceContext);
+
+		Folder folder = PortletFileRepositoryUtil.addPortletFolder(
+			userId, repository.getRepositoryId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, folderName,
+			serviceContext);
+
+		return folder;
+	}
+
+	protected String getEntryURL(
+			BlogsEntry entry, ServiceContext serviceContext)
+		throws PortalException {
+
+		String entryURL = GetterUtil.getString(
+			serviceContext.getAttribute("entryURL"));
+
+		if (Validator.isNotNull(entryURL)) {
+			return entryURL;
+		}
+
+		HttpServletRequest request = serviceContext.getRequest();
+
+		if (request == null) {
+			return StringPool.BLANK;
+		}
+
+		String portletId = PortletProviderUtil.getPortletId(
+			BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
+
+		if (Validator.isNotNull(portletId)) {
+			String layoutURL = LayoutURLUtil.getLayoutURL(
+				entry.getGroupId(), portletId, serviceContext);
+
+			if (Validator.isNotNull(layoutURL)) {
+				return layoutURL + Portal.FRIENDLY_URL_SEPARATOR + "blogs" +
+					StringPool.SLASH + entry.getEntryId();
+			}
+		}
+
+		portletId = PortletProviderUtil.getPortletId(
+			BlogsEntry.class.getName(), PortletProvider.Action.MANAGE);
+
+		if (Validator.isNull(portletId)) {
+			return StringPool.BLANK;
+		}
+
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			request, portletId, 0, PortletRequest.RENDER_PHASE);
+
+		portletURL.setParameter("mvcRenderCommandName", "/blogs/view_entry");
+		portletURL.setParameter("entryId", String.valueOf(entry.getEntryId()));
+
+		return portletURL.toString();
+	}
+
+	protected String getUniqueUrlTitle(
+		long entryId, long groupId, String title) {
 
 		String urlTitle = BlogsUtil.getUrlTitle(entryId, title);
 
@@ -1144,152 +1827,186 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	}
 
 	protected String getUniqueUrlTitle(
-			long entryId, String title, String oldUrlTitle,
-			ServiceContext serviceContext)
-		throws SystemException {
+		long entryId, String title, String oldUrlTitle,
+		ServiceContext serviceContext) {
 
-		String serviceContextUrlTitle = GetterUtil.getString(
-			serviceContext.getAttribute("urlTitle"));
+		String serviceContextUrlTitle = ParamUtil.getString(
+			serviceContext, "urlTitle");
 
 		String urlTitle = null;
 
-		if (isMatchesServiceContextUrlTitle(serviceContextUrlTitle)) {
+		if (Validator.isNotNull(serviceContextUrlTitle)) {
 			urlTitle = BlogsUtil.getUrlTitle(entryId, serviceContextUrlTitle);
-
-			BlogsEntry urlTitleEntry = blogsEntryPersistence.fetchByG_UT(
-				serviceContext.getScopeGroupId(), urlTitle);
-
-			if ((urlTitleEntry != null) &&
-				(urlTitleEntry.getEntryId() != entryId)) {
-
-				urlTitle = getUniqueUrlTitle(
-					entryId, serviceContext.getScopeGroupId(), urlTitle);
-			}
+		}
+		else if (Validator.isNotNull(oldUrlTitle)) {
+			return oldUrlTitle;
 		}
 		else {
-			if (isMatchesServiceContextUrlTitle(oldUrlTitle)) {
-				urlTitle = oldUrlTitle;
-			}
-			else {
-				urlTitle = getUniqueUrlTitle(
-					entryId, serviceContext.getScopeGroupId(), title);
-			}
+			urlTitle = getUniqueUrlTitle(
+				entryId, serviceContext.getScopeGroupId(), title);
+		}
+
+		BlogsEntry urlTitleEntry = blogsEntryPersistence.fetchByG_UT(
+			serviceContext.getScopeGroupId(), urlTitle);
+
+		if ((urlTitleEntry != null) &&
+			(urlTitleEntry.getEntryId() != entryId)) {
+
+			urlTitle = getUniqueUrlTitle(
+				entryId, serviceContext.getScopeGroupId(), urlTitle);
 		}
 
 		return urlTitle;
 	}
 
-	protected boolean isMatchesServiceContextUrlTitle(String urlTitle) {
-		if (Validator.isNotNull(urlTitle) &&
-			Validator.isNotNull(PropsValues.BLOGS_ENTRY_URL_TITLE_REGEXP)) {
-
-			Pattern pattern = Pattern.compile(
-				PropsValues.BLOGS_ENTRY_URL_TITLE_REGEXP);
-
-			Matcher matcher = pattern.matcher(urlTitle);
-
-			return matcher.matches();
-		}
-
-		return false;
-	}
-
 	protected void notifySubscribers(
-			BlogsEntry entry, ServiceContext serviceContext)
-		throws SystemException {
+			long userId, BlogsEntry entry, ServiceContext serviceContext,
+			Map<String, Serializable> workflowContext)
+		throws PortalException {
 
-		if (!entry.isApproved()) {
+		String entryURL = (String)workflowContext.get(
+			WorkflowConstants.CONTEXT_URL);
+
+		if (!entry.isApproved() || Validator.isNull(entryURL)) {
 			return;
 		}
 
-		String layoutFullURL = serviceContext.getLayoutFullURL();
+		BlogsGroupServiceSettings blogsGroupServiceSettings =
+			BlogsGroupServiceSettings.getInstance(entry.getGroupId());
 
-		if (Validator.isNull(layoutFullURL)) {
-			return;
-		}
-
-		PortletPreferences preferences =
-			ServiceContextUtil.getPortletPreferences(serviceContext);
-
-		if (preferences == null) {
-			long ownerId = entry.getGroupId();
-			int ownerType = PortletKeys.PREFS_OWNER_TYPE_GROUP;
-			long plid = PortletKeys.PREFS_PLID_SHARED;
-			String portletId = PortletKeys.BLOGS;
-			String defaultPreferences = null;
-
-			preferences = portletPreferencesLocalService.getPreferences(
-				entry.getCompanyId(), ownerId, ownerType, plid, portletId,
-				defaultPreferences);
-		}
+		boolean sendEmailEntryUpdated = GetterUtil.getBoolean(
+			serviceContext.getAttribute("sendEmailEntryUpdated"));
 
 		if (serviceContext.isCommandAdd() &&
-			BlogsUtil.getEmailEntryAddedEnabled(preferences)) {
+			blogsGroupServiceSettings.isEmailEntryAddedEnabled()) {
 		}
-		else if (serviceContext.isCommandUpdate() &&
-				 BlogsUtil.getEmailEntryUpdatedEnabled(preferences)) {
+		else if (sendEmailEntryUpdated && serviceContext.isCommandUpdate() &&
+				 blogsGroupServiceSettings.isEmailEntryUpdatedEnabled()) {
 		}
 		else {
 			return;
 		}
 
-		String entryURL =
-			layoutFullURL + Portal.FRIENDLY_URL_SEPARATOR + "blogs" +
-				StringPool.SLASH + entry.getEntryId();
+		Group group = groupPersistence.findByPrimaryKey(entry.getGroupId());
 
-		String fromName = BlogsUtil.getEmailFromName(
-			preferences, entry.getCompanyId());
-		String fromAddress = BlogsUtil.getEmailFromAddress(
-			preferences, entry.getCompanyId());
+		String entryTitle = entry.getTitle();
 
-		Map<Locale, String> localizedSubjectMap = null;
-		Map<Locale, String> localizedBodyMap = null;
+		String fromName = blogsGroupServiceSettings.getEmailFromName();
+		String fromAddress = blogsGroupServiceSettings.getEmailFromAddress();
+
+		LocalizedValuesMap subjectLocalizedValuesMap = null;
+		LocalizedValuesMap bodyLocalizedValuesMap = null;
 
 		if (serviceContext.isCommandUpdate()) {
-			localizedSubjectMap = BlogsUtil.getEmailEntryUpdatedSubjectMap(
-				preferences);
-			localizedBodyMap = BlogsUtil.getEmailEntryUpdatedBodyMap(
-				preferences);
+			subjectLocalizedValuesMap =
+				blogsGroupServiceSettings.getEmailEntryUpdatedSubject();
+			bodyLocalizedValuesMap =
+				blogsGroupServiceSettings.getEmailEntryUpdatedBody();
 		}
 		else {
-			localizedSubjectMap = BlogsUtil.getEmailEntryAddedSubjectMap(
-				preferences);
-			localizedBodyMap = BlogsUtil.getEmailEntryAddedBodyMap(preferences);
+			subjectLocalizedValuesMap =
+				blogsGroupServiceSettings.getEmailEntryAddedSubject();
+			bodyLocalizedValuesMap =
+				blogsGroupServiceSettings.getEmailEntryAddedBody();
 		}
 
-		SubscriptionSender subscriptionSender = new SubscriptionSender();
+		SubscriptionSender subscriptionSender =
+			new GroupSubscriptionCheckSubscriptionSender(
+				BlogsPermission.RESOURCE_NAME);
 
+		subscriptionSender.setClassPK(entry.getEntryId());
+		subscriptionSender.setClassName(entry.getModelClassName());
 		subscriptionSender.setCompanyId(entry.getCompanyId());
+		subscriptionSender.setContextAttribute(
+			"[$BLOGS_ENTRY_CONTENT$]",
+			StringUtil.shorten(HtmlUtil.stripHtml(entry.getContent()), 500),
+			false);
 		subscriptionSender.setContextAttributes(
+			"[$BLOGS_ENTRY_CREATE_DATE$]",
+			Time.getSimpleDate(entry.getCreateDate(), "yyyy/MM/dd"),
+			"[$BLOGS_ENTRY_DESCRIPTION$]", entry.getDescription(),
+			"[$BLOGS_ENTRY_SITE_NAME$]",
+				group.getDescriptiveName(serviceContext.getLocale()),
 			"[$BLOGS_ENTRY_STATUS_BY_USER_NAME$]", entry.getStatusByUserName(),
-			"[$BLOGS_ENTRY_URL$]", entryURL);
-		subscriptionSender.setContextUserPrefix("BLOGS_ENTRY");
+			"[$BLOGS_ENTRY_TITLE$]", entryTitle,
+			"[$BLOGS_ENTRY_UPDATE_COMMENT$]",
+			HtmlUtil.replaceNewLine(
+				GetterUtil.getString(
+					serviceContext.getAttribute("emailEntryUpdatedComment"))),
+			"[$BLOGS_ENTRY_URL$]", entryURL,
+			"[$BLOGS_ENTRY_USER_PORTRAIT_URL$]",
+			workflowContext.get(WorkflowConstants.CONTEXT_USER_PORTRAIT_URL),
+			"[$BLOGS_ENTRY_USER_URL$]",
+			workflowContext.get(WorkflowConstants.CONTEXT_USER_URL));
+		subscriptionSender.setContextCreatorUserPrefix("BLOGS_ENTRY");
+		subscriptionSender.setCreatorUserId(entry.getUserId());
+		subscriptionSender.setCurrentUserId(userId);
+		subscriptionSender.setEntryTitle(entryTitle);
+		subscriptionSender.setEntryURL(entryURL);
 		subscriptionSender.setFrom(fromAddress, fromName);
 		subscriptionSender.setHtmlFormat(true);
-		subscriptionSender.setLocalizedBodyMap(localizedBodyMap);
-		subscriptionSender.setLocalizedSubjectMap(localizedSubjectMap);
+
+		if (bodyLocalizedValuesMap != null) {
+			subscriptionSender.setLocalizedBodyMap(
+				LocalizationUtil.getMap(bodyLocalizedValuesMap));
+		}
+
+		if (subjectLocalizedValuesMap != null) {
+			subscriptionSender.setLocalizedSubjectMap(
+				LocalizationUtil.getMap(subjectLocalizedValuesMap));
+		}
+
 		subscriptionSender.setMailId("blogs_entry", entry.getEntryId());
-		subscriptionSender.setPortletId(PortletKeys.BLOGS);
+
+		int notificationType =
+			UserNotificationDefinition.NOTIFICATION_TYPE_ADD_ENTRY;
+
+		if (serviceContext.isCommandUpdate()) {
+			notificationType =
+				UserNotificationDefinition.NOTIFICATION_TYPE_UPDATE_ENTRY;
+		}
+
+		subscriptionSender.setNotificationType(notificationType);
+
+		String portletId = PortletProviderUtil.getPortletId(
+			BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
+
+		subscriptionSender.setPortletId(portletId);
 		subscriptionSender.setReplyToAddress(fromAddress);
 		subscriptionSender.setScopeGroupId(entry.getGroupId());
 		subscriptionSender.setServiceContext(serviceContext);
-		subscriptionSender.setUserId(entry.getUserId());
 
 		subscriptionSender.addPersistedSubscribers(
 			BlogsEntry.class.getName(), entry.getGroupId());
+
+		subscriptionSender.addPersistedSubscribers(
+			BlogsEntry.class.getName(), entry.getEntryId());
 
 		subscriptionSender.flushNotificationsAsync();
 	}
 
 	protected void pingGoogle(BlogsEntry entry, ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (!PropsValues.BLOGS_PING_GOOGLE_ENABLED || !entry.isApproved()) {
 			return;
 		}
 
+		String portletId = PortletProviderUtil.getPortletId(
+			BlogsEntry.class.getName(), PortletProvider.Action.MANAGE);
+
+		if (Validator.isNull(portletId)) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Not pinging Google because there is no blogs portlet " +
+						"provider");
+			}
+
+			return;
+		}
+
 		String layoutFullURL = PortalUtil.getLayoutFullURL(
-			serviceContext.getScopeGroupId(), PortletKeys.BLOGS);
+			serviceContext.getScopeGroupId(), portletId);
 
 		if (Validator.isNull(layoutFullURL)) {
 			return;
@@ -1311,8 +2028,7 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 		String name = group.getDescriptiveName();
 		String url = layoutFullURL + Portal.FRIENDLY_URL_SEPARATOR + "blogs";
-		String changesURL =
-			layoutFullURL + Portal.FRIENDLY_URL_SEPARATOR + "blogs/rss";
+		String changesURL = serviceContext.getPathMain() + "/blogs/rss";
 
 		sb.append("http://blogsearch.google.com/ping?name=");
 		sb.append(HttpUtil.encodeURL(name));
@@ -1339,8 +2055,8 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		}
 	}
 
-	protected void pingPingback(
-		BlogsEntry entry, ServiceContext serviceContext) {
+	protected void pingPingback(BlogsEntry entry, ServiceContext serviceContext)
+		throws PortalException {
 
 		if (!PropsValues.BLOGS_PINGBACK_ENABLED ||
 			!entry.isAllowPingbacks() || !entry.isApproved()) {
@@ -1348,7 +2064,16 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			return;
 		}
 
-		String layoutFullURL = serviceContext.getLayoutFullURL();
+		HttpServletRequest request = serviceContext.getRequest();
+
+		if (request == null) {
+			return;
+		}
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		String layoutFullURL = PortalUtil.getLayoutFullURL(themeDisplay);
 
 		if (Validator.isNull(layoutFullURL)) {
 			return;
@@ -1379,7 +2104,7 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 	protected void pingTrackbacks(
 			BlogsEntry entry, String[] trackbacks, boolean pingOldTrackbacks,
 			ServiceContext serviceContext)
-		throws SystemException {
+		throws PortalException {
 
 		if (!PropsValues.BLOGS_TRACKBACK_ENABLED ||
 			!entry.isAllowTrackbacks() || !entry.isApproved()) {
@@ -1387,13 +2112,22 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			return;
 		}
 
-		String layoutFullURL = serviceContext.getLayoutFullURL();
+		HttpServletRequest request = serviceContext.getRequest();
+
+		if (request == null) {
+			return;
+		}
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		String layoutFullURL = PortalUtil.getLayoutFullURL(themeDisplay);
 
 		if (Validator.isNull(layoutFullURL)) {
 			return;
 		}
 
-		Map<String, String> parts = new HashMap<String, String>();
+		Map<String, String> parts = new HashMap<>();
 
 		String excerpt = StringUtil.shorten(
 			HtmlUtil.extractText(entry.getContent()),
@@ -1409,11 +2143,11 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 		Set<String> trackbacksSet = null;
 
-		if (Validator.isNotNull(trackbacks)) {
+		if (ArrayUtil.isNotEmpty(trackbacks)) {
 			trackbacksSet = SetUtil.fromArray(trackbacks);
 		}
 		else {
-			trackbacksSet = new HashSet<String>();
+			trackbacksSet = new HashSet<>();
 		}
 
 		if (pingOldTrackbacks) {
@@ -1422,13 +2156,13 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 			entry.setTrackbacks(StringPool.BLANK);
 
-			blogsEntryPersistence.update(entry, false);
+			blogsEntryPersistence.update(entry);
 		}
 
 		Set<String> oldTrackbacks = SetUtil.fromArray(
 			StringUtil.split(entry.getTrackbacks()));
 
-		Set<String> validTrackbacks = new HashSet<String>();
+		Set<String> validTrackbacks = new HashSet<>();
 
 		for (String trackback : trackbacksSet) {
 			if (oldTrackbacks.contains(trackback)) {
@@ -1454,74 +2188,112 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 			entry.setTrackbacks(newTrackbacks);
 
-			blogsEntryPersistence.update(entry, false);
+			blogsEntryPersistence.update(entry);
 		}
 	}
 
-	protected void saveImages(
-			boolean smallImage, long smallImageId, byte[] smallImageBytes)
-		throws PortalException, SystemException {
+	protected BlogsEntry startWorkflowInstance(
+			long userId, BlogsEntry entry, ServiceContext serviceContext)
+		throws PortalException {
 
-		if (smallImage) {
-			if (smallImageBytes != null) {
-				imageLocalService.updateImage(smallImageId, smallImageBytes);
-			}
+		Map<String, Serializable> workflowContext = new HashMap<>();
+
+		workflowContext.put(
+			WorkflowConstants.CONTEXT_URL, getEntryURL(entry, serviceContext));
+
+		String userPortraitURL = StringPool.BLANK;
+		String userURL = StringPool.BLANK;
+
+		if (serviceContext.getThemeDisplay() != null) {
+			User user = userPersistence.findByPrimaryKey(userId);
+
+			userPortraitURL = user.getPortraitURL(
+				serviceContext.getThemeDisplay());
+			userURL = user.getDisplayURL(serviceContext.getThemeDisplay());
 		}
-		else {
-			imageLocalService.deleteImage(smallImageId);
-		}
+
+		workflowContext.put(
+			WorkflowConstants.CONTEXT_USER_PORTRAIT_URL, userPortraitURL);
+		workflowContext.put(WorkflowConstants.CONTEXT_USER_URL, userURL);
+
+		return WorkflowHandlerRegistryUtil.startWorkflowInstance(
+			entry.getCompanyId(), entry.getGroupId(), userId,
+			BlogsEntry.class.getName(), entry.getEntryId(), entry,
+			serviceContext, workflowContext);
 	}
 
-	protected void validate(
-			String title, String content, boolean smallImage,
-			String smallImageURL, String smallImageFileName,
-			byte[] smallImageBytes)
-		throws PortalException, SystemException {
-
-		if (Validator.isNull(title)) {
-			throw new EntryTitleException();
-		}
-		else if (Validator.isNull(content)) {
-			throw new EntryContentException();
-		}
-
+	protected void validate(long smallImageFileEntryId) throws PortalException {
 		String[] imageExtensions = PrefsPropsUtil.getStringArray(
 			PropsKeys.BLOGS_IMAGE_EXTENSIONS, StringPool.COMMA);
 
-		if (smallImage && Validator.isNull(smallImageURL) &&
-			(smallImageBytes != null)) {
+		if (smallImageFileEntryId != 0) {
+			FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
+				smallImageFileEntryId);
 
-			if (smallImageFileName != null) {
-				boolean validSmallImageExtension = false;
+			boolean validSmallImageExtension = false;
 
-				for (String _imageExtension : imageExtensions) {
-					if (StringPool.STAR.equals(_imageExtension) ||
-						StringUtil.endsWith(
-							smallImageFileName, _imageExtension)) {
+			for (String _imageExtension : imageExtensions) {
+				if (StringPool.STAR.equals(_imageExtension) ||
+					_imageExtension.equals(
+						StringPool.PERIOD + fileEntry.getExtension())) {
 
-						validSmallImageExtension = true;
+					validSmallImageExtension = true;
 
-						break;
-					}
+					break;
 				}
+			}
 
-				if (!validSmallImageExtension) {
-					throw new EntrySmallImageNameException(smallImageFileName);
-				}
+			if (!validSmallImageExtension) {
+				throw new EntrySmallImageNameException(
+					"Invalid small image for file entry " +
+						smallImageFileEntryId);
 			}
 
 			long smallImageMaxSize = PrefsPropsUtil.getLong(
 				PropsKeys.BLOGS_IMAGE_SMALL_MAX_SIZE);
 
 			if ((smallImageMaxSize > 0) &&
-				(smallImageBytes.length > smallImageMaxSize)) {
+				(fileEntry.getSize() > smallImageMaxSize)) {
 
 				throw new EntrySmallImageSizeException();
 			}
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	protected void validate(String title, String content)
+		throws PortalException {
+
+		if (Validator.isNull(title)) {
+			throw new EntryTitleException("Title is null");
+		}
+
+		int titleMaxLength = ModelHintsUtil.getMaxLength(
+			BlogsEntry.class.getName(), "title");
+
+		if (title.length() > titleMaxLength) {
+			throw new EntryTitleException(
+				"Title has more than " + titleMaxLength + " characters");
+		}
+
+		if (Validator.isNull(content)) {
+			throw new EntryContentException("Content is null");
+		}
+
+		int contentMaxLength = ModelHintsUtil.getMaxLength(
+			BlogsEntry.class.getName(), "content");
+
+		if (content.length() > contentMaxLength) {
+			throw new EntryContentException(
+				"Content has more than " + contentMaxLength + " characters");
+		}
+	}
+
+	protected CommentManager commentManager =
+		CommentManagerUtil.getCommentManager();
+
+	private static final String _COVER_IMAGE_FOLDER_NAME = "Cover Image";
+
+	private static final Log _log = LogFactoryUtil.getLog(
 		BlogsEntryLocalServiceImpl.class);
 
 }

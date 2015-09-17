@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -29,9 +29,7 @@ int numHits = userTracker.getHits();
 userTracker = userTracker.toEscapedModel();
 %>
 
-<portlet:actionURL var="editSessionURL">
-	<portlet:param name="struts_action" value="/monitoring/edit_session" />
-</portlet:actionURL>
+<portlet:actionURL name="/monitoring/edit_session" var="editSessionURL" />
 
 <aui:form action="<%= editSessionURL %>" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
@@ -44,9 +42,7 @@ userTracker = userTracker.toEscapedModel();
 
 	<c:choose>
 		<c:when test="<%= userTracker == null %>">
-			<liferay-ui:message key="session-id-not-found" />
-
-			<br /><br />
+			<liferay-ui:message key="session-id-could-not-be-found" />
 
 			<aui:button href="<%= redirect %>" type="cancel" />
 		</c:when>
@@ -64,125 +60,123 @@ userTracker = userTracker.toEscapedModel();
 			boolean userSessionAlive = false;
 			%>
 
-			<aui:fieldset>
-				<aui:field-wrapper label="session-id">
-					<%= HtmlUtil.escape(sessionId) %>
-				</aui:field-wrapper>
+			<liferay-ui:panel-container extended="<%= true %>" id="monitoringSessionHistoryPanelContainer" persistState="<%= true %>">
+				<liferay-ui:panel collapsible="<%= true %>" extended="<%= false %>" id="monitoringSessionPanel" persistState="<%= false %>" title="session">
+					<dl>
+						<dt>
+							<liferay-ui:message key="session-id" />
+						</dt>
+						<dd>
+							<%= HtmlUtil.escape(sessionId) %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="user-id" />
+						</dt>
+						<dd>
+							<%= userTracker.getUserId() %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="name" />
+						</dt>
+						<dd>
+							<%= (user2 != null) ? HtmlUtil.escape(user2.getFullName()) : LanguageUtil.get(request, "not-available") %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="email-address" />
+						</dt>
+						<dd>
+							<%= (user2 != null) ? user2.getEmailAddress() : LanguageUtil.get(request, "not-available") %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="last-request" />
+						</dt>
+						<dd>
+							<%= dateFormatDateTime.format(userTracker.getModifiedDate()) %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="num-of-hits" />
+						</dt>
+						<dd>
+							<%= numHits %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="browser-os-type" />
+						</dt>
+						<dd>
+							<%= userTracker.getUserAgent() %>
+						</dd>
+						<dt>
+							<liferay-ui:message key="remote-host-ip" />
+						</dt>
+						<dd>
+							<%= userTracker.getRemoteAddr() %> / <%= userTracker.getRemoteHost() %>
+						</dd>
+					</dl>
+				</liferay-ui:panel>
 
-				<aui:field-wrapper label="user-id">
-					<%= userTracker.getUserId() %>
-				</aui:field-wrapper>
+				<liferay-ui:panel collapsible="<%= true %>" extended="<%= false %>" id="sessionAccessedURLsPanels" persistState="<%= true %>" title="accessed-urls">
+					<dl>
 
-				<aui:field-wrapper label="name">
-					<%= (user2 != null) ? HtmlUtil.escape(user2.getFullName()) : LanguageUtil.get(pageContext, "not-available") %>
-				</aui:field-wrapper>
+						<%
+						for (int i = 0; i < paths.size(); i++) {
+							UserTrackerPath userTrackerPath = paths.get(i);
+						%>
 
-				<aui:field-wrapper label="email-address">
-					<%= (user2 != null) ? user2.getEmailAddress() : LanguageUtil.get(pageContext, "not-available") %>
-				</aui:field-wrapper>
+						<dt>
+							<%= StringUtil.replace(userTrackerPath.getPath(), "&", "& ") %>
+						</dt>
+						<dd>
+							<%= dateFormatDateTime.format(userTrackerPath.getPathDate()) %>
+						</dd>
 
-				<aui:field-wrapper label="last-request">
-					<%= dateFormatDateTime.format(userTracker.getModifiedDate()) %>
-				</aui:field-wrapper>
+						<%
+						}
+						%>
 
-				<aui:field-wrapper label="num-of-hits">
-					<%= numHits %>
-				</aui:field-wrapper>
+					</dl>
+				</liferay-ui:panel>
 
-				<aui:field-wrapper label="browser-os-type">
-					<%= userTracker.getUserAgent() %>
-				</aui:field-wrapper>
+				<liferay-ui:panel collapsible="<%= true %>" extended="<%= false %>" id="monitoringSessionAttributesPanel" persistState="<%= true %>" title="session-attributes">
+					<dl>
 
-				<aui:field-wrapper label="remote-host-ip">
-					<%= userTracker.getRemoteAddr() %> / <%= userTracker.getRemoteHost() %>
-				</aui:field-wrapper>
+						<%
+						userSessionAlive = true;
 
-				<liferay-ui:panel-container extended="<%= true %>" id="monitoringSessionHistoryPanelContainer" persistState="<%= true %>">
-					<liferay-ui:panel collapsible="<%= true %>" extended="<%= false %>" id="sessionAccessedURLsPanels" persistState="<%= true %>" title="accessed-urls">
-						<table border="0" cellpadding="4" cellspacing="0" width="100%">
+						HttpSession userSession = PortalSessionContext.get(sessionId);
 
-							<%
-							for (int i = 0; i < paths.size(); i++) {
-								UserTrackerPath userTrackerPath = paths.get(i);
+						if (userSession != null) {
+							try {
+								Set<String> sortedAttrNames = new TreeSet<String>();
 
-								String className = "portlet-section-body results-row";
-								String classHoverName = "portlet-section-body-hover results-row hover";
+								Enumeration<String> enu = userSession.getAttributeNames();
 
-								if (MathUtil.isEven(i)) {
-									className = "portlet-section-alternate results-row alt";
-									classHoverName = "portlet-section-alternate-hover results-row alt hover";
+								while (enu.hasMoreElements()) {
+									String attrName = enu.nextElement();
+
+									sortedAttrNames.add(attrName);
 								}
-							%>
 
-								<tr class="<%= className %>" onMouseEnter="this.className = '<%= classHoverName %>';" onMouseLeave="this.className = '<%= className %>';" style="font-size: xx-small;">
-									<td class="lfr-top">
-										<%= StringUtil.replace(userTrackerPath.getPath(), "&", "& ") %>
-									</td>
-									<td class="lfr-top" nowrap>
-										<%= dateFormatDateTime.format(userTrackerPath.getPathDate()) %>
-									</td>
-								</tr>
+								for (String attrName : sortedAttrNames) {
+						%>
 
-							<%
-							}
-							%>
+									<dt>
+										<%= HtmlUtil.escape(attrName) %>
+									</dt>
 
-						</table>
-					</liferay-ui:panel>
-
-					<liferay-ui:panel collapsible="<%= true %>" extended="<%= false %>" id="monitoringSessionAttributesPanel" persistState="<%= true %>" title="session-attributes">
-						<table border="0" cellpadding="4" cellspacing="0" width="100%">
-
-							<%
-							userSessionAlive = true;
-
-							HttpSession userSession = PortalSessionContext.get(sessionId);
-
-							if (userSession != null) {
-								try {
-									int counter = 0;
-
-									Set<String> sortedAttrNames = new TreeSet<String>();
-
-									Enumeration<String> enu = userSession.getAttributeNames();
-
-									while (enu.hasMoreElements()) {
-										String attrName = enu.nextElement();
-
-										sortedAttrNames.add(attrName);
-									}
-
-									for (String attrName : sortedAttrNames) {
-										String className = "portlet-section-body results-row";
-										String classHoverName = "portlet-section-body-hover results-row hover";
-
-										if (MathUtil.isEven(counter++)) {
-											className = "portlet-section-alternate results-row alt";
-											classHoverName = "portlet-section-alternate-hover results-row alt hover";
-										}
-							%>
-
-										<tr class="<%= className %>" onMouseEnter="this.className = '<%= classHoverName %>';" onMouseLeave="this.className = '<%= className %>';" style="font-size: xx-small;">
-											<td class="lfr-top">
-												<%= attrName %>
-											</td>
-										</tr>
-
-							<%
-									}
-								}
-								catch (Exception e) {
-									userSessionAlive = false;
-
-									e.printStackTrace();
+						<%
 								}
 							}
-							%>
+							catch (Exception e) {
+								userSessionAlive = false;
 
-							</table>
-					</liferay-ui:panel>
-				</liferay-ui:panel-container>
-			</aui:fieldset>
+								e.printStackTrace();
+							}
+						}
+						%>
+
+					</dl>
+				</liferay-ui:panel>
+			</liferay-ui:panel-container>
 
 			<aui:button-row>
 				<c:if test="<%= userSessionAlive && !session.getId().equals(sessionId) %>">

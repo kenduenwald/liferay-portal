@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.verify;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.blogs.model.BlogsEntry;
 import com.liferay.portlet.blogs.service.BlogsEntryLocalServiceUtil;
 
@@ -28,6 +29,11 @@ public class VerifyBlogs extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
+		updateEntryAssets();
+		verifyStatus();
+	}
+
+	protected void updateEntryAssets() throws Exception {
 		List<BlogsEntry> entries =
 			BlogsEntryLocalServiceUtil.getNoAssetEntries();
 
@@ -55,6 +61,12 @@ public class VerifyBlogs extends VerifyProcess {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(VerifyBlogs.class);
+	protected void verifyStatus() throws Exception {
+		runSQL(
+			"update BlogsEntry set status = " +
+				WorkflowConstants.STATUS_APPROVED + " where status is null");
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(VerifyBlogs.class);
 
 }

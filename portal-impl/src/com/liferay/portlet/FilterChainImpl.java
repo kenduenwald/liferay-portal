@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -56,6 +56,7 @@ public class FilterChainImpl implements FilterChain {
 		}
 	}
 
+	@Override
 	public void doFilter(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws IOException, PortletException {
@@ -71,6 +72,7 @@ public class FilterChainImpl implements FilterChain {
 		}
 	}
 
+	@Override
 	public void doFilter(EventRequest eventRequest, EventResponse eventResponse)
 		throws IOException, PortletException {
 
@@ -86,6 +88,7 @@ public class FilterChainImpl implements FilterChain {
 		}
 	}
 
+	@Override
 	public void doFilter(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
@@ -101,6 +104,7 @@ public class FilterChainImpl implements FilterChain {
 		}
 	}
 
+	@Override
 	public void doFilter(
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws IOException, PortletException {
@@ -120,8 +124,8 @@ public class FilterChainImpl implements FilterChain {
 		}
 	}
 
-	private Portlet _portlet;
-	private List<? extends PortletFilter> _portletFilters;
+	private final Portlet _portlet;
+	private final List<? extends PortletFilter> _portletFilters;
 	private int _pos;
 
 }

@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,10 @@
 
 <%@ include file="/html/common/init.jsp" %>
 
-<%@ page import="com.liferay.taglib.aui.AUIUtil" %><%@
+<%@ page import="com.liferay.portal.kernel.comment.Comment" %><%@
+page import="com.liferay.portal.kernel.search.RelatedSearchResult" %><%@
+page import="com.liferay.portal.kernel.util.DateFormatFactoryUtil" %><%@
+page import="com.liferay.taglib.aui.AUIUtil" %><%@
 page import="com.liferay.taglib.util.InlineUtil" %>
 
 <%
@@ -24,15 +27,22 @@ PortletRequest portletRequest = (PortletRequest)request.getAttribute(JavaConstan
 
 PortletResponse portletResponse = (PortletResponse)request.getAttribute(JavaConstants.JAVAX_PORTLET_RESPONSE);
 
-String namespace = StringPool.BLANK;
+String namespace = AUIUtil.getNamespace(portletRequest, portletResponse);
 
-boolean auiFormUseNamespace = GetterUtil.getBoolean((String)request.getAttribute("aui:form:useNamespace"), true);
-
-if ((portletResponse != null) && auiFormUseNamespace) {
-	namespace = portletResponse.getNamespace();
+if (Validator.isNull(namespace)) {
+	namespace = AUIUtil.getNamespace(request);
 }
 
-String currentURL = PortalUtil.getCurrentURL(request);
+String currentURL = null;
+
+if ((portletRequest != null) && (portletResponse != null)) {
+	PortletURL currentURLObj = PortletURLUtil.getCurrent(PortalUtil.getLiferayPortletRequest(portletRequest), PortalUtil.getLiferayPortletResponse(portletResponse));
+
+	currentURL = currentURLObj.toString();
+}
+else {
+	currentURL = PortalUtil.getCurrentURL(request);
+}
 %>
 
 <%@ include file="/html/taglib/init-ext.jsp" %>

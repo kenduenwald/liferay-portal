@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,53 +14,32 @@
 
 package com.liferay.portal.security.auth;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Shuyang Zhou
+ * @author Peter Fellwock
  */
 public class ScreenNameValidatorFactory {
 
 	public static ScreenNameValidator getInstance() {
-		if (_screenNameValidator == null) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Instantiate " + PropsValues.USERS_SCREEN_NAME_VALIDATOR);
-			}
-
-			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
-
-			try {
-				_screenNameValidator =
-					(ScreenNameValidator)classLoader.loadClass(
-						PropsValues.USERS_SCREEN_NAME_VALIDATOR).newInstance();
-			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-		}
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Return " + _screenNameValidator.getClass().getName());
-		}
-
-		return _screenNameValidator;
+		return _instance._serviceTracker.getService();
 	}
 
-	public static void setInstance(ScreenNameValidator screenNameValidator) {
-		if (_log.isDebugEnabled()) {
-			_log.debug("Set " + screenNameValidator.getClass().getName());
-		}
+	private ScreenNameValidatorFactory() {
+		Registry registry = RegistryUtil.getRegistry();
 
-		_screenNameValidator = screenNameValidator;
+		_serviceTracker = registry.trackServices(ScreenNameValidator.class);
+
+		_serviceTracker.open();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
-		ScreenNameValidatorFactory.class);
+	private static final ScreenNameValidatorFactory _instance =
+		new ScreenNameValidatorFactory();
 
-	private static ScreenNameValidator _screenNameValidator;
+	private final ServiceTracker<?, ScreenNameValidator> _serviceTracker;
 
 }

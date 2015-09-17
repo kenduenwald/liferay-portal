@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,12 +23,8 @@ public interface MessageBus {
 
 	public void addDestination(Destination destination);
 
-	public void addDestinationEventListener(
-		DestinationEventListener destinationEventListener);
-
-	public void addDestinationEventListener(
-		String destinationName,
-		DestinationEventListener destinationEventListener);
+	public boolean addMessageBusEventListener(
+		MessageBusEventListener messageBusEventListener);
 
 	public Destination getDestination(String destinationName);
 
@@ -47,14 +43,15 @@ public interface MessageBus {
 
 	public Destination removeDestination(String destinationName);
 
-	public void removeDestinationEventListener(
-		DestinationEventListener destinationEventListener);
+	public Destination removeDestination(
+		String destinationName, boolean closeOnRemove);
 
-	public void removeDestinationEventListener(
-		String destinationName,
-		DestinationEventListener destinationEventListener);
+	public boolean removeMessageBusEventListener(
+		MessageBusEventListener messageBusEventListener);
 
 	public void replace(Destination destination);
+
+	public void replace(Destination destination, boolean closeOnReplace);
 
 	public void sendMessage(String destinationName, Message message);
 

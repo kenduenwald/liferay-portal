@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,32 +14,21 @@
 
 package com.liferay.portal.kernel.util;
 
-import java.util.HashMap;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Raymond Augé
  */
 public class TimeZoneUtil {
 
+	public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
+
 	public static TimeZone getDefault() {
-		return _instance._getDefault();
-	}
-
-	public static TimeZone getTimeZone(String timeZoneId) {
-		return _instance._getTimeZone(timeZoneId);
-	}
-
-	public static void setDefault(String timeZoneId) {
-		_instance._setDefault(timeZoneId);
-	}
-
-	private TimeZoneUtil() {
-		_timeZone = _getTimeZone(StringPool.UTC);
-	}
-
-	private TimeZone _getDefault() {
 		TimeZone timeZone = TimeZoneThreadLocal.getDefaultTimeZone();
 
 		if (timeZone != null) {
@@ -49,7 +38,13 @@ public class TimeZoneUtil {
 		return _timeZone;
 	}
 
-	private TimeZone _getTimeZone(String timeZoneId) {
+	public static TimeZoneUtil getInstance() {
+		PortalRuntimePermission.checkGetBeanProperty(TimeZoneUtil.class);
+
+		return new TimeZoneUtil();
+	}
+
+	public static TimeZone getTimeZone(String timeZoneId) {
 		TimeZone timeZone = _timeZones.get(timeZoneId);
 
 		if (timeZone == null) {
@@ -61,15 +56,20 @@ public class TimeZoneUtil {
 		return timeZone;
 	}
 
-	private void _setDefault(String timeZoneId) {
+	public static void setDefault(String timeZoneId) {
+		PortalRuntimePermission.checkSetBeanProperty(TimeZoneUtil.class);
+
 		if (Validator.isNotNull(timeZoneId)) {
 			_timeZone = TimeZone.getTimeZone(timeZoneId);
 		}
 	}
 
-	private static TimeZoneUtil _instance = new TimeZoneUtil();
+	private TimeZoneUtil() {
+	}
 
-	private TimeZone _timeZone;
-	private Map<String, TimeZone> _timeZones = new HashMap<String, TimeZone>();
+	private static volatile TimeZone _timeZone = TimeZone.getTimeZone(
+		StringPool.UTC);
+	private static final Map<String, TimeZone> _timeZones =
+		new ConcurrentHashMap<>();
 
 }

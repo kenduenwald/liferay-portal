@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,9 +28,9 @@ public interface JSONSerializer {
 	public String serializeDeep(Object target);
 
 	public JSONSerializer transform(
-		JSONTransformer jsonTransformer, Class<?>... types);
+		JSONTransformer jsonTransformer, Class<?> type);
 
 	public JSONSerializer transform(
-		JSONTransformer jsonTransformer, String... fields);
+		JSONTransformer jsonTransformer, String field);
 
 }

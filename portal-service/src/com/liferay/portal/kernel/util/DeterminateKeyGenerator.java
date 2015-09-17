@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * <p>
- * See http://issues.liferay.com/browse/LPS-6872.
+ * See https://issues.liferay.com/browse/LPS-6872.
  * </p>
  *
  * @author Shuyang Zhou
@@ -97,7 +97,7 @@ public class DeterminateKeyGenerator {
 
 	private static final int _DEFAULT_LENGTH = 4;
 
-	private static ThreadLocal<Map<String, Integer>> _seedMap =
+	private static final ThreadLocal<Map<String, Integer>> _seedMap =
 		new AutoResetThreadLocal<Map<String, Integer>>(
 			DeterminateKeyGenerator.class + "._seedMap",
 			new HashMap<String, Integer>());

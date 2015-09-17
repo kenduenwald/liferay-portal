@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,39 +16,18 @@
 
 <%@ include file="/html/taglib/init.jsp" %>
 
+<%@ page import="com.liferay.portal.theme.NavItem" %><%@
+page import="com.liferay.portlet.dynamicdatamapping.DDMTemplate" %>
+
 <%
-String bulletStyle = ((String)request.getAttribute("liferay-ui:navigation:bulletStyle")).toLowerCase();
-String displayStyle = (String)request.getAttribute("liferay-ui:navigation:displayStyle");
-
-String headerType = null;
-String rootLayoutType = null;
-int rootLayoutLevel = 0;
-String includedLayouts = null;
-boolean nestedChildren = true;
-
-String[] displayStyleDefinition = _getDisplayStyleDefinition(displayStyle);
-
-if ((displayStyleDefinition != null) && (displayStyleDefinition.length != 0)) {
-	headerType = displayStyleDefinition[0];
-	rootLayoutType = displayStyleDefinition[1];
-	rootLayoutLevel = GetterUtil.getInteger(displayStyleDefinition[2]);
-	includedLayouts = displayStyleDefinition[3];
-
-	if (displayStyleDefinition.length > 4) {
-		nestedChildren = GetterUtil.getBoolean(displayStyleDefinition[4]);
-	}
-}
-else {
-	headerType = (String)request.getAttribute("liferay-ui:navigation:headerType");
-	rootLayoutType = (String)request.getAttribute("liferay-ui:navigation:rootLayoutType");
-	rootLayoutLevel = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:navigation:rootLayoutLevel"));
-	includedLayouts = (String)request.getAttribute("liferay-ui:navigation:includedLayouts");
-	nestedChildren = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:navigation:nestedChildren"));
-}
-%>
-
-<%!
-private String[] _getDisplayStyleDefinition(String displayStyle) {
-	return PropsUtil.getArray("navigation.display.style", new Filter(displayStyle));
-}
+String bulletStyle = StringUtil.toLowerCase(((String)request.getAttribute("liferay-ui:navigation:bulletStyle")));
+String displayStyle = GetterUtil.getString((String)request.getAttribute("liferay-ui:navigation:displayStyle"));
+long displayStyleGroupId = GetterUtil.getLong((String)request.getAttribute("liferay-ui:navigation:displayStyleGroupId"));
+String headerType = (String)request.getAttribute("liferay-ui:navigation:headerType");
+String includedLayouts = (String)request.getAttribute("liferay-ui:navigation:includedLayouts");
+List<NavItem> navItems = (List)request.getAttribute("liferay-ui:navigation:navItems");
+boolean nestedChildren = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:navigation:nestedChildren"));
+boolean preview = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:navigation:preview"));
+int rootLayoutLevel = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:navigation:rootLayoutLevel"));
+String rootLayoutType = (String)request.getAttribute("liferay-ui:navigation:rootLayoutType");
 %>

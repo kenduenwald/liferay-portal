@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,7 +22,46 @@ import com.liferay.portal.kernel.exception.PortalException;
 public class DuplicateFileException extends PortalException {
 
 	public DuplicateFileException() {
-		super();
+	}
+
+	public DuplicateFileException(
+		long companyId, long repositoryId, String fileName) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s}",
+				companyId, repositoryId, fileName));
+	}
+
+	public DuplicateFileException(
+		long companyId, long repositoryId, String fileName, String version) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s, version=%s}",
+				companyId, repositoryId, fileName, version));
+	}
+
+	public DuplicateFileException(
+		long companyId, long repositoryId, String fileName, String version,
+		Throwable cause) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s, version=%s, " +
+					"cause=%s}",
+				companyId, repositoryId, fileName, version, cause),
+			cause);
+	}
+
+	public DuplicateFileException(
+		long companyId, long repositoryId, String fileName, Throwable cause) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s, cause=%s}",
+				companyId, repositoryId, fileName, cause),
+			cause);
 	}
 
 	public DuplicateFileException(String msg) {

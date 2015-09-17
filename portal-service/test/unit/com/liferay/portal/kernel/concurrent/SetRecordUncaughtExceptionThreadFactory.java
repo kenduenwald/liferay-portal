@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,24 +20,24 @@ import java.util.concurrent.ThreadFactory;
 /**
  * @author Shuyang Zhou
  */
-public class SetRecordUncaughtExceptionThreadFactory
-	implements ThreadFactory {
+public class SetRecordUncaughtExceptionThreadFactory implements ThreadFactory {
 
 	public RecordUncaughtExceptionHandler getRecordUncaughtExceptionHandler() {
-		return recordUncaughtExceptionHandler;
+		return _recordUncaughtExceptionHandler;
 	}
 
+	@Override
 	public Thread newThread(Runnable runnable) {
 		Thread thread = _threadFactory.newThread(runnable);
 
-		thread.setUncaughtExceptionHandler(recordUncaughtExceptionHandler);
+		thread.setUncaughtExceptionHandler(_recordUncaughtExceptionHandler);
 
 		return thread;
 	}
 
+	private final RecordUncaughtExceptionHandler
+		_recordUncaughtExceptionHandler = new RecordUncaughtExceptionHandler();
 	private final ThreadFactory _threadFactory =
 		Executors.defaultThreadFactory();
-	private final RecordUncaughtExceptionHandler
-		recordUncaughtExceptionHandler = new RecordUncaughtExceptionHandler();
 
 }

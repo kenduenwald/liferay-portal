@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,19 +18,19 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.mail.Account;
 import com.liferay.portal.kernel.pop.MessageListener;
+import com.liferay.portal.kernel.pop.MessageListenerException;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.pop.POPServerUtil;
 import com.liferay.util.mail.MailEngine;
 
-import java.util.List;
-
 import javax.mail.Address;
 import javax.mail.Flags;
 import javax.mail.Folder;
-import javax.mail.Message.RecipientType;
 import javax.mail.Message;
+import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Store;
@@ -45,19 +45,48 @@ public class POPNotificationsMessageListener
 	@Override
 	protected void doReceive(
 			com.liferay.portal.kernel.messaging.Message message)
-		throws Exception {
+		throws MessagingException {
+
+		Store store = null;
 
 		try {
-			pollPopServer();
+			store = getStore();
+
+			Folder inboxFolder = getInboxFolder(store);
+
+			if (inboxFolder == null) {
+				return;
+			}
+
+			try {
+				Message[] messages = inboxFolder.getMessages();
+
+				if (messages == null) {
+					return;
+				}
+
+				if (_log.isDebugEnabled()) {
+					_log.debug("Deleting messages");
+				}
+
+				inboxFolder.setFlags(
+					messages, new Flags(Flags.Flag.DELETED), true);
+
+				notifyMessageListeners(messages);
+			}
+			finally {
+				inboxFolder.close(true);
+			}
 		}
 		finally {
-			_store = null;
-			_inboxFolder = null;
+			if (store != null) {
+				store.close();
+			}
 		}
 	}
 
 	protected String getEmailAddress(Address[] addresses) {
-		if ((addresses == null) || (addresses.length == 0)) {
+		if (ArrayUtil.isEmpty(addresses)) {
 			return StringPool.BLANK;
 		}
 
@@ -66,127 +95,92 @@ public class POPNotificationsMessageListener
 		return internetAddress.getAddress();
 	}
 
-	protected void initInboxFolder() throws Exception {
-		if ((_inboxFolder == null) || !_inboxFolder.isOpen()) {
-			initStore();
+	protected Folder getInboxFolder(Store store) throws MessagingException {
+		Folder defaultFolder = store.getDefaultFolder();
 
-			Folder defaultFolder = _store.getDefaultFolder();
+		Folder[] folders = defaultFolder.list();
 
-			Folder[] folders = defaultFolder.list();
-
-			if (folders.length == 0) {
-				throw new MessagingException("Inbox not found");
-			}
-			else {
-				_inboxFolder = folders[0];
-
-				_inboxFolder.open(Folder.READ_WRITE);
-			}
+		if (folders.length == 0) {
+			throw new MessagingException("Inbox not found");
 		}
+
+		Folder inboxFolder = folders[0];
+
+		inboxFolder.open(Folder.READ_WRITE);
+
+		return inboxFolder;
 	}
 
-	protected void initStore() throws Exception {
-		if ((_store == null) || !_store.isConnected()) {
-			Session session = MailEngine.getSession();
+	protected Store getStore() throws MessagingException {
+		Session session = MailEngine.getSession();
 
-			String storeProtocol = GetterUtil.getString(
-				session.getProperty("mail.store.protocol"));
+		String storeProtocol = GetterUtil.getString(
+			session.getProperty("mail.store.protocol"));
 
-			if (!storeProtocol.equals(Account.PROTOCOL_POPS)) {
-				storeProtocol = Account.PROTOCOL_POP;
-			}
-
-			_store = session.getStore(storeProtocol);
-
-			String prefix = "mail." + storeProtocol + ".";
-
-			String host = session.getProperty(prefix + "host");
-
-			String user = session.getProperty(prefix + "user");
-
-			if (Validator.isNull(user)) {
-				user = session.getProperty("mail.smtp.user");
-			}
-
-			String password = session.getProperty(prefix + "password");
-
-			if (Validator.isNull(password)) {
-				password = session.getProperty("mail.smtp.password");
-			}
-
-			_store.connect(host, user, password);
+		if (!storeProtocol.equals(Account.PROTOCOL_POPS)) {
+			storeProtocol = Account.PROTOCOL_POP;
 		}
+
+		Store store = session.getStore(storeProtocol);
+
+		String prefix = "mail." + storeProtocol + ".";
+
+		String host = session.getProperty(prefix + "host");
+
+		String user = session.getProperty(prefix + "user");
+
+		if (Validator.isNull(user)) {
+			user = session.getProperty("mail.smtp.user");
+		}
+
+		String password = session.getProperty(prefix + "password");
+
+		if (Validator.isNull(password)) {
+			password = session.getProperty("mail.smtp.password");
+		}
+
+		store.connect(host, user, password);
+
+		return store;
 	}
 
-	protected void nostifyMessageListeners(
-			List<MessageListener> messageListeners, Message message)
-		throws Exception {
-
-		String from = getEmailAddress(message.getFrom());
-		String recipient = getEmailAddress(
-			message.getRecipients(RecipientType.TO));
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("From " + from);
-			_log.debug("Recipient " + recipient);
-		}
-
-		for (MessageListener messageListener : messageListeners) {
-			try {
-				if (messageListener.accept(from, recipient, message)) {
-					messageListener.deliver(from, recipient, message);
-				}
-			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-		}
-	}
-
-	protected void nostifyMessageListeners(Message[] messages)
-		throws Exception {
+	protected void notifyMessageListeners(Message[] messages)
+		throws MessagingException {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Messages " + messages.length);
 		}
 
-		List<MessageListener> messageListeners = POPServerUtil.getListeners();
-
-		for (int i = 0; i < messages.length; i++) {
-			Message message = messages[i];
-
+		for (Message message : messages) {
 			if (_log.isDebugEnabled()) {
 				_log.debug("Message " + message);
 			}
 
-			nostifyMessageListeners(messageListeners, message);
-		}
-	}
+			String from = getEmailAddress(message.getFrom());
+			String recipient = getEmailAddress(
+				message.getRecipients(RecipientType.TO));
 
-	protected void pollPopServer() throws Exception {
-		initInboxFolder();
-
-		Message[] messages = _inboxFolder.getMessages();
-
-		try {
-			nostifyMessageListeners(messages);
-		}
-		finally {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Deleting messages");
+				_log.debug("From " + from);
+				_log.debug("Recipient " + recipient);
 			}
 
-			_inboxFolder.setFlags(
-				messages, new Flags(Flags.Flag.DELETED), true);
+			for (MessageListener messageListener :
+					POPServerUtil.getListeners()) {
 
-			_inboxFolder.close(true);
+				try {
+					if (messageListener.accept(from, recipient, message)) {
+						messageListener.deliver(from, recipient, message);
+					}
+				}
+				catch (MessageListenerException mle) {
+					_log.error(mle, mle);
+				}
+			}
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		POPNotificationsMessageListener.class);
-
-	private Folder _inboxFolder;
-	private Store _store;
 
 }

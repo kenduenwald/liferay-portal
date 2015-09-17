@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,30 +14,125 @@
 
 package com.liferay.portal.struts;
 
-import java.util.HashSet;
+import com.liferay.portal.kernel.concurrent.ConcurrentHashSet;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceReference;
+import com.liferay.registry.ServiceRegistration;
+import com.liferay.registry.ServiceTracker;
+import com.liferay.registry.ServiceTrackerCustomizer;
+import com.liferay.registry.collections.StringServiceRegistrationMap;
+import com.liferay.registry.collections.StringServiceRegistrationMapImpl;
+import com.liferay.registry.util.StringPlus;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * @author Mika Koivisto
+ * @author Raymond Augé
  */
 public class AuthPublicPathRegistry {
 
 	public static boolean contains(String path) {
-		return _paths.contains(path);
+		return _instance._contains(path);
 	}
 
 	public static void register(String... paths) {
-		for (String path : paths) {
-			_paths.add(path);
-		}
+		_instance._register(paths);
 	}
 
 	public static void unregister(String... paths) {
+		_instance._unregister(paths);
+	}
+
+	private AuthPublicPathRegistry() {
+		Registry registry = RegistryUtil.getRegistry();
+
+		_serviceTracker = registry.trackServices(
+			registry.getFilter(
+				"(&(auth.public.path=*)(objectClass=java.lang.Object))"),
+			new AuthPublicTrackerCustomizer());
+
+		_serviceTracker.open();
+	}
+
+	private boolean _contains(String path) {
+		return _paths.contains(path);
+	}
+
+	private void _register(String... paths) {
+		Registry registry = RegistryUtil.getRegistry();
+
 		for (String path : paths) {
-			_paths.remove(path);
+			Map<String, Object> properties = new HashMap<>();
+
+			properties.put("auth.public.path", path);
+			properties.put("objectClass", Object.class.getName());
+
+			ServiceRegistration<Object> serviceRegistration =
+				registry.registerService(
+					Object.class, new Object(), properties);
+
+			_serviceRegistrations.put(path, serviceRegistration);
 		}
 	}
 
-	private static Set<String> _paths = new HashSet<String>();
+	private void _unregister(String... paths) {
+		for (String path : paths) {
+			ServiceRegistration<Object> serviceRegistration =
+				_serviceRegistrations.remove(path);
+
+			if (serviceRegistration != null) {
+				serviceRegistration.unregister();
+			}
+		}
+	}
+
+	private static final AuthPublicPathRegistry _instance =
+		new AuthPublicPathRegistry();
+
+	private final Set<String> _paths = new ConcurrentHashSet<>();
+	private final StringServiceRegistrationMap<Object>
+		_serviceRegistrations = new StringServiceRegistrationMapImpl<>();
+	private final ServiceTracker<Object, Object> _serviceTracker;
+
+	private class AuthPublicTrackerCustomizer
+		implements ServiceTrackerCustomizer<Object, Object> {
+
+		@Override
+		public Object addingService(ServiceReference<Object> serviceReference) {
+			List<String> paths = StringPlus.asList(
+				serviceReference.getProperty("auth.public.path"));
+
+			for (String path : paths) {
+				_paths.add(path);
+			}
+
+			Registry registry = RegistryUtil.getRegistry();
+
+			return registry.getService(serviceReference);
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<Object> serviceReference, Object object) {
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<Object> serviceReference, Object object) {
+
+			List<String> paths = StringPlus.asList(
+				serviceReference.getProperty("auth.public.path"));
+
+			for (String path : paths) {
+				_paths.remove(path);
+			}
+		}
+
+	}
 
 }

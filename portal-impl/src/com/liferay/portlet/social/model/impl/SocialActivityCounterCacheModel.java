@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.social.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.social.model.SocialActivityCounter;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing SocialActivityCounter in entity cache.
@@ -29,8 +35,33 @@ import java.io.Serializable;
  * @see SocialActivityCounter
  * @generated
  */
+@ProviderType
 public class SocialActivityCounterCacheModel implements CacheModel<SocialActivityCounter>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof SocialActivityCounterCacheModel)) {
+			return false;
+		}
+
+		SocialActivityCounterCacheModel socialActivityCounterCacheModel = (SocialActivityCounterCacheModel)obj;
+
+		if (activityCounterId == socialActivityCounterCacheModel.activityCounterId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, activityCounterId);
+	}
+
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(27);
@@ -66,6 +97,7 @@ public class SocialActivityCounterCacheModel implements CacheModel<SocialActivit
 		return sb.toString();
 	}
 
+	@Override
 	public SocialActivityCounter toEntityModel() {
 		SocialActivityCounterImpl socialActivityCounterImpl = new SocialActivityCounterImpl();
 
@@ -93,6 +125,48 @@ public class SocialActivityCounterCacheModel implements CacheModel<SocialActivit
 		socialActivityCounterImpl.resetOriginalValues();
 
 		return socialActivityCounterImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		activityCounterId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		classNameId = objectInput.readLong();
+		classPK = objectInput.readLong();
+		name = objectInput.readUTF();
+		ownerType = objectInput.readInt();
+		currentValue = objectInput.readInt();
+		totalValue = objectInput.readInt();
+		graceValue = objectInput.readInt();
+		startPeriod = objectInput.readInt();
+		endPeriod = objectInput.readInt();
+		active = objectInput.readBoolean();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(activityCounterId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(classNameId);
+		objectOutput.writeLong(classPK);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		objectOutput.writeInt(ownerType);
+		objectOutput.writeInt(currentValue);
+		objectOutput.writeInt(totalValue);
+		objectOutput.writeInt(graceValue);
+		objectOutput.writeInt(startPeriod);
+		objectOutput.writeInt(endPeriod);
+		objectOutput.writeBoolean(active);
 	}
 
 	public long activityCounterId;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,17 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.EmailAddressServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.EmailAddressServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.EmailAddressServiceSoap
  * @generated
  */
+@ProviderType
 public class EmailAddressSoap implements Serializable {
 	public static EmailAddressSoap toSoapModel(EmailAddress model) {
 		EmailAddressSoap soapModel = new EmailAddressSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
+		soapModel.setUuid(model.getUuid());
 		soapModel.setEmailAddressId(model.getEmailAddressId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
@@ -42,6 +47,7 @@ public class EmailAddressSoap implements Serializable {
 		soapModel.setAddress(model.getAddress());
 		soapModel.setTypeId(model.getTypeId());
 		soapModel.setPrimary(model.getPrimary());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 
 		return soapModel;
 	}
@@ -92,6 +98,22 @@ public class EmailAddressSoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setEmailAddressId(pk);
+	}
+
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
+	public String getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String uuid) {
+		_uuid = uuid;
 	}
 
 	public long getEmailAddressId() {
@@ -166,11 +188,11 @@ public class EmailAddressSoap implements Serializable {
 		_address = address;
 	}
 
-	public int getTypeId() {
+	public long getTypeId() {
 		return _typeId;
 	}
 
-	public void setTypeId(int typeId) {
+	public void setTypeId(long typeId) {
 		_typeId = typeId;
 	}
 
@@ -186,6 +208,16 @@ public class EmailAddressSoap implements Serializable {
 		_primary = primary;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	private long _mvccVersion;
+	private String _uuid;
 	private long _emailAddressId;
 	private long _companyId;
 	private long _userId;
@@ -195,6 +227,7 @@ public class EmailAddressSoap implements Serializable {
 	private long _classNameId;
 	private long _classPK;
 	private String _address;
-	private int _typeId;
+	private long _typeId;
 	private boolean _primary;
+	private Date _lastPublishDate;
 }

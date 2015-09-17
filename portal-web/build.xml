@@ -5,29 +5,26 @@
 
 	<property name="war.file" value="${ant.project.name}" />
 
-	<property name="alloy.file" value="alloy-1.5.0.zip" />
-
-	<!--
-	When upgrading CKEditor, make sure to delete
-	docroot/html/js/editor/ckeditor_diffs/ckeditor.js.
-	-->
-
-	<property name="ckeditor.file" value="ckeditor_3.5.3.zip" />
-	<property name="fckeditor.file" value="FCKeditor_2.6.3.zip" />
-	<property name="tinymce.file" value="tinymce_3_2_1.zip" />
-	<property name="vaadin.file" value="vaadin-6.7.4-liferay.zip" />
+	<property name="alloy.bootstrap.version" value="3.2.0-2" />
+	<property name="alloy.version" value="3.0.1" />
+	<property name="alloy-font-awesome.version" value="2.0" />
+	<property name="frontend.js.web.dir" value="../modules/frontend/frontend-js-web" />
+	<property name="sass.portal.common.dir" value="../modules/frontend/frontend-common-css/tmp/META-INF/resources" />
 
 	<path id="jspc.common.classpath">
 		<pathelement path="docroot/WEB-INF/classes" />
-		<pathelement path="${classpath.jsp}" />
+		<pathelement location="${project.dir}/modules/core/registry-api/classes" />
 		<pathelement location="${project.dir}/portal-impl/portal-impl.jar" />
+		<pathelement location="${project.dir}/portal-pacl/portal-pacl.jar" />
 		<pathelement location="${project.dir}/portal-service/portal-service.jar" />
+		<pathelement location="${project.dir}/util-bridges/util-bridges.jar" />
 		<pathelement location="${project.dir}/util-java/util-java.jar" />
 		<pathelement location="${project.dir}/util-taglib/util-taglib.jar" />
 		<pathelement location="${project.dir}/lib/development/activation.jar" />
 		<pathelement location="${project.dir}/lib/development/mail.jar" />
+		<pathelement location="${project.dir}/lib/development/velocity.jar" />
+		<pathelement location="${project.dir}/lib/global/portal-settings-shared.jar" />
 		<pathelement location="${project.dir}/lib/global/portlet.jar" />
-		<pathelement location="${project.dir}/lib/portal/alloy-taglib.jar" />
 		<pathelement location="${project.dir}/lib/portal/ant.jar" />
 		<pathelement location="${project.dir}/lib/portal/backport-concurrent.jar" />
 		<pathelement location="${project.dir}/lib/portal/commons-collections.jar" />
@@ -47,344 +44,71 @@
 		<pathelement location="${project.dir}/lib/portal/log4j.jar" />
 		<pathelement location="${project.dir}/lib/portal/openid4java.jar" />
 		<pathelement location="${project.dir}/lib/portal/rome.jar" />
-		<pathelement location="${project.dir}/lib/portal/struts.jar" />
-		<pathelement location="${project.dir}/lib/portal/velocity.jar" />
+		<pathelement location="${project.dir}/lib/portal/struts-core.jar" />
+		<pathelement location="${project.dir}/lib/portal/struts-extras.jar" />
+		<pathelement location="${project.dir}/lib/portal/struts-taglib.jar" />
+		<pathelement location="${project.dir}/lib/portal/struts-tiles.jar" />
 	</path>
 
-	<target name="build-alloy">
+	<extension-point name="build-portal-web-dependencies" depends="build-css,build-dtd" />
+
+	<target name="build-common-css">
+		<property name="bourbon.version" value="3.2.3" />
+
+		<property name="bourbon.deploy" value="${sass.portal.common.dir}/bourbon" />
+
+		<property name="bourbon.file" value="bourbon-${bourbon.version}.zip" />
+
 		<if>
 			<not>
 				<uptodate
-					srcfile="third-party/${alloy.file}"
-					targetfile="docroot/html/js/aui"
+					srcfile="third-party/${bourbon.file}"
+					targetfile="${bourbon.deploy}"
 				/>
 			</not>
 			<then>
-
-				<!-- Prepare -->
-
-				<delete dir="docroot/html/ALLOY_ZIP" />
-				<delete dir="docroot/html/css/portal/aui.css" />
-				<delete dir="docroot/html/js/aui" />
-				<delete dir="docroot/html/portal/aui" />
-				<delete dir="docroot/html/themes/_unstyled/images/aui/" />
-
-				<unzip src="third-party/${alloy.file}" dest="docroot/html/ALLOY_ZIP" />
-
-				<!-- JavaScript -->
-
-				<copy todir="docroot/html/js/aui" overwrite="true">
-					<fileset dir="docroot/html/ALLOY_ZIP/build/" />
-				</copy>
-
-				<replaceregexp match="[\n\s\t]+filter: 'raw'," replace="" flags="g" byline="false">
-					<fileset
-						dir="docroot/html/js/aui/aui-base/"
-						includes="aui-base.js"
-					/>
-				</replaceregexp>
-
-				<replaceregexp match="combine: ?false," replace="combine:Liferay.AUI.getCombine()," flags="g" byline="true">
-					<fileset
-						dir="docroot/html/js/aui/aui-base/"
-						includes="aui-base.js"
-					/>
-				</replaceregexp>
-
-				<replaceregexp match="skinnable:true" replace="skinnable:false" flags="g" byline="true">
-					<fileset
-						dir="docroot/html/js/aui/aui-base/"
-						includes="aui-base.js"
-					/>
-				</replaceregexp>
-
-				<replace file="docroot/html/js/aui/aui-base/aui-base.js">
-					<replacefilter token="var PATH_THEME_IMAGES = PATH_THEME_ROOT + '../images/';" value="var PATH_THEME_IMAGES = Liferay.ThemeDisplay.getPathThemeImages() + '/aui';" />
-				</replace>
-
-				<!-- CSS -->
-
-				<property name="alloy.core.css" value="aui-skin-base.css" />
-
-				<concat destfile="docroot/html/ALLOY_ZIP/build/aui-skins/tmp/alloy.css">
-					<filelist
-						dir="docroot/html/ALLOY_ZIP/build/aui-skin-base/css"
-						files="${alloy.core.css}"
-					/>
-				</concat>
-
-				<for param="dir">
-					<path>
-						<dirset
-							dir="docroot/html/ALLOY_ZIP/build/"
-							includes="aui-*/"
-						/>
-					</path>
-					<sequential>
-						<basename property="dir.name" file="@{dir}"/>
-						<if>
-							<available file="docroot/html/js/aui/${dir.name}/assets/skins/sam/${dir.name}.css"/>
-							<then>
-								<concat append="true" destfile="docroot/html/ALLOY_ZIP/build/aui-skins/tmp/alloy.css">
-									<filelist
-										dir="docroot/html/js/aui/${dir.name}/assets/skins/sam/"
-										files="${dir.name}.css"
-									/>
-								</concat>
-							</then>
-						</if>
-						<if>
-							<available file="docroot/html/js/aui/${dir.name}/assets/skins/sam/"/>
-							<then>
-								<copy todir="docroot/html/themes/_unstyled/images/aui/">
-									<fileset dir="docroot/html/js/aui/${dir.name}/assets/skins/sam/" includes="**/*.png,**/*.jpg,**/*.gif" />
-								</copy>
-							</then>
-						</if>
-						<var name="dir.name" unset="true" />
-					</sequential>
-				</for>
-
-				<replaceregexp match="url\(([^)]+)\)" replace="url(@theme_image_path@/aui/\1)" flags="g" byline="false">
-					<fileset
-						dir="docroot/html/ALLOY_ZIP/build/aui-skins/tmp/"
-						includes="alloy.css"
-					/>
-				</replaceregexp>
-
-				<replace file="docroot/html/ALLOY_ZIP/build/aui-skins/tmp/alloy.css">
-					<replacefilter token="../images/" value="" />
-				</replace>
-
-				<replace file="docroot/html/ALLOY_ZIP/build/aui-skins/tmp/alloy.css">
-					<replacefilter token="../../../../../build/aui-skin-base/images/" value="" />
-				</replace>
-
-				<copy
-					file="docroot/html/ALLOY_ZIP/build/aui-skins/tmp/alloy.css"
-					tofile="docroot/html/css/portal/aui.css"
-					overwrite="true"
-				/>
-
-				<!-- Images -->
-
-				<copy todir="docroot/html/themes/_unstyled/images/aui/">
-					<fileset dir="docroot/html/ALLOY_ZIP/build/aui-skin-base/images/" />
-				</copy>
-
-				<!-- Clean up -->
-
-				<delete dir="docroot/html/ALLOY_ZIP" />
+				<gradle-execute dir="../modules/frontend/frontend-css-web" task="buildBourbon" />
 			</then>
 		</if>
 	</target>
 
-	<target name="build-ckeditor">
-		<if>
-			<not>
-				<uptodate
-					srcfile="third-party/${ckeditor.file}"
-					targetfile="docroot/html/js/editor/ckeditor"
-				/>
-			</not>
-			<then>
-				<delete dir="docroot/html/js/editor/ckeditor" />
+	<target name="build-css" depends="build-common-css">
+		<property name="sass.tmp.dir" value="${basedir}/sass_tmp_dir" />
 
-				<unzip src="third-party/${ckeditor.file}" dest="docroot/html/js/editor" />
+		<mkdir dir="${sass.tmp.dir}" />
 
-				<if>
-					<not>
-						<available file="docroot/html/js/editor/ckeditor_diffs/ckeditor.js" />
-					</not>
-					<then>
-						<replace file="docroot/html/js/editor/ckeditor/_source/core/dtd.js">
-							<replacefilter token="div:1," value="article:1,aside:1,audio:1,command:1,datagrid:1,datalist:1,details:1,dialog:1,div:1,figure:1,footer:1,header:1,hgroup:1,keygen:1,m:1,meter:1,nav:1,output:1,progress:1,section:1,time:1,video:1," />
-						</replace>
-
-						<replace file="docroot/html/js/editor/ckeditor/_source/core/dtd.js">
-							<replacetoken>div : P,</replacetoken>
-							<replacevalue>
-								article : P,
-								aside : P,
-								audio : O,
-								command : L,
-								datagrid : O,
-								datalist : O,
-								details : O,
-								dialog : P,
-								div : P,
-								figure : P,
-								footer : P,
-								header : P,
-								hgroup : P,
-								keygen : L,
-								m : L,
-								meter : L,
-								nav : P,
-								output : L,
-								progress : O,
-								section : P,
-								time : L,
-								video: O,
-							</replacevalue>
-						</replace>
-
-						<replace file="docroot/html/js/editor/ckeditor/_source/plugins/popup/plugin.js">
-							<replacetoken><![CDATA[popupWindow.moveTo( left, top );]]></replacetoken>
-							<replacevalue><![CDATA[// Chrome 18 is problematic, but it's not really needed here (#8855)]]></replacevalue>
-						</replace>
-
-						<replace file="docroot/html/js/editor/ckeditor/_source/plugins/popup/plugin.js">
-							<replacetoken><![CDATA[popupWindow.resizeTo( width, height );]]></replacetoken>
-							<replacevalue><![CDATA[var ua = navigator.userAgent.toLowerCase();
-
-								if (ua.indexOf(' chrome/18') == -1) {
-									popupWindow.moveTo(left, top);
-									popupWindow.resizeTo(width, height);
-								}
-							]]>
-							</replacevalue>
-						</replace>
-
-						<java
-							classname="ckpackager.ckpackager"
-							classpathref="project.classpath"
-							dir="docroot/html/js/editor/ckeditor"
-							fork="true"
-							newenvironment="true"
-						>
-							<arg line="ckeditor.pack" />
-						</java>
-
-						<copy
-							file="docroot/html/js/editor/ckeditor/ckeditor.js"
-							tofile="docroot/html/js/editor/ckeditor_diffs/ckeditor.js"
-						/>
-					</then>
-				</if>
-
-				<copy todir="docroot/html/js/editor/ckeditor" overwrite="true">
-					<fileset dir="docroot/html/js/editor/ckeditor_diffs" />
-				</copy>
-			</then>
-			<else>
-				<copy todir="docroot/html/js/editor/ckeditor">
-					<fileset dir="docroot/html/js/editor/ckeditor_diffs" />
-				</copy>
-			</else>
-		</if>
-
-		<replace file="docroot/html/js/editor/ckeditor/_source/plugins/link/dialogs/link.js">
-			<replacetoken><![CDATA[return 'mailto:' +]]></replacetoken>
-			<replacevalue><![CDATA[rest = decodeURIComponent(rest); return "mailto:" + ]]></replacevalue>
-		</replace>
-
-		<replace file="docroot/html/js/editor/ckeditor/_source/plugins/link/dialogs/link.js">
-			<replacetoken><![CDATA[body = encodeURIComponent( email.body || '' );]]></replacetoken>
-			<replacevalue><![CDATA[body = email.body || ''; body = encodeURIComponent(body).replace(/%/g, '%25');]]></replacevalue>
-		</replace>
-	</target>
-
-	<target name="build-ckeditor-plugins-bbcode">
-		<concat destfile="docroot/html/js/editor/ckeditor_diffs/plugins/bbcode/bbcode_parser.js">
-			<filelist
-				dir="docroot/html/js/editor/ckeditor_diffs/plugins/bbcode"
-				files="lexer.js,parser.js,converter.js"
-			/>
-		</concat>
-	</target>
-
-	<target name="build-ckeditor-plugins-creole">
-		<get
-			dest="docroot/html/js/editor/ckeditor_diffs/plugins/creole/creole_parser.js"
-			src="http://www.ivan.fomichev.name/2008/04/javascript-creole-10-wiki-markup-parser.html"
-		/>
-
-		<loadfile property="creole_parser.content" srcfile="docroot/html/js/editor/ckeditor_diffs/plugins/creole/creole_parser.js" />
-
-		<script classpathref="project.classpath" language="beanshell">
-			<![CDATA[
-				import org.apache.commons.lang.StringEscapeUtils;
-
-				// Read content
-
-				String creoleParserContent = project.getProperty("creole_parser.content");
-
-				// Get source
-
-				int x = creoleParserContent.indexOf("<pre id=\"parser\"");
-
-				x  = creoleParserContent.indexOf(">", x) + 1;
-
-				int y = creoleParserContent.indexOf("</pre>", x);
-
-				creoleParserContent = creoleParserContent.substring(x, y);
-
-				// Unescape
-
-				creoleParserContent = StringEscapeUtils.unescapeHtml(creoleParserContent);
-
-				// Wrap with function
-
-				x = creoleParserContent.indexOf("if (!Parse) {");
-
-				creoleParserContent = creoleParserContent.substring(0, x) + "(function() {\n" + creoleParserContent.substring(x) + "\n})();";
-
-				// Fix for loop
-
-				creoleParserContent = creoleParserContent.replace("for (i in this.options) {", "for (var i in this.options) {");
-
-				// Fix image
-
-				x = creoleParserContent.indexOf("regex: rx.img,");
-				x = creoleParserContent.indexOf("{", x) + 1;
-
-				y = creoleParserContent.indexOf("r[1];", x) + 5;
-
-				StringBuilder sb = new StringBuilder();
-
-				sb.append("\n\t\t\t\tvar imagePath = r[1];\n");
-				sb.append("\t\t\t\tvar imagePathPrefix = options ? options.imagePrefix : '';\n\n");
-				sb.append("\t\t\t\tif (imagePathPrefix) {\n");
-				sb.append("\t\t\t\t\tif (!(/^https?:\\/\\//gi.test(imagePath))) {\n");
-				sb.append("\t\t\t\t\t\timagePath = imagePathPrefix + imagePath;\n");
-				sb.append("\t\t\t\t\t}\n");
-				sb.append("\t\t\t\t}\n\n");
-				sb.append("\t\t\t\tvar img = document.createElement('img');\n");
-				sb.append("\t\t\t\timg.src = imagePath;");
-
-				creoleParserContent = creoleParserContent.substring(0, x) + sb.toString() + creoleParserContent.substring(y);
-
-				// Add support for whitespace in headings
-
-				creoleParserContent = creoleParserContent.replace("'(^|\\\\n)[ \\\\t]*={' + i + '}[ \\\\t]'", "'(^|\\\\n)[ \\\\t]*={' + i + '}[ \\\\t]*'");
-				creoleParserContent = creoleParserContent.replace("'([^~]*?(~(.|(?=\\\\n)|$))*)[ \\\\t]*=*\\\\s*(\\\\n|$)'", "'([^\\\\n=][^~]*?(~(.|(?=\\\\n)|$))*)[ \\\\t]*=*\\\\s*(\\\\n|$)'");
-
-				// Register Creole parser
-
-				creoleParserContent = creoleParserContent.replace("= Parse.Simple.Creole;", "= Parse.Simple.Creole;\n\nCKEDITOR.CreoleParser = Parse.Simple.Creole;");
-
-				// Set content
-
-				project.setProperty("creole_parser.content", creoleParserContent);
-			]]>
-		</script>
-
-		<echo file="docroot/html/js/editor/ckeditor_diffs/plugins/creole/creole_parser.js">${creole_parser.content}</echo>
-	</target>
-
-	<target name="build-css">
 		<java
-			classname="com.liferay.portal.tools.SassToCssBuilder"
-			classpathref="project.classpath"
+			classname="com.liferay.css.builder.CSSBuilder"
+			classpathref="portal.tools.classpath"
 			fork="true"
 			newenvironment="true"
+			outputproperty="build-css.output"
 		>
-			<jvmarg value="-Dliferay.lib.portal.dir=${basedir}/../lib/portal" />
-			<arg value="sass.dir.0=${basedir}/docroot/html/css" />
-			<arg value="sass.dir.1=${basedir}/docroot/html/portlet" />
-			<arg value="sass.dir.2=${basedir}/docroot/html/themes" />
+			<jvmarg value="-Xmx1024m" />
+			<jvmarg value="-Djava.io.tmpdir=${sass.tmp.dir}" />
+			<arg value="sass.compiler.class.name=${sass.compiler.class.name}" />
+			<arg value="sass.dir=/html/portlet" />
+			<arg value="sass.docroot.dir=${basedir}/docroot" />
+			<arg value="sass.portal.common.dir=${sass.portal.common.dir}" />
 		</java>
+
+		<delete dir="${sass.tmp.dir}" />
+
+		<if>
+			<not>
+				<equals arg1="${build-css.output}" arg2="" />
+			</not>
+			<then>
+				<echo>${build-css.output}</echo>
+			</then>
+		</if>
+
+		<if>
+			<contains string="${build-css.output}" substring="Error" />
+			<then>
+				<fail>Sass to CSS Builder generated exceptions.</fail>
+			</then>
+		</if>
 	</target>
 
 	<target name="build-dtd">
@@ -393,509 +117,134 @@
 		</copy>
 	</target>
 
-	<target name="build-fckeditor">
+	<target name="build-selenium">
 		<if>
 			<not>
-				<uptodate
-					srcfile="third-party/${fckeditor.file}"
-					targetfile="docroot/html/js/editor/fckeditor"
-				/>
+				<equals arg1="${delete.function.generated}" arg2="false" />
 			</not>
 			<then>
-				<delete dir="docroot/html/js/editor/fckeditor" />
-
-				<unzip src="third-party/${fckeditor.file}" dest="docroot/html/js/editor" />
-
-				<copy todir="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay">
-					<fileset dir="docroot/html/js/editor/fckeditor/editor/filemanager/browser/default" />
-				</copy>
-
-				<copy todir="docroot/html/js/editor/fckeditor" overwrite="true">
-					<fileset dir="docroot/html/js/editor/fckeditor_diffs" />
-				</copy>
-
-				<!-- fck_link.js -->
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/dialog/fck_link/fck_link.js">
-					<replacetoken><![CDATA[var aMatch = aLinkInfo[2].match( /^location\.href='mailto:'\+(String\.fromCharCode\([\d,]+\))\+'(.*)'$/ ) ;]]></replacetoken>
-					<replacevalue><![CDATA[var aMatch = aLinkInfo[2].match( /^(?:void\()?location\.href='mailto:'\+(String\.fromCharCode\([\d,]+\))\+'(.*)'\)?$/ ) ;]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/dialog/fck_link/fck_link.js">
-					<replacetoken><![CDATA[return 'javascript:location.href=\'mailto:\'+String.fromCharCode(' + aAddressCode.join( ',' ) + ')+\'?' + aParams.join( '&' ) + '\'' ;]]></replacetoken>
-					<replacevalue><![CDATA[return 'javascript:void(location.href=\'mailto:\'+String.fromCharCode(' + aAddressCode.join( ',' ) + ')+\'?' + aParams.join( '&' ) + '\')' ;]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/dialog/fck_link/fck_link.js">
-					<replacetoken><![CDATA[if ( aMatch ) oEMailParams.Body = decodeURIComponent( aMatch[2] ) ;]]></replacetoken>
-					<replacevalue><![CDATA[if ( aMatch ) {
-			oEMailParams.Body = decodeURIComponent( aMatch[2] ) ;
-			oEMailParams.Body = decodeURIComponent( oEMailParams.Body ) ;
-		}]]>
-					</replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/dialog/fck_link/fck_link.js">
-					<replacetoken><![CDATA[aParams.push( 'body=' + encodeURIComponent( body ) ) ;]]></replacetoken>
-					<replacevalue><![CDATA[{
-				var encodedBody = encodeURIComponent( body );
-
-				encodedBody = encodedBody.replace(/%/g, '%25');
-
-				aParams.push( 'body=' + encodedBody ) ;
-			}]]>
-					</replacevalue>
-				</replace>
-
-				<!-- browser.html -->
-
-				<replaceregexp file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/browser.html"
-					match="(if \( oConnector.ShowAllTypes \)\r?(\n)\t*oConnector.ResourceType = ')File(')"
-					replace="\1Document\3"
-					flags="s"
-				/>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/browser.html">
-					<replacetoken><![CDATA[<title>FCKeditor - Resources Browser</title>]]></replacetoken>
-					<replacevalue><![CDATA[<title>Resources Browser</title>]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/browser.html">
-					<replacetoken><![CDATA[oConnector.CurrentFolder	= '/' ;]]></replacetoken>
-					<replacevalue><![CDATA[oConnector.CurrentFolder	= '/' ;
-
-var currentFolderParam = GetUrlParam( 'currentFolder' ) ;
-
-if (currentFolderParam) {
-	oConnector.CurrentFolder = currentFolderParam ;
-}
-]]>
-					</replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/browser.html">
-					<replacetoken><![CDATA[sUrl += '&CurrentFolder=' + encodeURIComponent( this.CurrentFolder ) ;]]></replacetoken>
-					<replacevalue><![CDATA[sUrl += '&CurrentFolder=' + encodeURIComponent( oConnector.CurrentFolder ) ;]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/browser.html">
-					<replacetoken><![CDATA[function OnUploadCompleted( errorNumber, fileUrl, fileName, customMsg )]]></replacetoken>
-					<replacevalue><![CDATA[if (oConnector.ResourceType === 'Attachment') {
-	var frmCreateFolderLoadedInterval = window.setInterval(
-		function() {
-			var frmCreateFolder = document.getElementsByName('frmCreateFolder');
-
-			if (frmCreateFolder.length > 0) {
-				window.clearInterval(frmCreateFolderLoadedInterval);
-
-				frmCreateFolder = frmCreateFolder[0];
-
-				frmCreateFolder.setAttribute('height', '0');
-				frmCreateFolder.setAttribute('style', 'display:none');
-				frmCreateFolder.setAttribute('tabindex', '-1');
-				frmCreateFolder.setAttribute('width', '0');
-
-				var parentNode = frmCreateFolder.parentNode;
-
-				parentNode.setAttribute('cols', '0,*,0');
-			}
-		},
-		50
-	);
-}
-
-function OnUploadCompleted( errorNumber, fileUrl, fileName, customMsg )]]></replacevalue>
-				</replace>
-
-				<!-- frmfolders.html -->
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmfolders.html">
-					<replacetoken><![CDATA[var sLink = '<a href="#" onclick="OpenFolder(\'' + folderPath + '\');return false;">' ;]]></replacetoken>
-					<replacevalue><![CDATA[var sLink = '<a href="#" onclick="OpenFolder(\'' + folderPath.replace( /&#039;/g, '\\\'') + '\');return false;">' ;]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmfolders.html">
-					<replacetoken><![CDATA[this.TableRows[ folderPath ] = oRow ;]]></replacetoken>
-					<replacevalue><![CDATA[this.TableRows[ folderPath.replace( /&#039;/g, '\\\'') ] = oRow ;]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmfolders.html">
-					<replacetoken><![CDATA[( sFolderPath == folderPath ? 'FolderListCurrentFolder' : 'FolderListFolder' ) ;]]></replacetoken>
-					<replacevalue><![CDATA[( sFolderPath == folderPath.replace( /'/g, '\\\'') ? 'FolderListCurrentFolder' : 'FolderListFolder' ) ;]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmfolders.html">
-					<replacetoken><![CDATA[oListManager.AddItem( sFolderName, sCurrentFolderPath + sFolderName + '/' ) ;]]></replacetoken>
-					<replacevalue><![CDATA[oListManager.AddItem( sFolderName, sCurrentFolderPath.replace( /'/g, '\\\'') + sFolderName + '/' ) ;]]></replacevalue>
-				</replace>
-
-				<!-- frmresourceslist.html -->
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourceslist.html">
-					<replacetoken><![CDATA[path = path.replace( /'/g, '\\\'') ;]]></replacetoken>
-					<replacevalue><![CDATA[path = path.replace( /'/g, '\\\'') ;
-	path = path.replace( /&#039;/g, '\\\'') ;]]></replacevalue>
-				</replace>
-
-				<replaceregexp file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourceslist.html"
-					match="(\t*)// Get the optional [^;]*?;\r?(\n).*?sFileSize \) \) ;"
-					replace="\1var sFileDesc = oNode.attributes.getNamedItem('desc').value ;\2\1var sFileUrl = oNode.attributes.getNamedItem('url').value ;\2\2\1oHtml.Append( oListManager.GetFileRowHtml( sFileDesc, sFileUrl, sFileSize ) ) ;"
-					flags="s"
-				/>
-
-				<!-- frmresourcetype.html -->
-
-				<replaceregexp file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourcetype.html"
-					match="var aTypes = \[\r?(\n)(\t*)(.)+\] ;"
-					replace="var aTypes = [\1\2['Document','Document'],\1\2['Page','Page']\1] ;"
-					flags="s"
-				/>
-
-				<replaceregexp file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourcetype.html"
-					match="(&lt;select id=&quot;cmbType.*\>)\r?(\n)[^\n]*\n(\t*&lt;\/select\>)"
-					replace="\1\2\3"
-					flags="s"
-				/>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourcetype.html">
-					<replacetoken><![CDATA[var aTypes = []]></replacetoken>
-					<replacevalue><![CDATA[var customTypes = [
-	['Attachment', 'Attachment']
-];
-
-var defaultTypes = []]>
-					</replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourcetype.html">
-					<replacetoken><![CDATA[aTypes]]></replacetoken>
-					<replacevalue><![CDATA[defaultTypes]]></replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmresourcetype.html">
-					<replacetoken><![CDATA[AddSelectOption( oCombo, defaultTypes[i][1], defaultTypes[i][0] ) ;]]></replacetoken>
-					<replacevalue><![CDATA[AddSelectOption( oCombo, defaultTypes[i][1], defaultTypes[i][0] ) ;
-	}
-
-	var len = customTypes.length;
-
-	for ( i = 0; i < len; i++ ) {
-		if ( customTypes[i][0] == oConnector.ResourceType )
-			AddSelectOption( oCombo, customTypes[i][1], customTypes[i][0] ) ;]]>
-					</replacevalue>
-				</replace>
-
-				<!-- frmupload.html -->
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmupload.html">
-					<replacetoken><![CDATA[default :]]></replacetoken>
-					<replacevalue><![CDATA[
-		case 203 :
-			alert( 'An unexpected error occurred.' ) ;
-			break ;
-		case 204 :
-			alert( 'You cannot upload into the root folder.' ) ;
-			break ;
-		case 205:
-			alert( 'Please enter a valid image name.' );
-			break ;
-		case 206:
-			alert( 'Please enter a valid file name.' );
-			break ;
-		case 207:
-			alert( 'You do not have the permission to upload to this folder.' );
-			break ;
-		case 208:
-			alert( 'File size exceeds upload limit.' );
-			break ;
-		case 209:
-			alert( 'An internal server error occured.' );
-			break ;
-
-		default :]]>
-					</replacevalue>
-				</replace>
-
-				<replace file="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay/frmupload.html">
-					<replacetoken><![CDATA[<body>]]></replacetoken>
-					<replacevalue><![CDATA[<body bottommargin="0" topmargin="0">]]></replacevalue>
-				</replace>
-
-				<replace dir="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay">
-					<include name="**/*.html"/>
-					<replacetoken><![CDATA[<html>]]></replacetoken>
-					<replacevalue><![CDATA[<html xmlns="http://www.w3.org/1999/xhtml">]]></replacevalue>
-				</replace>
-
-				<!-- EOL -->
-
-				<fixcrlf includes="**/*.html" srcdir="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay" eol="unix" />
-
-				<!-- CKEditor -->
-
-				<mkdir dir="docroot/html/js/editor/ckeditor/editor/filemanager/browser/liferay" />
-
-				<copy todir="docroot/html/js/editor/ckeditor/editor/filemanager/browser/liferay">
-					<fileset dir="docroot/html/js/editor/fckeditor/editor/filemanager/browser/liferay" />
-				</copy>
-
-				<replace file="docroot/html/js/editor/ckeditor/editor/filemanager/browser/liferay/browser.html">
-					<replacefilter token="FCKeditor" value="CKeditor" />
-				</replace>
-
-				<replace file="docroot/html/js/editor/ckeditor/editor/filemanager/browser/liferay/frmresourceslist.html">
-					<replacetoken><![CDATA[window.top.opener.SetUrl( encodeURI( fileUrl ).replace( '#', '%23' ) ) ;]]></replacetoken>
-					<replacevalue><![CDATA[var match = window.top.location.search.match(/(?:[\?&]|&amp;)CKEditorFuncNum=([^&]+)/i);
-
-	var funcNum = (match && match.length) ? match[1] : '';
-
-	window.top.opener.CKEDITOR.tools.callFunction(funcNum, fileUrl);]]>
-					</replacevalue>
-				</replace>
+				<delete dir="${basedir.unix}/test/functional-generated" />
 			</then>
-			<else>
-				<copy todir="docroot/html/js/editor/fckeditor">
-					<fileset dir="docroot/html/js/editor/fckeditor_diffs" />
-				</copy>
-			</else>
 		</if>
-	</target>
 
-	<target name="build-selenium">
-		<delete dir="test-classes" />
-
-		<!--
-		ant build-selenium -Dminimize=com/liferay/portalweb/portal/util/TearDownPageTest.html -DreportDuplicates=true
-		-->
+		<if>
+			<not>
+				<isset property="selenium.types" />
+			</not>
+			<then>
+				<property name="selenium.types" value="action,function,macro,path,testcase" />
+			</then>
+		</if>
 
 		<java
-			classname="com.liferay.portal.tools.SeleneseToJavaBuilder"
+			classname="com.liferay.portal.tools.seleniumbuilder.SeleniumBuilder"
 			classpathref="project.classpath"
+			failonerror="true"
 			fork="true"
 			maxmemory="1024m"
 			newenvironment="true"
 		>
 			<jvmarg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<arg line="--basedir test --minimize ${minimize} --reportDuplicates ${reportDuplicates}" />
+			<arg value="project.dir=${project.dir}" />
+			<arg value="selenium.base.dir=test/functional" />
+			<arg value="selenium.types=${selenium.types}" />
+			<arg value="test.class=${test.class}" />
 		</java>
 	</target>
 
-	<target name="build-themes">
-		<antcall target="build-alloy" />
-
-		<for param="module.name">
-			<path>
-				<dirset dir="docroot/html/themes" excludes="_styled,_unstyled" includes="*" />
-			</path>
-			<sequential>
-				<if>
-					<available file="@{module.name}/_diffs/images" />
-					<then>
-						<for param="file">
-							<path>
-								<fileset
-									dir="@{module.name}/_diffs/images"
-									includes="**/screenshot.png"
-								/>
-							</path>
-							<sequential>
-								<propertyregex input="@{file}" override="yes" property="thumbnail.file" regexp="screenshot\.png" replace="thumbnail\.png" />
-
-								<java
-									classname="com.liferay.portal.tools.ThumbnailBuilder"
-									classpathref="project.classpath"
-								>
-									<arg value="thumbnail.original.file=@{file}" />
-									<arg value="thumbnail.thumbnail.file=${thumbnail.file}" />
-									<arg value="thumbnail.height=120" />
-									<arg value="thumbnail.width=160" />
-									<arg value="thumbnail.overwrite=false" />
-								</java>
-							</sequential>
-						</for>
-					</then>
-				</if>
-
-				<copy todir="@{module.name}" overwrite="true">
-					<fileset
-						dir="docroot/html/themes/_unstyled"
-						excludes="templates/init.vm"
-					/>
-				</copy>
-
-				<copy todir="@{module.name}" overwrite="true">
-					<fileset
-						dir="docroot/html/themes/_styled"
-					/>
-				</copy>
-
-				<if>
-					<available file="@{module.name}/_diffs" />
-					<then>
-						<copy todir="@{module.name}" overwrite="true">
-							<fileset
-								dir="@{module.name}/_diffs"
-							/>
-						</copy>
-					</then>
-				</if>
-			</sequential>
-		</for>
+	<target name="build-selenium-action">
+		<antcall target="build-selenium">
+			<param name="delete.function.generated" value="false" />
+			<param name="selenium.types" value="action" />
+		</antcall>
 	</target>
 
-	<target name="build-tinymce">
+	<target name="build-selenium-block">
+		<antcall target="build-selenium">
+			<param name="selenium.types" value="action,function,macro,path" />
+		</antcall>
+	</target>
+
+	<target name="build-selenium-function">
+		<antcall target="build-selenium">
+			<param name="delete.function.generated" value="false" />
+			<param name="selenium.types" value="function" />
+		</antcall>
+	</target>
+
+	<target name="build-selenium-macro">
+		<antcall target="build-selenium">
+			<param name="delete.function.generated" value="false" />
+			<param name="selenium.types" value="macro" />
+		</antcall>
+	</target>
+
+	<target name="build-selenium-path">
+		<antcall target="build-selenium">
+			<param name="delete.function.generated" value="false" />
+			<param name="selenium.types" value="path" />
+		</antcall>
+	</target>
+
+	<target name="build-selenium-test-case">
 		<if>
 			<not>
-				<available file="docroot/html/js/editor/tiny_mce_diffs/langs/en.js" />
+				<isset property="test.class" />
 			</not>
 			<then>
-
-				<!--
-				Delete docroot/html/js/editor/tiny_mce_diffs/langs/en.js and rerun this task to
-				download the latest language files from TinyMCE's website.
-
-				This task will also delete the directory docroot/html/js/editor/tiny_mce to
-				ensure that ${tinymce.file} is properly unzipped.
-				-->
-
-				<delete dir="docroot/html/js/editor/tiny_mce" />
-
-				<script classpathref="project.classpath" language="beanshell">
-					<![CDATA[
-						import com.liferay.portal.kernel.util.GetterUtil;
-
-						import java.io.File;
-
-						import java.net.URL;
-
-						import java.util.StringTokenizer;
-
-						import org.apache.tools.ant.taskdefs.Get;
-
-						StringTokenizer st = new StringTokenizer("languages=[ar,ar,133];[nb,nb,207];[bg,bg,136];[es_CA,ca,140];[hr,hr,158];[cs,cs,142];[nl,nl,176];[en_GB,en,132];[et,et,149];[fi,fi,152];[fr,fr,153];[es_GL,gl,154];[de,de,145];[el,el,147];[iw,he,156];[hi_IN,hi,157];[hu,hu,159];[in,id,162];[it,it,164];[ja,ja,165];[ko,ko,205];[fa,fa,151];[pt,pl,179];[pt_PT,pt,181];[ro,ro,182];[ru,ru,183];[sr,sr,190];[sk,sk,187];[sl,sl,188];[es_ES,es,148];[sv,sv,191];[tr,tr,196];[uk,uk,199];[vi,vi,201];[zh_TW,zh-tw,221];[zh_CN,zh-cn,216]",";");
-
-						while (st.hasMoreElements()) { 
-							String lang = st.nextToken(); 
-
-							int x = lang.indexOf(","); 
-							int y = lang.lastIndexOf(",");
-
-							//String liferayLanguageCode = lang.substring(1, x); 
-							String tinyMceLanguageCode = lang.substring(x + 1, y); 
-							int tinyMceLanguageId = GetterUtil.getInteger(lang.substring(y + 1)); 
-
-							Get get = new Get();
-
-							get.setDest(new File("docroot/html/js/editor/tiny_mce_diffs/langs/" + tinyMceLanguageCode + ".js"));
-							get.setSrc(new URL("http://www.tinymce.com/i18n/index.php?ctrl=export&act=js&pr_id=7&la_id=" + tinyMceLanguageId));
-
-							get.execute();
-						}
-					]]>
-				</script>
+				<fail>Please set "test.class".</fail>
 			</then>
 		</if>
 
-		<if>
-			<not>
-				<uptodate
-					srcfile="third-party/${tinymce.file}"
-					targetfile="docroot/html/js/editor/tiny_mce"
-				/>
-			</not>
-			<then>
-				<delete dir="docroot/html/js/editor/tiny_mce" />
-				<delete dir="docroot/html/js/editor/tinymce" />
-
-				<unzip src="third-party/${tinymce.file}" dest="docroot/html/js/editor" />
-
-				<move file="docroot/html/js/editor/tinymce/jscripts/tiny_mce" todir="docroot/html/js/editor" />
-
-				<copy todir="docroot/html/js/editor/tiny_mce" overwrite="true">
-					<fileset dir="docroot/html/js/editor/tiny_mce_diffs" />
-				</copy>
-
-				<delete dir="docroot/html/js/editor/tinymce" />
-			</then>
-		</if>
+		<antcall target="build-selenium">
+			<param name="delete.function.generated" value="false" />
+			<param name="selenium.types" value="testcase" />
+		</antcall>
 	</target>
 
-	<target name="build-vaadin">
-		<if>
-			<not>
-				<uptodate
-					srcfile="third-party/${vaadin.file}"
-					targetfile="docroot/html/VAADIN"
-				/>
-			</not>
-			<then>
-				<delete dir="docroot/html/VAADIN_ZIP" />
+	<target name="build-selenium-user-extensions">
+		<property file="${project.dir}/test.${user.name}.properties" />
+		<property file="${project.dir}/test.${env.COMPUTERNAME}.properties" />
+		<property file="${project.dir}/test.${env.HOST}.properties" />
+		<property file="${project.dir}/test.${env.HOSTNAME}.properties" />
+		<property file="${project.dir}/test.properties" />
 
-				<unzip src="third-party/${vaadin.file}" dest="docroot/html/VAADIN_ZIP" />
+		<propertyregex
+			property="basedir.double.slash"
+			input="${basedir}"
+			regexp="\\"
+			replace="\\\\\\\\"
+		/>
 
-				<delete dir="docroot/html/VAADIN" />
+		<loadfile property="ide.js.content" srcfile="${project.dir}/tools/selenium/extensions/ide.js">
+			<filterchain>
+				<expandproperties />
+			</filterchain>
+		</loadfile>
 
-				<copy todir="docroot/html/VAADIN/themes">
-					<fileset dir="docroot/html/VAADIN_ZIP/VAADIN/themes">
-						<include name="default/**" />
-						<include name="base/**" />
-						<include name="runo/**" />
-						<include name="reindeer/**" />
-						<include name="liferay/**" />
-					</fileset>
-				</copy>
-
-				<copy todir="docroot/html/VAADIN/widgetsets">
-					<fileset dir="docroot/html/VAADIN_ZIP/VAADIN/widgetsets">
-						<include name="com.vaadin.portal.gwt.PortalDefaultWidgetSet/**" />
-					</fileset>
-				</copy>
-
-				<delete dir="docroot/html/VAADIN_ZIP" />
-			</then>
-		</if>
+		<echo file="${project.dir}/tools/selenium/extensions/ide.${user.name}.js">${ide.js.content}</echo>
 	</target>
 
-	<target name="clean" depends="build-common-web.clean">
+	<target name="clean" depends="build-common-web.clean,clean-css,clean-tlds">
 		<delete dir="classes" />
 		<delete dir="docroot/dtd" />
-		<delete dir="docroot/html/js/aui" />
-		<delete dir="docroot/html/js/editor/ckeditor" />
-		<delete dir="docroot/html/js/editor/fckeditor" />
-		<delete dir="docroot/html/js/editor/tinymce" />
 		<delete dir="docroot/html/portal/aui" />
-		<delete dir="docroot/html/themes/_unstyled/images/aui/" />
-		<delete dir="docroot/html/themes/classic/color_schemes" />
-		<delete dir="docroot/html/VAADIN" />
 		<delete dir="docroot/WEB-INF/classes" />
 		<delete dir="docroot/WEB-INF/lib" />
 		<delete dir="test-classes" />
 		<delete dir="test-results" />
-
-		<delete includeemptydirs="true">
-			<fileset dir="docroot/html/css" includes="**/.sass-cache/**,**/.sass_cache_*.css,**/_sass_cache_*.css" />
-			<fileset dir="docroot/html/portlet" includes="**/.sass-cache/**,**/.sass_cache_*.css,**/_sass_cache_*.css" />
-			<fileset dir="docroot/html/themes" includes="**/.sass-cache/**,**/.sass_cache_*.css,**/_sass_cache_*.css" />
-			<fileset dir="docroot/WEB-INF/tld" includes="liferay*.tld" />
-		</delete>
-
-		<antcall target="clean-themes" />
 	</target>
 
-	<target name="clean-themes">
-		<for param="module.name">
-			<path>
-				<dirset dir="docroot/html/themes" excludes="_styled,_unstyled" includes="*" />
-			</path>
-			<sequential>
-				<delete includeemptydirs="true" quiet="true" failonerror="false">
-					<fileset
-						dir="@{module.name}"
-						excludes="**/_diffs/**"
-					/>
-				</delete>
-			</sequential>
-		</for>
+	<target name="clean-css">
+		<delete includeemptydirs="true">
+			<fileset dir="docroot/html/portlet" includes="**/.sass-cache/**,**/.sass_cache_*.css,**/_sass_cache_*.css" />
+		</delete>
+	</target>
+
+	<target name="clean-tlds">
+		<delete includeemptydirs="true">
+			<fileset dir="docroot/WEB-INF/tld" includes="liferay*.tld" />
+		</delete>
 	</target>
 
 	<target name="compile-common-jsp">
@@ -914,6 +263,17 @@ var defaultTypes = []]>
 			</else>
 		</if>
 
+		<if>
+			<available file="${app.server.portal.dir}/WEB-INF/classes/com/liferay/portal/deploy/dependencies/touch.jsp" />
+			<then>
+				<move
+					failonerror="false"
+					file="${app.server.portal.dir}/WEB-INF/classes/com/liferay/portal/deploy/dependencies/touch.jsp"
+					tofile="${app.server.portal.dir}/WEB-INF/classes/com/liferay/portal/deploy/dependencies/touch.jsp.tmp"
+				/>
+			</then>
+		</if>
+
 		<java
 			classname="org.apache.jasper.JspC"
 			classpathref="jspc.classpath"
@@ -925,12 +285,61 @@ var defaultTypes = []]>
 			<arg line="${arg.line}" />
 		</java>
 
+		<if>
+			<available file="${app.server.portal.dir}/WEB-INF/classes/com/liferay/portal/deploy/dependencies/touch.jsp.tmp" />
+			<then>
+				<move
+					failonerror="false"
+					file="${app.server.portal.dir}/WEB-INF/classes/com/liferay/portal/deploy/dependencies/touch.jsp.tmp"
+					tofile="${app.server.portal.dir}/WEB-INF/classes/com/liferay/portal/deploy/dependencies/touch.jsp"
+				/>
+			</then>
+		</if>
+
 		<echo>${jspc.output}</echo>
 
 		<if>
 			<contains string="${jspc.output}" substring="JasperException" />
 			<then>
 				<fail>JSPs failed to compile.</fail>
+			</then>
+		</if>
+
+		<if>
+			<equals arg1="${app.server.type}" arg2="tomcat" />
+			<then>
+				<fileset dir="${jspc.classes.dir}" id="oversize.files">
+					<include name="**/*.java" />
+					<size units="K" value="700" when="more" />
+				</fileset>
+
+				<pathconvert
+					dirsep="/"
+					pathsep="${line.separator}"
+					property="oversize.files.java"
+					refid="oversize.files"
+				/>
+
+				<if>
+					<not>
+						<equals arg1="${oversize.files.java}" arg2="" />
+					</not>
+					<then>
+						<antelope:stringutil property="oversize.files.jsp" string="${oversize.files.java}">
+							<replace regex="\.java" replacement="" />
+							<replace regex="${jspc.classes.dir}/org/apache/jsp" replacement="docroot" />
+							<replace regex="_jsp" replacement=".jsp" />
+							<replace regex="_002d" replacement="-" />
+							<replace regex="_005f" replacement="_" />
+						</antelope:stringutil>
+
+						<fail>
+The following JSPs may be too large for some application servers. See LPS-27841
+for more information.
+
+${oversize.files.jsp}</fail>
+					</then>
+				</if>
 			</then>
 		</if>
 
@@ -973,13 +382,13 @@ var defaultTypes = []]>
 	<target name="compile-resin">
 		<if>
 			<not>
-				<isset property="jdk.6.home" />
+				<isset property="jdk.7.home" />
 			</not>
 			<then>
 				<fail>
 .
 
-Please set the property "jdk.6.home" in build.properties.
+Please set the property "jdk.7.home" in build.properties.
 				</fail>
 			</then>
 		</if>
@@ -987,8 +396,8 @@ Please set the property "jdk.6.home" in build.properties.
 		<property name="jspc.classes.dir" value="classes/${app.server.type}" />
 
 		<path id="jspc.classpath">
-			<pathelement location="${env.JAVA_HOME}/jre/lib/rt.jar" />
-			<pathelement location="${env.JAVA_HOME}/lib/tools.jar" />
+			<pathelement location="${jdk.7.home}/jre/lib/rt.jar" />
+			<pathelement location="${jdk.7.home}/lib/tools.jar" />
 			<path refid="jspc.common.classpath" />
 			<pathelement location="${app.server.dir}/lib/resin.jar" />
 			<pathelement location="${project.dir}/lib/portal/abdera.jar" />
@@ -999,13 +408,12 @@ Please set the property "jdk.6.home" in build.properties.
 			<pathelement location="${project.dir}/lib/portal/commons-httpclient.jar" />
 			<pathelement location="${project.dir}/lib/portal/portletbridge-core.jar" />
 			<pathelement location="${project.dir}/lib/portal/portletbridge-portlet.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-asm.jar" />
 			<pathelement location="${project.dir}/lib/portal/spring-beans.jar" />
 			<pathelement location="${project.dir}/lib/portal/spring-context.jar" />
 			<pathelement location="${project.dir}/lib/portal/spring-core.jar" />
 			<pathelement location="${project.dir}/lib/portal/spring-expression.jar" />
 			<pathelement location="${project.dir}/lib/portal/spring-web.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-web-servlet.jar" />
+			<pathelement location="${project.dir}/lib/portal/spring-webmvc.jar" />
 			<pathelement location="${project.dir}/lib/portal/struts-el.jar" />
 			<pathelement location="${project.dir}/lib/portal/tika-core.jar" />
 		</path>
@@ -1020,7 +428,7 @@ Please set the property "jdk.6.home" in build.properties.
 			fork="true"
 			maxmemory="512m"
 			newenvironment="true"
-			jvm="${jdk.6.home}\bin\java"
+			jvm="${jdk.7.home}\bin\java"
 		>
 			<arg line="docroot ${jspc.classes.dir}" />
 		</java>
@@ -1072,15 +480,8 @@ Please set the property "jdk.6.home" in build.properties.
 		</antcall>
 	</target>
 
-	<target name="deploy">
-		<antcall target="build-alloy" />
-		<antcall target="build-ckeditor" />
-		<antcall target="build-dtd" />
-		<antcall target="build-fckeditor" />
-		<antcall target="build-tinymce" />
-		<antcall target="build-vaadin" />
-
-		<antcall target="build-css" />
+	<target name="deploy" depends="build-portal-web-dependencies">
+		<manifest-macro />
 
 		<antcall target="build-common-web.deploy" />
 
@@ -1156,28 +557,68 @@ Please set the property "jdk.6.home" in build.properties.
 						<include name="**/*.wsdd" />
 						<include name="**/*.xml" />
 					</fileset>
+					<filtermapper>
+						<replacestring from=".sass-cache" to="" />
+					</filtermapper>
 				</copy>
 			</then>
 		</if>
 	</target>
 
-	<target name="deploy-properties">
-		<ant dir=".." target="deploy-properties" inheritAll="false" />
+	<target name="format-js">
+		<taskdef classname="com.philmander.jshint.JsHintAntTask" classpath="${project.dir}/tools/ant-jshint-2.0.5.jar" name="jshint" />
+
+		<jshint
+			dir="${project.dir}"
+			globals="alert: true, AUI: true, confirm: true, Liferay: true, prompt: true, submitForm: true, themeDisplay: true, YUI: true"
+			options="browser=true,curly=true,devel=false,eqeqeq=false,eqnull=true,evil=true,forin=false,funcscope=true,nonew=false,nonstandard=true,scripturl=true,strict=false,trailing=true,yui=true"
+		>
+			<exclude name="**/aui/**" />
+			<exclude name="**/dynamiccss/dependencies/r2*.js" />
+			<exclude name="**/editors/**" />
+			<exclude name="**/misc/**" />
+			<exclude name="**/selenium/**" />
+			<include name="**/*.js" />
+		</jshint>
 	</target>
 
-	<target name="war" depends="compile">
-		<antcall target="build-alloy" />
-		<antcall target="build-ckeditor" />
-		<antcall target="build-dtd" />
-		<antcall target="build-fckeditor" />
-		<antcall target="build-tinymce" />
-		<antcall target="build-vaadin" />
+	<target name="node-execute">
+		<ant antfile="build-node.xml" dir="${sdk.dir}" target="node-execute" inheritAll="false" />
+	</target>
+
+	<target name="npm-execute">
+		<ant antfile="build-node.xml" dir="${sdk.dir}" target="npm-execute" inheritAll="false" />
+	</target>
+
+	<target name="update-gradle-cache">
+		<gradle-execute forcedcacheenabled="false" task="updateGradleCache">
+			<arg value="--build-file=build-test.gradle" />
+			<arg value="-Dmaven.local.ignore=true" />
+		</gradle-execute>
+	</target>
+
+	<target name="war" depends="build-portal-web-dependencies">
+		<manifest-macro />
 
 		<war
-			basedir="docroot"
 			destfile="${war.file}.war"
-			excludes="WEB-INF/web.xml,html/js/editor/fckeditor/_samples/**,html/js/editor/fckeditor_diffs/**"
 			webxml="docroot/WEB-INF/web.xml"
-		/>
+		>
+            <fileset dir="docroot">
+                <exclude name="**/css/*.scss" />
+                <exclude name="**/.sass-cache/**" />
+            </fileset>
+
+            <mappedresources>
+                <fileset dir="docroot" includes="**/.sass-cache/*.css" />
+                <filtermapper>
+                    <replacestring from=".sass-cache" to="" />
+                </filtermapper>
+            </mappedresources>
+
+			<metainf dir="${project.dir}/oss-licenses">
+				<exclude name="**/development/**" />
+			</metainf>
+		</war>
 	</target>
 </project>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,32 +16,46 @@ package com.liferay.portlet.directory.asset;
 
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.model.User;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.service.permission.UserPermissionUtil;
 import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.WebKeys;
-import com.liferay.portlet.asset.model.BaseAssetRenderer;
+import com.liferay.portlet.asset.model.BaseJSPAssetRenderer;
 
 import java.util.Locale;
 
 import javax.portlet.PortletRequest;
+import javax.portlet.PortletResponse;
 import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Michael C. Han
  * @author Sergio González
  */
-public class UserAssetRenderer extends BaseAssetRenderer {
+public class UserAssetRenderer extends BaseJSPAssetRenderer<User> {
 
 	public UserAssetRenderer(User user) {
 		_user = user;
 	}
 
+	@Override
+	public User getAssetObject() {
+		return _user;
+	}
+
+	@Override
+	public String getClassName() {
+		return User.class.getName();
+	}
+
+	@Override
 	public long getClassPK() {
 		return _user.getPrimaryKey();
 	}
@@ -51,14 +65,36 @@ public class UserAssetRenderer extends BaseAssetRenderer {
 		return null;
 	}
 
+	@Override
 	public long getGroupId() {
 		return 0;
 	}
 
-	public String getSummary(Locale locale) {
+	@Override
+	public String getJspPath(HttpServletRequest request, String template) {
+		if (template.equals(TEMPLATE_ABSTRACT) ||
+			template.equals(TEMPLATE_FULL_CONTENT)) {
+
+			return "/html/portlet/directory/asset/abstract.jsp";
+		}
+		else {
+			return null;
+		}
+	}
+
+	@Override
+	public int getStatus() {
+		return _user.getStatus();
+	}
+
+	@Override
+	public String getSummary(
+		PortletRequest portletRequest, PortletResponse portletResponse) {
+
 		return _user.getComments();
 	}
 
+	@Override
 	public String getTitle(Locale locale) {
 		return _user.getFullName();
 	}
@@ -69,11 +105,15 @@ public class UserAssetRenderer extends BaseAssetRenderer {
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
+		String portletId = PortletProviderUtil.getPortletId(
+			User.class.getName(), PortletProvider.Action.VIEW);
+
 		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest), PortletKeys.USERS_ADMIN,
+			getControlPanelPlid(liferayPortletRequest), portletId,
 			PortletRequest.RENDER_PHASE);
 
-		portletURL.setParameter("struts_action", "/users_admin/edit_user");
+		portletURL.setParameter(
+			"mvcRenderCommandName", "/users_admin/edit_user");
 		portletURL.setParameter("p_u_i_d", String.valueOf(_user.getUserId()));
 
 		return portletURL;
@@ -90,15 +130,30 @@ public class UserAssetRenderer extends BaseAssetRenderer {
 		LiferayPortletResponse liferayPortletResponse,
 		String noSuchEntryRedirect) {
 
-		return getURLViewInContext(
-			liferayPortletRequest, noSuchEntryRedirect, "/directory/find_user",
-			"p_u_i_d", _user.getUserId());
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		try {
+			return _user.getDisplayURL(themeDisplay);
+		}
+		catch (Exception e) {
+		}
+
+		return noSuchEntryRedirect;
 	}
 
+	@Override
 	public long getUserId() {
 		return _user.getUserId();
 	}
 
+	@Override
+	public String getUserName() {
+		return _user.getFullName();
+	}
+
+	@Override
 	public String getUuid() {
 		return _user.getUuid();
 	}
@@ -116,25 +171,19 @@ public class UserAssetRenderer extends BaseAssetRenderer {
 	}
 
 	@Override
-	public boolean isPrintable() {
-		return false;
-	}
-
-	public String render(
-			RenderRequest renderRequest, RenderResponse renderResponse,
+	public boolean include(
+			HttpServletRequest request, HttpServletResponse response,
 			String template)
 		throws Exception {
 
-		if (template.equals(TEMPLATE_ABSTRACT) ||
-			template.equals(TEMPLATE_FULL_CONTENT)) {
+		request.setAttribute(WebKeys.USER, _user);
 
-			renderRequest.setAttribute(WebKeys.USER, _user);
+		return super.include(request, response, template);
+	}
 
-			return "/html/portlet/directory/asset/abstract.jsp";
-		}
-		else {
-			return null;
-		}
+	@Override
+	public boolean isPrintable() {
+		return false;
 	}
 
 	@Override
@@ -142,6 +191,6 @@ public class UserAssetRenderer extends BaseAssetRenderer {
 		return themeDisplay.getPathThemeImages() + "/common/user_icon.png";
 	}
 
-	private User _user;
+	private final User _user;
 
 }

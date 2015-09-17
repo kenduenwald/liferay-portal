@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,40 +15,48 @@
 package com.liferay.portlet.blogs.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.staging.permission.StagingPermissionUtil;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.security.auth.PrincipalException;
+import com.liferay.portal.security.permission.BaseResourcePermissionChecker;
 import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.util.PortletKeys;
+import com.liferay.portlet.blogs.model.BlogsEntry;
 
 /**
  * @author Jorge Ferrer
  */
-public class BlogsPermission {
+@OSGiBeanProperties(property = {"resource.name=com.liferay.portlet.blogs"})
+public class BlogsPermission extends BaseResourcePermissionChecker {
+
+	public static final String RESOURCE_NAME = "com.liferay.portlet.blogs";
 
 	public static void check(
 			PermissionChecker permissionChecker, long groupId, String actionId)
 		throws PortalException {
 
 		if (!contains(permissionChecker, groupId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker.getUserId(), RESOURCE_NAME, groupId,
+				actionId);
 		}
 	}
 
 	public static boolean contains(
-		PermissionChecker permissionChecker, long groupId, String actionId) {
+		PermissionChecker permissionChecker, long classPK, String actionId) {
 
-		Boolean hasPermission = StagingPermissionUtil.hasPermission(
-			permissionChecker, groupId, _CLASS_NAME, groupId, PortletKeys.BLOGS,
-			actionId);
+		String portletId = PortletProviderUtil.getPortletId(
+			BlogsEntry.class.getName(), PortletProvider.Action.EDIT);
 
-		if (hasPermission != null) {
-			return hasPermission.booleanValue();
-		}
-
-		return permissionChecker.hasPermission(
-			groupId, _CLASS_NAME, groupId, actionId);
+		return contains(
+			permissionChecker, RESOURCE_NAME, portletId, classPK, actionId);
 	}
 
-	private static final String _CLASS_NAME = "com.liferay.portlet.blogs";
+	@Override
+	public Boolean checkResource(
+		PermissionChecker permissionChecker, long classPK, String actionId) {
+
+		return contains(permissionChecker, classPK, actionId);
+	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.kernel.scheduler.messaging;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
@@ -21,10 +23,11 @@ import com.liferay.portal.kernel.messaging.MessageListener;
 import com.liferay.portal.kernel.messaging.MessageListenerException;
 import com.liferay.portal.kernel.scheduler.JobState;
 import com.liferay.portal.kernel.scheduler.SchedulerEngine;
-import com.liferay.portal.kernel.scheduler.SchedulerEngineUtil;
+import com.liferay.portal.kernel.scheduler.SchedulerEngineHelperUtil;
+import com.liferay.portal.kernel.scheduler.SchedulerException;
+import com.liferay.portal.kernel.scheduler.StorageType;
 import com.liferay.portal.kernel.scheduler.TriggerState;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.util.Date;
@@ -35,18 +38,6 @@ import java.util.Date;
 public class SchedulerEventMessageListenerWrapper implements MessageListener {
 
 	public void afterPropertiesSet() {
-		if (_jobName.length() > SchedulerEngine.GROUP_NAME_MAX_LENGTH) {
-			_jobName = _jobName.substring(
-				0, SchedulerEngine.GROUP_NAME_MAX_LENGTH);
-		}
-
-		if (_groupName.length() > SchedulerEngine.JOB_NAME_MAX_LENGTH) {
-			_groupName = _groupName.substring(
-				0, SchedulerEngine.JOB_NAME_MAX_LENGTH);
-		}
-
-		_key = _jobName.concat(StringPool.PERIOD).concat(_groupName);
-
 		if (_messageListenerUUID == null) {
 			_messageListenerUUID = PortalUUIDUtil.generate();
 		}
@@ -56,20 +47,21 @@ public class SchedulerEventMessageListenerWrapper implements MessageListener {
 		return _messageListenerUUID;
 	}
 
+	@Override
 	public void receive(Message message) throws MessageListenerException {
 		String destinationName = GetterUtil.getString(
 			message.getString(SchedulerEngine.DESTINATION_NAME));
 
 		if (destinationName.equals(DestinationNames.SCHEDULER_DISPATCH)) {
-			String receiverKey = GetterUtil.getString(
-				message.getString(SchedulerEngine.RECEIVER_KEY));
+			String messageListenerUUID = message.getString(
+				SchedulerEngine.MESSAGE_LISTENER_UUID);
 
-			if (!receiverKey.equals(_key)) {
+			if (!_messageListenerUUID.equals(messageListenerUUID)) {
 				return;
 			}
 		}
 
-		try{
+		try {
 			_messageListener.receive(message);
 		}
 		catch (Exception e) {
@@ -94,32 +86,63 @@ public class SchedulerEventMessageListenerWrapper implements MessageListener {
 					MessageBusUtil.unregisterMessageListener(
 						destinationName, this);
 				}
+
+				String jobName = message.getString(SchedulerEngine.JOB_NAME);
+				String groupName = message.getString(
+					SchedulerEngine.GROUP_NAME);
+				StorageType storageType = (StorageType)message.get(
+					SchedulerEngine.STORAGE_TYPE);
+
+				try {
+					SchedulerEngineHelperUtil.delete(
+						jobName, groupName, storageType);
+				}
+				catch (SchedulerException se) {
+					if (_log.isInfoEnabled()) {
+						_log.info(
+							"Unable to delete job " + jobName + " in group " +
+								groupName,
+							se);
+					}
+				}
 			}
 			else {
 				triggerState = TriggerState.NORMAL;
 			}
 
 			try {
-				SchedulerEngineUtil.auditSchedulerJobs(message, triggerState);
+				SchedulerEngineHelperUtil.auditSchedulerJobs(
+					message, triggerState);
 			}
 			catch (Exception e) {
-				throw new MessageListenerException(e);
+				if (_log.isInfoEnabled()) {
+					_log.info("Unable to send audit message", e);
+				}
 			}
 		}
 	}
 
 	/**
-	 * @deprecated {@link #setGroupName(String)}
+	 * @deprecated As of 6.2.0, replaced by {@link #setGroupName(String)}
 	 */
+	@Deprecated
 	public void setClassName(String className) {
 		_groupName = className;
 		_jobName = className;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	public void setGroupName(String groupName) {
 		_groupName = groupName;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	public void setJobName(String jobName) {
 		_jobName = jobName;
 	}
@@ -140,9 +163,23 @@ public class SchedulerEventMessageListenerWrapper implements MessageListener {
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		SchedulerEventMessageListenerWrapper.class);
+
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
+	@SuppressWarnings("unused")
 	private String _groupName;
+
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
+	@SuppressWarnings("unused")
 	private String _jobName;
-	private String _key;
+
 	private MessageListener _messageListener;
 	private String _messageListenerUUID;
 

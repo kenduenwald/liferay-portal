@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,14 +15,14 @@
 package com.liferay.portlet.softwarecatalog.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.User;
 import com.liferay.portal.service.ServiceContext;
-import com.liferay.portal.util.HttpImpl;
 import com.liferay.portlet.softwarecatalog.DuplicateProductVersionDirectDownloadURLException;
 import com.liferay.portlet.softwarecatalog.ProductVersionChangeLogException;
 import com.liferay.portlet.softwarecatalog.ProductVersionDownloadURLException;
@@ -38,10 +38,6 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.httpclient.HostConfiguration;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
-
 /**
  * @author Jorge Ferrer
  * @author Brian Wing Shun Chan
@@ -49,20 +45,20 @@ import org.apache.commons.httpclient.methods.GetMethod;
 public class SCProductVersionLocalServiceImpl
 	extends SCProductVersionLocalServiceBaseImpl {
 
+	@Override
 	public SCProductVersion addProductVersion(
 			long userId, long productEntryId, String version, String changeLog,
 			String downloadPageURL, String directDownloadURL,
 			boolean testDirectDownloadURL, boolean repoStoreArtifact,
 			long[] frameworkVersionIds, ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		// Product version
 
 		User user = userPersistence.findByPrimaryKey(userId);
 		SCProductEntry productEntry =
 			scProductEntryPersistence.findByPrimaryKey(productEntryId);
-		directDownloadURL = directDownloadURL.trim().toLowerCase();
-		Date now = new Date();
+		directDownloadURL = StringUtil.toLowerCase(directDownloadURL.trim());
 
 		validate(
 			0, version, changeLog, downloadPageURL, directDownloadURL,
@@ -76,8 +72,6 @@ public class SCProductVersionLocalServiceImpl
 		productVersion.setCompanyId(user.getCompanyId());
 		productVersion.setUserId(user.getUserId());
 		productVersion.setUserName(user.getFullName());
-		productVersion.setCreateDate(now);
-		productVersion.setModifiedDate(now);
 		productVersion.setProductEntryId(productEntryId);
 		productVersion.setVersion(version);
 		productVersion.setChangeLog(changeLog);
@@ -85,7 +79,7 @@ public class SCProductVersionLocalServiceImpl
 		productVersion.setDirectDownloadURL(directDownloadURL);
 		productVersion.setRepoStoreArtifact(repoStoreArtifact);
 
-		scProductVersionPersistence.update(productVersion, false);
+		scProductVersionPersistence.update(productVersion);
 
 		// Framework versions
 
@@ -94,22 +88,23 @@ public class SCProductVersionLocalServiceImpl
 
 		// Product entry
 
-		productEntry.setModifiedDate(now);
+		productEntry.setModifiedDate(new Date());
 
-		scProductEntryPersistence.update(productEntry, false);
+		scProductEntryPersistence.update(productEntry);
 
 		// Indexer
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-			SCProductEntry.class);
+		Indexer<SCProductEntry> indexer =
+			IndexerRegistryUtil.nullSafeGetIndexer(SCProductEntry.class);
 
 		indexer.reindex(productEntry);
 
 		return productVersion;
 	}
 
+	@Override
 	public void deleteProductVersion(long productVersionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		SCProductVersion productVersion =
 			scProductVersionPersistence.findByPrimaryKey(productVersionId);
@@ -117,15 +112,13 @@ public class SCProductVersionLocalServiceImpl
 		deleteProductVersion(productVersion);
 	}
 
-	public void deleteProductVersion(SCProductVersion productVersion)
-		throws SystemException {
-
+	@Override
+	public void deleteProductVersion(SCProductVersion productVersion) {
 		scProductVersionPersistence.remove(productVersion);
 	}
 
-	public void deleteProductVersions(long productEntryId)
-		throws SystemException {
-
+	@Override
+	public void deleteProductVersions(long productEntryId) {
 		List<SCProductVersion> productVersions =
 			scProductVersionPersistence.findByProductEntryId(productEntryId);
 
@@ -134,46 +127,47 @@ public class SCProductVersionLocalServiceImpl
 		}
 	}
 
+	@Override
 	public SCProductVersion getProductVersion(long productVersionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return scProductVersionPersistence.findByPrimaryKey(productVersionId);
 	}
 
+	@Override
 	public SCProductVersion getProductVersionByDirectDownloadURL(
 			String directDownloadURL)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return scProductVersionPersistence.findByDirectDownloadURL(
 			directDownloadURL);
 	}
 
+	@Override
 	public List<SCProductVersion> getProductVersions(
-			long productEntryId, int start, int end)
-		throws SystemException {
+		long productEntryId, int start, int end) {
 
 		return scProductVersionPersistence.findByProductEntryId(
 			productEntryId, start, end);
 	}
 
-	public int getProductVersionsCount(long productEntryId)
-		throws SystemException {
-
+	@Override
+	public int getProductVersionsCount(long productEntryId) {
 		return scProductVersionPersistence.countByProductEntryId(
 			productEntryId);
 	}
 
+	@Override
 	public SCProductVersion updateProductVersion(
 			long productVersionId, String version, String changeLog,
 			String downloadPageURL, String directDownloadURL,
 			boolean testDirectDownloadURL, boolean repoStoreArtifact,
 			long[] frameworkVersionIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		// Product version
 
-		directDownloadURL = directDownloadURL.trim().toLowerCase();
-		Date now = new Date();
+		directDownloadURL = StringUtil.toLowerCase(directDownloadURL.trim());
 
 		validate(
 			productVersionId, version, changeLog, downloadPageURL,
@@ -182,14 +176,13 @@ public class SCProductVersionLocalServiceImpl
 		SCProductVersion productVersion =
 			scProductVersionPersistence.findByPrimaryKey(productVersionId);
 
-		productVersion.setModifiedDate(now);
 		productVersion.setVersion(version);
 		productVersion.setChangeLog(changeLog);
 		productVersion.setDownloadPageURL(downloadPageURL);
 		productVersion.setDirectDownloadURL(directDownloadURL);
 		productVersion.setRepoStoreArtifact(repoStoreArtifact);
 
-		scProductVersionPersistence.update(productVersion, false);
+		scProductVersionPersistence.update(productVersion);
 
 		// Framework versions
 
@@ -202,14 +195,14 @@ public class SCProductVersionLocalServiceImpl
 			scProductEntryPersistence.findByPrimaryKey(
 				productVersion.getProductEntryId());
 
-		productEntry.setModifiedDate(now);
+		productEntry.setModifiedDate(new Date());
 
-		scProductEntryPersistence.update(productEntry, false);
+		scProductEntryPersistence.update(productEntry);
 
 		// Indexer
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-			SCProductEntry.class);
+		Indexer<SCProductEntry> indexer =
+			IndexerRegistryUtil.nullSafeGetIndexer(SCProductEntry.class);
 
 		indexer.reindex(productEntry);
 
@@ -220,19 +213,16 @@ public class SCProductVersionLocalServiceImpl
 		throws PortalException {
 
 		try {
-			HttpImpl httpImpl = (HttpImpl)HttpUtil.getHttp();
+			Http.Options options = new Http.Options();
 
-			HostConfiguration hostConfiguration = httpImpl.getHostConfiguration(
-				directDownloadURL);
+			options.setLocation(directDownloadURL);
+			options.setPost(false);
 
-			HttpClient httpClient = httpImpl.getClient(hostConfiguration);
+			HttpUtil.URLtoByteArray(options);
 
-			GetMethod getFileMethod = new GetMethod(directDownloadURL);
+			Http.Response response = options.getResponse();
 
-			int responseCode = httpClient.executeMethod(
-				hostConfiguration, getFileMethod);
-
-			if (responseCode != HttpServletResponse.SC_OK) {
+			if (response.getResponseCode() != HttpServletResponse.SC_OK) {
 				throw new UnavailableProductVersionDirectDownloadURLException();
 			}
 		}
@@ -245,7 +235,7 @@ public class SCProductVersionLocalServiceImpl
 			long productVersionId, String version, String changeLog,
 			String downloadPageURL, String directDownloadURL,
 			boolean testDirectDownloadURL, long[] frameworkVersionIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (Validator.isNull(version)) {
 			throw new ProductVersionNameException();
@@ -266,7 +256,8 @@ public class SCProductVersionLocalServiceImpl
 			if ((productVersion != null) &&
 				(productVersion.getProductVersionId() != productVersionId)) {
 
-				throw new DuplicateProductVersionDirectDownloadURLException();
+				throw new DuplicateProductVersionDirectDownloadURLException(
+					"{productVersionId=" + productVersionId + "}");
 			}
 
 			if (testDirectDownloadURL) {

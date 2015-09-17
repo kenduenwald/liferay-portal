@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,10 +15,10 @@
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.UnicodeLanguageUtil;
-import com.liferay.portal.kernel.servlet.taglib.FileAvailabilityUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.taglib.FileAvailabilityUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -28,7 +28,7 @@ public class IconDeactivateTag extends IconTag {
 
 	@Override
 	protected String getPage() {
-		if (FileAvailabilityUtil.isAvailable(getServletContext(), _PAGE)) {
+		if (FileAvailabilityUtil.isAvailable(servletContext, _PAGE)) {
 			return _PAGE;
 		}
 
@@ -41,9 +41,8 @@ public class IconDeactivateTag extends IconTag {
 		if (url.startsWith(Http.HTTP_WITH_SLASH) ||
 			url.startsWith(Http.HTTPS_WITH_SLASH)) {
 
-			url =
-				"submitForm(document.hrefFm, '".concat(
-					HttpUtil.encodeURL(url)).concat("');");
+			url = "submitForm(document.hrefFm, '".concat(
+				HttpUtil.encodeURL(url)).concat("');");
 		}
 
 		StringBundler sb = new StringBundler(5);
@@ -51,14 +50,15 @@ public class IconDeactivateTag extends IconTag {
 		sb.append("javascript:if (confirm('");
 		sb.append(
 			UnicodeLanguageUtil.get(
-				pageContext, "are-you-sure-you-want-to-deactivate-this"));
+				request, "are-you-sure-you-want-to-deactivate-this"));
 		sb.append("')) { ");
 		sb.append(url);
 		sb.append(" } else { self.focus(); }");
 
 		url = sb.toString();
 
-		setImage("deactivate");
+		setIconCssClass("icon-ban-circle");
+		setMessage("deactivate");
 		setUrl(url);
 
 		return super.getPage();

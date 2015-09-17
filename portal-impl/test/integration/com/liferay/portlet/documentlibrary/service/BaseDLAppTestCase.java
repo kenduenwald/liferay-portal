@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,22 @@
 
 package com.liferay.portlet.documentlibrary.service;
 
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.util.ContentTypes;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.model.Group;
+import com.liferay.portal.model.ResourceConstants;
+import com.liferay.portal.model.RoleConstants;
+import com.liferay.portal.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.service.ServiceContext;
-import com.liferay.portal.util.TestPropsValues;
 import com.liferay.portlet.documentlibrary.NoSuchFolderException;
 import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
+import com.liferay.portlet.documentlibrary.service.permission.DLPermission;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,109 +37,54 @@ import org.junit.Before;
 /**
  * @author Alexander Chow
  */
-public class BaseDLAppTestCase {
+public abstract class BaseDLAppTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		String name = "Test Folder";
-		String description = "This is a test folder.";
+		_name = PrincipalThreadLocal.getName();
 
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setAddGroupPermissions(true);
-		serviceContext.setAddGuestPermissions(true);
+		group = GroupTestUtil.addGroup();
 
 		try {
 			DLAppServiceUtil.deleteFolder(
-				TestPropsValues.getGroupId(),
-				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, name);
+				group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+				"Test Folder");
 		}
 		catch (NoSuchFolderException nsfe) {
 		}
 
-		folder = DLAppServiceUtil.addFolder(
-			TestPropsValues.getGroupId(),
-			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, name, description,
-			serviceContext);
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId());
+
+		parentFolder = DLAppServiceUtil.addFolder(
+			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			"Test Folder", RandomTestUtil.randomString(), serviceContext);
+
+		RoleTestUtil.addResourcePermission(
+			RoleConstants.GUEST, DLPermission.RESOURCE_NAME,
+			ResourceConstants.SCOPE_GROUP, String.valueOf(group.getGroupId()),
+			ActionKeys.VIEW);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		if (folder != null) {
-			DLAppServiceUtil.deleteFolder(folder.getFolderId());
-		}
-	}
+		PrincipalThreadLocal.setName(_name);
 
-	protected FileEntry addFileEntry(boolean rootFolder, String fileName)
-		throws Exception {
-
-		return addFileEntry(rootFolder, fileName, fileName);
-	}
-
-	protected FileEntry addFileEntry(
-			boolean rootFolder, String sourceFileName, String title)
-		throws Exception {
-
-		long folderId = DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
-
-		if (!rootFolder) {
-			folderId = folder.getFolderId();
-		}
-
-		String description = StringPool.BLANK;
-		String changeLog = StringPool.BLANK;
-
-		byte[] bytes = null;
-
-		if (Validator.isNotNull(sourceFileName)) {
-			bytes = CONTENT.getBytes();
-		}
-
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setAddGroupPermissions(true);
-		serviceContext.setAddGuestPermissions(true);
-
-		return DLAppServiceUtil.addFileEntry(
-			TestPropsValues.getGroupId(), folderId, sourceFileName,
-			ContentTypes.TEXT_PLAIN, title, description, changeLog, bytes,
-			serviceContext);
-	}
-
-	protected FileEntry updateFileEntry(
-			long fileEntryId, String sourceFileName, String title)
-		throws Exception {
-
-		return updateFileEntry(fileEntryId, sourceFileName, title, false);
-	}
-
-	protected FileEntry updateFileEntry(
-			long fileEntryId, String sourceFileName, String title,
-			boolean majorVersion)
-		throws Exception {
-
-		String description = StringPool.BLANK;
-		String changeLog = StringPool.BLANK;
-
-		byte[] bytes = null;
-
-		if (Validator.isNotNull(sourceFileName)) {
-			bytes = CONTENT.getBytes();
-		}
-
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setAddGroupPermissions(true);
-		serviceContext.setAddGuestPermissions(true);
-
-		return DLAppServiceUtil.updateFileEntry(
-			fileEntryId, sourceFileName, ContentTypes.TEXT_PLAIN, title,
-			description, changeLog, majorVersion, bytes, serviceContext);
+		RoleTestUtil.removeResourcePermission(
+			RoleConstants.GUEST, DLPermission.RESOURCE_NAME,
+			ResourceConstants.SCOPE_GROUP, String.valueOf(group.getGroupId()),
+			ActionKeys.VIEW);
 	}
 
 	protected static final String CONTENT =
 		"Content: Enterprise. Open Source. For Life.";
 
-	protected Folder folder;
+	@DeleteAfterTestRun
+	protected Group group;
+
+	protected Folder parentFolder;
+
+	private String _name;
 
 }

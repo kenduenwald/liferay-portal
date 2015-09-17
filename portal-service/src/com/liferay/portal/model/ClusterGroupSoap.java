@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -22,13 +24,15 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class ClusterGroupSoap implements Serializable {
 	public static ClusterGroupSoap toSoapModel(ClusterGroup model) {
 		ClusterGroupSoap soapModel = new ClusterGroupSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setClusterGroupId(model.getClusterGroupId());
 		soapModel.setName(model.getName());
 		soapModel.setClusterNodeIds(model.getClusterNodeIds());
@@ -85,6 +89,14 @@ public class ClusterGroupSoap implements Serializable {
 		setClusterGroupId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
 	public long getClusterGroupId() {
 		return _clusterGroupId;
 	}
@@ -121,6 +133,7 @@ public class ClusterGroupSoap implements Serializable {
 		_wholeCluster = wholeCluster;
 	}
 
+	private long _mvccVersion;
 	private long _clusterGroupId;
 	private String _name;
 	private String _clusterNodeIds;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,16 @@
 
 package com.liferay.portlet.asset.util.comparator;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portlet.asset.model.AssetTag;
 
 /**
  * @author Miguel Pastor
  */
-public class AssetTagCountComparator extends OrderByComparator {
+@ProviderType
+public class AssetTagCountComparator extends OrderByComparator<AssetTag> {
 
 	public static final String ORDER_BY_ASC = "AssetTag.assetCount ASC";
 
@@ -37,10 +40,7 @@ public class AssetTagCountComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		AssetTag assetTag1 = (AssetTag)obj1;
-		AssetTag assetTag2 = (AssetTag)obj2;
-
+	public int compare(AssetTag assetTag1, AssetTag assetTag2) {
 		int value = 0;
 
 		if (assetTag1.getAssetCount() < assetTag2.getAssetCount()) {
@@ -78,6 +78,6 @@ public class AssetTagCountComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

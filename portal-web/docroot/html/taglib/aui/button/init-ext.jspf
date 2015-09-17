@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,3 +13,85 @@
  * details.
  */
 --%>
+
+<%
+if (!useNamespace) {
+	namespace = StringPool.BLANK;
+}
+
+Object bodyContent = request.getAttribute("aui:button:bodyContent");
+
+String bodyContentString = StringPool.BLANK;
+
+if (bodyContent != null) {
+	bodyContentString = bodyContent.toString();
+}
+
+boolean dropdown = Validator.isNotNull(bodyContentString.trim());
+
+String escapedHREF = StringPool.BLANK;
+
+if (Validator.isNotNull(href)) {
+	escapedHREF = HtmlUtil.escapeAttribute(PortalUtil.escapeRedirect(href));
+}
+else if (onClick.startsWith(Http.HTTP_WITH_SLASH) || onClick.startsWith(Http.HTTPS_WITH_SLASH) || onClick.startsWith(StringPool.SLASH)) {
+	href = onClick;
+
+	escapedHREF = HtmlUtil.escapeAttribute(PortalUtil.escapeRedirect(href));
+}
+else if (onClick.startsWith("wsrp_rewrite?")) {
+	href = onClick;
+
+	escapedHREF = HtmlUtil.escapeAttribute(href);
+}
+
+if (useDialog && Validator.isNotNull(escapedHREF)) {
+	if (data == null) {
+		data = new HashMap<String, Object>();
+	}
+
+	data.put("href", href);
+	data.put("title", LanguageUtil.get(request, value));
+
+	onClick = StringPool.BLANK;
+
+	if (Validator.isNull(name)) {
+		name = StringUtil.randomId();
+	}
+}
+
+if (Validator.isNull(id)) {
+	if (Validator.isNotNull(name)) {
+		id = name;
+	}
+	else {
+		id = StringUtil.randomId();
+	}
+}
+
+id = namespace + id;
+
+if (primary == null) {
+	if (type.equals("submit")) {
+		primary = true;
+	}
+	else {
+		primary = false;
+	}
+}
+else {
+	primary = GetterUtil.getBoolean(String.valueOf(primary));
+}
+
+if (primary == Boolean.TRUE) {
+	cssClass += " btn-primary";
+}
+
+if (type.equals("cancel")) {
+	cssClass += " btn-cancel btn-default";
+}
+
+if (dropdown) {
+	cssClass += " dropdown-toggle direction-down";
+}
+%>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,8 @@ package com.liferay.portal.kernel.bean;
 
 import com.liferay.portal.kernel.util.HtmlUtil;
 
+import java.io.Serializable;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -24,27 +26,20 @@ import java.lang.reflect.Method;
  * Wraps a bean so that all strings returned from <code>@AutoEscape</code>
  * annotated methods are automatically HTML escaped.
  *
- * <p>
- * For a usage example see {@link
- * com.liferay.portlet.shopping.util.ShoppingUtil#getBreadcrumbs(
- * com.liferay.portlet.shopping.model.ShoppingCategory,
- * javax.servlet.jsp.PageContext, javax.portlet.RenderRequest,
- * javax.portlet.RenderResponse) ShoppingUtil.getBreadcrumbs} .
- * </p>
- *
  * @author Shuyang Zhou
  * @see    AutoEscape
  */
-public class AutoEscapeBeanHandler implements InvocationHandler {
+public class AutoEscapeBeanHandler implements InvocationHandler, Serializable {
 
 	public AutoEscapeBeanHandler(Object bean) {
-		_bean = bean;
+		_bean = (Serializable)bean;
 	}
 
 	public Object getBean() {
 		return _bean;
 	}
 
+	@Override
 	public Object invoke(Object proxy, Method method, Object[] arguments)
 		throws Throwable {
 
@@ -78,6 +73,6 @@ public class AutoEscapeBeanHandler implements InvocationHandler {
 		return result;
 	}
 
-	private Object _bean;
+	private final Serializable _bean;
 
 }

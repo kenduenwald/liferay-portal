@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,20 +15,20 @@
 package com.liferay.util.ant;
 
 import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.kernel.xml.Attribute;
-import com.liferay.portal.kernel.xml.Document;
-import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.util.SystemProperties;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.util.xml.Dom4jUtil;
+import com.liferay.util.xml.XMLSafeReader;
 
 import java.io.File;
 
+import java.nio.file.Files;
+
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -36,18 +36,28 @@ import org.apache.axis.tools.ant.wsdl.Java2WsdlAntTask;
 import org.apache.axis.tools.ant.wsdl.NamespaceMapping;
 import org.apache.axis.tools.ant.wsdl.Wsdl2javaAntTask;
 import org.apache.tools.ant.Project;
+import org.apache.tools.ant.types.Path;
+
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Node;
+import org.dom4j.io.SAXReader;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class Java2WsddTask {
 
-	public static String[] generateWsdd(String className, String serviceName)
+	public static String[] generateWsdd(
+			String className, String classPath, String serviceName)
 		throws Exception {
 
 		// Create temp directory
 
-		File tempDir = new File(Time.getTimestamp());
+		File tempDir = new File(
+			SystemProperties.get(SystemProperties.TMP_DIR),
+			String.valueOf(System.currentTimeMillis()));
 
 		tempDir.mkdir();
 
@@ -87,6 +97,11 @@ public class Java2WsddTask {
 
 		java2Wsdl.setProject(project);
 		java2Wsdl.setClassName(className);
+
+		if (Validator.isNotNull(classPath)) {
+			java2Wsdl.setClasspath(new Path(project, classPath));
+		}
+
 		java2Wsdl.setOutput(new File(wsdlFileName));
 		java2Wsdl.setLocation(location);
 		java2Wsdl.setNamespace(namespace);
@@ -109,9 +124,12 @@ public class Java2WsddTask {
 
 		// Get content
 
-		String deployContent = FileUtil.read(
+		File deployFile = new File(
 			tempDir + "/" + StringUtil.replace(packagePath, ".", "/") +
 				"/deploy.wsdd");
+
+		String deployContent = new String(
+			Files.readAllBytes(deployFile.toPath()));
 
 		deployContent = StringUtil.replace(
 			deployContent, packagePath + "." + serviceName + "SoapBindingImpl",
@@ -119,9 +137,12 @@ public class Java2WsddTask {
 
 		deployContent = _format(deployContent);
 
-		String undeployContent = FileUtil.read(
+		File undeployFile = new File(
 			tempDir + "/" + StringUtil.replace(packagePath, ".", "/") +
 				"/undeploy.wsdd");
+
+		String undeployContent = new String(
+			Files.readAllBytes(undeployFile.toPath()));
 
 		undeployContent = _format(undeployContent);
 
@@ -143,40 +164,44 @@ public class Java2WsddTask {
 	}
 
 	private static String _format(String content) throws Exception {
-		content = HtmlUtil.stripComments(content);
+		content = _stripComments(content);
 
-		Document document = SAXReaderUtil.read(content);
+		SAXReader saxReader = new SAXReader();
+
+		Document document = saxReader.read(new XMLSafeReader(content));
 
 		Element rootElement = document.getRootElement();
 
 		Element serviceElement = rootElement.element("service");
 
-		Map<String, Element> arrayMappingElements =
-			new TreeMap<String, Element>();
-		Map<String, Element> typeMappingElements =
-			new TreeMap<String, Element>();
-		Map<String, Element> operationElements = new TreeMap<String, Element>();
-		Map<String, Element> parameterElements = new TreeMap<String, Element>();
+		Map<String, Element> arrayMappingElements = new TreeMap<>();
+		Map<String, Element> typeMappingElements = new TreeMap<>();
+		Map<String, Element> operationElements = new TreeMap<>();
+		Map<String, Element> parameterElements = new TreeMap<>();
 
-		for (Element element : serviceElement.elements()) {
+		List<Element> elements = serviceElement.elements();
+
+		for (Element element : elements) {
 			String elementName = element.getName();
 
 			if (elementName.equals("arrayMapping")) {
 				element.detach();
 
-				arrayMappingElements.put(element.formattedString(), element);
+				arrayMappingElements.put(_formattedString(element), element);
 			}
 			else if (elementName.equals("operation")) {
 				element.detach();
 
-				StringBundler sb = new StringBundler();
+				List<Element> parameters = element.elements("parameter");
+
+				StringBundler sb = new StringBundler(2 * parameters.size() + 2);
 
 				String name = element.attributeValue("name");
 
 				sb.append(name);
 				sb.append("_METHOD_");
 
-				for (Element parameterElement : element.elements("parameter")) {
+				for (Element parameterElement : parameters) {
 					String type = parameterElement.attributeValue("type");
 
 					sb.append(type);
@@ -217,7 +242,7 @@ public class Java2WsddTask {
 			else if (elementName.equals("typeMapping")) {
 				element.detach();
 
-				typeMappingElements.put(element.formattedString(), element);
+				typeMappingElements.put(_formattedString(element), element);
 			}
 		}
 
@@ -227,9 +252,17 @@ public class Java2WsddTask {
 		_addElements(serviceElement, parameterElements);
 
 		content = StringUtil.replace(
-			document.formattedString(), "\"/>", "\" />");
+			_formattedString(document), "\"/>", "\" />");
 
 		return content;
+	}
+
+	private static String _formattedString(Node node) throws Exception {
+		return Dom4jUtil.toString(node);
+	}
+
+	private static String _stripComments(String text) {
+		return StringUtil.stripBetween(text, "<!--", "-->");
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -22,22 +24,26 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.ResourcePermissionServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.ResourcePermissionServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.ResourcePermissionServiceSoap
  * @generated
  */
+@ProviderType
 public class ResourcePermissionSoap implements Serializable {
 	public static ResourcePermissionSoap toSoapModel(ResourcePermission model) {
 		ResourcePermissionSoap soapModel = new ResourcePermissionSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setResourcePermissionId(model.getResourcePermissionId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setName(model.getName());
 		soapModel.setScope(model.getScope());
 		soapModel.setPrimKey(model.getPrimKey());
+		soapModel.setPrimKeyId(model.getPrimKeyId());
 		soapModel.setRoleId(model.getRoleId());
 		soapModel.setOwnerId(model.getOwnerId());
 		soapModel.setActionIds(model.getActionIds());
+		soapModel.setViewActionId(model.getViewActionId());
 
 		return soapModel;
 	}
@@ -93,6 +99,14 @@ public class ResourcePermissionSoap implements Serializable {
 		setResourcePermissionId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
 	public long getResourcePermissionId() {
 		return _resourcePermissionId;
 	}
@@ -133,6 +147,14 @@ public class ResourcePermissionSoap implements Serializable {
 		_primKey = primKey;
 	}
 
+	public long getPrimKeyId() {
+		return _primKeyId;
+	}
+
+	public void setPrimKeyId(long primKeyId) {
+		_primKeyId = primKeyId;
+	}
+
 	public long getRoleId() {
 		return _roleId;
 	}
@@ -157,12 +179,27 @@ public class ResourcePermissionSoap implements Serializable {
 		_actionIds = actionIds;
 	}
 
+	public boolean getViewActionId() {
+		return _viewActionId;
+	}
+
+	public boolean isViewActionId() {
+		return _viewActionId;
+	}
+
+	public void setViewActionId(boolean viewActionId) {
+		_viewActionId = viewActionId;
+	}
+
+	private long _mvccVersion;
 	private long _resourcePermissionId;
 	private long _companyId;
 	private String _name;
 	private int _scope;
 	private String _primKey;
+	private long _primKeyId;
 	private long _roleId;
 	private long _ownerId;
 	private long _actionIds;
+	private boolean _viewActionId;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,47 +23,64 @@ import com.liferay.portal.kernel.cache.ThreadLocalCachable;
 import com.liferay.portal.kernel.cache.ThreadLocalCache;
 import com.liferay.portal.kernel.cache.ThreadLocalCacheManager;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.lar.ImportExportThreadLocal;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.spring.aop.Skip;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.Company;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.Layout;
+import com.liferay.portal.model.ResourceAction;
+import com.liferay.portal.model.ResourceBlockPermission;
 import com.liferay.portal.model.ResourceConstants;
+import com.liferay.portal.model.ResourcePermission;
+import com.liferay.portal.model.ResourceTypePermission;
 import com.liferay.portal.model.Role;
 import com.liferay.portal.model.RoleConstants;
+import com.liferay.portal.model.SystemEventConstants;
 import com.liferay.portal.model.Team;
 import com.liferay.portal.model.User;
+import com.liferay.portal.security.auth.CompanyThreadLocal;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionCacheUtil;
+import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.base.RoleLocalServiceBaseImpl;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.portlet.admin.util.PortalMyAccountApplicationType;
+import com.liferay.portlet.exportimport.lar.ExportImportThreadLocal;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * The implementation of the role local service.
+ * Provides the local service for accessing, adding, checking, deleting, and
+ * updating roles.
  *
  * @author Brian Wing Shun Chan
  * @author Marcellus Tavares
@@ -73,28 +90,67 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	/**
 	 * Adds a role. The user is reindexed after role is added.
 	 *
-	 * @param  userId the primary key of the user
-	 * @param  companyId the primary key of the company
-	 * @param  name the role's name
-	 * @param  titleMap the role's localized titles (optionally
-	 *         <code>null</code>)
-	 * @param  descriptionMap the role's localized descriptions (optionally
-	 *         <code>null</code>)
-	 * @param  type the role's type (optionally <code>0</code>)
-	 * @return the role
-	 * @throws PortalException if the class name or the role name were invalid,
-	 *         if the role is a duplicate, or if a user with the primary key
-	 *         could not be found
-	 * @throws SystemException if a system exception occurred
+	 * @param      userId the primary key of the user
+	 * @param      companyId the primary key of the company
+	 * @param      name the role's name
+	 * @param      titleMap the role's localized titles (optionally
+	 *             <code>null</code>)
+	 * @param      descriptionMap the role's localized descriptions (optionally
+	 *             <code>null</code>)
+	 * @param      type the role's type (optionally <code>0</code>)
+	 * @return     the role
+	 * @throws     PortalException if the class name or the role name were
+	 *             invalid, if the role is a duplicate, or if a user with the
+	 *             primary key could not be found
+	 * @deprecated As of 6.2.0, replaced by {@link #addRole(long, String, long,
+	 *             String, Map, Map, int, String, ServiceContext)}
 	 */
+	@Deprecated
+	@Override
 	public Role addRole(
 			long userId, long companyId, String name,
 			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
 			int type)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return addRole(
-			userId, companyId, name, titleMap, descriptionMap, type, null, 0);
+			userId, null, 0, name, titleMap, descriptionMap, type, null, null);
+	}
+
+	/**
+	 * Adds a role with additional parameters. The user is reindexed after role
+	 * is added.
+	 *
+	 * @param      userId the primary key of the user
+	 * @param      companyId the primary key of the company
+	 * @param      name the role's name
+	 * @param      titleMap the role's localized titles (optionally
+	 *             <code>null</code>)
+	 * @param      descriptionMap the role's localized descriptions (optionally
+	 *             <code>null</code>)
+	 * @param      type the role's type (optionally <code>0</code>)
+	 * @param      className the name of the class for which the role is created
+	 *             (optionally <code>null</code>)
+	 * @param      classPK the primary key of the class for which the role is
+	 *             created (optionally <code>0</code>)
+	 * @return     the role
+	 * @throws     PortalException if the class name or the role name were
+	 *             invalid, if the role is a duplicate, or if a user with the
+	 *             primary key could not be found
+	 * @deprecated As of 6.2.0, replaced by {@link #addRole(long, String, long,
+	 *             String, Map, Map, int, String, ServiceContext)}
+	 */
+	@Deprecated
+	@Override
+	public Role addRole(
+			long userId, long companyId, String name,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			int type, String className, long classPK)
+		throws PortalException {
+
+		return addRole(
+			userId, className, classPK, name, titleMap, descriptionMap, type,
+			null, null);
 	}
 
 	/**
@@ -102,67 +158,76 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * is added.
 	 *
 	 * @param  userId the primary key of the user
-	 * @param  companyId the primary key of the company
+	 * @param  className the name of the class for which the role is created
+	 *         (optionally <code>null</code>)
+	 * @param  classPK the primary key of the class for which the role is
+	 *         created (optionally <code>0</code>)
 	 * @param  name the role's name
 	 * @param  titleMap the role's localized titles (optionally
 	 *         <code>null</code>)
 	 * @param  descriptionMap the role's localized descriptions (optionally
 	 *         <code>null</code>)
 	 * @param  type the role's type (optionally <code>0</code>)
-	 * @param  className the name of the class for which the role is created
-	 *         (optionally <code>null</code>)
-	 * @param  classPK the primary key of the class for which the role is
-	 *         created (optionally <code>0</code>)
+	 * @param  subtype the role's subtype (optionally <code>null</code>)
+	 * @param  serviceContext the service context to be applied (optionally
+	 *         <code>null</code>). Can set expando bridge attributes for the
+	 *         role.
 	 * @return the role
 	 * @throws PortalException if the class name or the role name were invalid,
 	 *         if the role is a duplicate, or if a user with the primary key
 	 *         could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public Role addRole(
-			long userId, long companyId, String name,
+			long userId, String className, long classPK, String name,
 			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			int type, String className, long classPK)
-		throws PortalException, SystemException {
+			int type, String subtype, ServiceContext serviceContext)
+		throws PortalException {
 
 		// Role
 
+		User user = userPersistence.findByPrimaryKey(userId);
 		className = GetterUtil.getString(className);
-		long classNameId = PortalUtil.getClassNameId(className);
+		long classNameId = classNameLocalService.getClassNameId(className);
 
 		long roleId = counterLocalService.increment();
 
 		if ((classNameId <= 0) || className.equals(Role.class.getName())) {
-			classNameId = PortalUtil.getClassNameId(Role.class);
+			classNameId = classNameLocalService.getClassNameId(Role.class);
 			classPK = roleId;
 		}
 
-		validate(0, companyId, classNameId, name);
+		validate(0, user.getCompanyId(), classNameId, name);
 
 		Role role = rolePersistence.create(roleId);
 
-		role.setCompanyId(companyId);
+		if (serviceContext != null) {
+			role.setUuid(serviceContext.getUuid());
+		}
+
+		role.setCompanyId(user.getCompanyId());
+		role.setUserId(user.getUserId());
+		role.setUserName(user.getFullName());
 		role.setClassNameId(classNameId);
 		role.setClassPK(classPK);
 		role.setName(name);
 		role.setTitleMap(titleMap);
 		role.setDescriptionMap(descriptionMap);
 		role.setType(type);
+		role.setSubtype(subtype);
+		role.setExpandoBridgeAttributes(serviceContext);
 
-		rolePersistence.update(role, false);
+		rolePersistence.update(role);
 
 		// Resources
 
-		if (userId > 0) {
+		if (!user.isDefaultUser()) {
 			resourceLocalService.addResources(
-				companyId, 0, userId, Role.class.getName(), role.getRoleId(),
-				false, false, false);
+				user.getCompanyId(), 0, userId, Role.class.getName(),
+				role.getRoleId(), false, false, false);
 
-			if (!ImportExportThreadLocal.isImportInProcess()) {
-				Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-					User.class);
-
-				indexer.reindex(userId);
+			if (!ExportImportThreadLocal.isImportInProcess()) {
+				reindex(userId);
 			}
 		}
 
@@ -176,20 +241,18 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  roleIds the primary keys of the roles
 	 * @throws PortalException if a user with the primary key could not be found
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.UserPersistence#addRoles(
 	 *         long, long[])
 	 */
+	@Override
 	public void addUserRoles(long userId, long[] roleIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		userPersistence.addRoles(userId, roleIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
+		reindex(userId);
 
-		indexer.reindex(userId);
-
-		PermissionCacheUtil.clearCache();
+		PermissionCacheUtil.clearCache(userId);
 	}
 
 	/**
@@ -198,9 +261,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *
 	 * @throws PortalException if the current user did not have permission to
 	 *         set applicable permissions on a role
-	 * @throws SystemException if a system exception occurred
 	 */
-	public void checkSystemRoles() throws PortalException, SystemException {
+	@Override
+	public void checkSystemRoles() throws PortalException {
 		List<Company> companies = companyLocalService.getCompanies();
 
 		for (Company company : companies) {
@@ -215,15 +278,31 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  companyId the primary key of the company
 	 * @throws PortalException if the current user did not have permission to
 	 *         set applicable permissions on a role
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public void checkSystemRoles(long companyId)
-		throws PortalException, SystemException {
-
+	public void checkSystemRoles(long companyId) throws PortalException {
 		String companyIdHexString = StringUtil.toHexString(companyId);
 
-		for (Role role : roleFinder.findBySystem(companyId)) {
+		List<Role> roles = null;
+
+		try {
+			roles = roleFinder.findBySystem(companyId);
+		}
+		catch (Exception e) {
+
+			// LPS-34324
+
+			runSQL("alter table Role_ add uuid_ VARCHAR(75) null");
+			runSQL("alter table Role_ add userId LONG");
+			runSQL("alter table Role_ add userName VARCHAR(75) null");
+			runSQL("alter table Role_ add createDate DATE null");
+			runSQL("alter table Role_ add modifiedDate DATE null");
+
+			roles = roleFinder.findBySystem(companyId);
+		}
+
+		for (Role role : roles) {
 			_systemRolesMap.put(
 				companyIdHexString.concat(role.getName()), role);
 		}
@@ -238,7 +317,7 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 					StringUtil.replace(name, CharPool.SPACE, CharPool.PERIOD) +
 						".description";
 
-			Map<Locale, String> descriptionMap = new HashMap<Locale, String>();
+			Map<Locale, String> descriptionMap = new HashMap<>();
 
 			descriptionMap.put(LocaleUtil.getDefault(), PropsUtil.get(key));
 
@@ -258,7 +337,7 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 					StringUtil.replace(name, CharPool.SPACE, CharPool.PERIOD) +
 						".description";
 
-			Map<Locale, String> descriptionMap = new HashMap<Locale, String>();
+			Map<Locale, String> descriptionMap = new HashMap<>();
 
 			descriptionMap.put(LocaleUtil.getDefault(), PropsUtil.get(key));
 
@@ -277,13 +356,30 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 					StringUtil.replace(name, CharPool.SPACE, CharPool.PERIOD) +
 						".description";
 
-			Map<Locale, String> descriptionMap = new HashMap<Locale, String>();
+			Map<Locale, String> descriptionMap = new HashMap<>();
 
 			descriptionMap.put(LocaleUtil.getDefault(), PropsUtil.get(key));
 
 			int type = RoleConstants.TYPE_SITE;
 
 			checkSystemRole(companyId, name, descriptionMap, type);
+		}
+
+		// All users should be able to view all system roles
+
+		Role userRole = getRole(companyId, RoleConstants.USER);
+
+		String[] userViewableRoles = ArrayUtil.append(
+			systemRoles, systemOrganizationRoles, systemSiteRoles);
+
+		for (String roleName : userViewableRoles) {
+			Role role = getRole(companyId, roleName);
+
+			resourcePermissionLocalService.setResourcePermissions(
+				companyId, Role.class.getName(),
+				ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(role.getRoleId()), userRole.getRoleId(),
+				new String[] {ActionKeys.VIEW});
 		}
 	}
 
@@ -295,15 +391,12 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @throws PortalException if a role with the primary key could not be
 	 *         found, if the role is a default system role, or if the role's
 	 *         resource could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
 	@Override
-	public Role deleteRole(long roleId)
-		throws PortalException, SystemException {
-
+	public Role deleteRole(long roleId) throws PortalException {
 		Role role = rolePersistence.findByPrimaryKey(roleId);
 
-		return deleteRole(role);
+		return roleLocalService.deleteRole(role);
 	}
 
 	/**
@@ -313,15 +406,46 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @return the deleted role
 	 * @throws PortalException if the role is a default system role or if the
 	 *         role's resource could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
 	@Override
-	public Role deleteRole(Role role) throws PortalException, SystemException {
-		if (PortalUtil.isSystemRole(role.getName())) {
+	@SystemEvent(
+		action = SystemEventConstants.ACTION_SKIP,
+		type = SystemEventConstants.TYPE_DELETE
+	)
+	public Role deleteRole(Role role) throws PortalException {
+		if (role.isSystem() && !CompanyThreadLocal.isDeleteInProcess()) {
 			throw new RequiredRoleException();
 		}
 
 		// Resources
+
+		List<ResourceBlockPermission> resourceBlockPermissions =
+			resourceBlockPermissionPersistence.findByRoleId(role.getRoleId());
+
+		for (ResourceBlockPermission resourceBlockPermission :
+				resourceBlockPermissions) {
+
+			resourceBlockPermissionLocalService.deleteResourceBlockPermission(
+				resourceBlockPermission);
+		}
+
+		List<ResourcePermission> resourcePermissions =
+			resourcePermissionPersistence.findByRoleId(role.getRoleId());
+
+		for (ResourcePermission resourcePermission : resourcePermissions) {
+			resourcePermissionLocalService.deleteResourcePermission(
+				resourcePermission);
+		}
+
+		List<ResourceTypePermission> resourceTypePermissions =
+			resourceTypePermissionPersistence.findByRoleId(role.getRoleId());
+
+		for (ResourceTypePermission resourceTypePermission :
+				resourceTypePermissions) {
+
+			resourceTypePermissionLocalService.deleteResourceTypePermission(
+				resourceTypePermission);
+		}
 
 		String className = role.getClassName();
 		long classNameId = role.getClassNameId();
@@ -346,6 +470,10 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 
 		rolePersistence.remove(role);
 
+		// Expando
+
+		expandoRowLocalService.deleteRows(role.getRoleId());
+
 		// Permission cache
 
 		PermissionCacheUtil.clearCache();
@@ -365,10 +493,10 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  name the role's name
 	 * @return Returns the role with the name or <code>null</code> if a role
 	 *         with the name could not be found in the company
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	@Skip
-	public Role fetchRole(long companyId, String name) throws SystemException {
+	public Role fetchRole(long companyId, String name) {
 		String companyIdHexString = StringUtil.toHexString(companyId);
 
 		Role role = _systemRolesMap.get(companyIdHexString.concat(name));
@@ -385,24 +513,20 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *
 	 * <p>
 	 * If the group is a site, then the default role is {@link
-	 * com.liferay.portal.model.RoleConstants#SITE_MEMBER}. If the group is an
-	 * organization, then the default role is {@link
-	 * com.liferay.portal.model.RoleConstants#ORGANIZATION_USER}. If the group
-	 * is a user or user group, then the default role is {@link
-	 * com.liferay.portal.model.RoleConstants#POWER_USER}. For all other group
-	 * types, the default role is {@link
-	 * com.liferay.portal.model.RoleConstants#USER}.
+	 * RoleConstants#SITE_MEMBER}. If the group is an organization, then the
+	 * default role is {@link RoleConstants#ORGANIZATION_USER}. If the group is
+	 * a user or user group, then the default role is {@link
+	 * RoleConstants#POWER_USER}. For all other group types, the default role is
+	 * {@link RoleConstants#USER}.
 	 * </p>
 	 *
 	 * @param  groupId the primary key of the group
 	 * @return the default role for the group with the primary key
 	 * @throws PortalException if a group with the primary key could not be
 	 *         found, or if a default role could not be found for the group
-	 * @throws SystemException if a system exception occurred
 	 */
-	public Role getDefaultGroupRole(long groupId)
-		throws PortalException, SystemException {
-
+	@Override
+	public Role getDefaultGroupRole(long groupId) throws PortalException {
 		Group group = groupPersistence.findByPrimaryKey(groupId);
 
 		if (group.isLayout()) {
@@ -429,9 +553,6 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 			role = getRole(
 				group.getCompanyId(), RoleConstants.ORGANIZATION_USER);
 		}
-		else if (group.isUser() || group.isUserGroup()) {
-			role = getRole(group.getCompanyId(), RoleConstants.POWER_USER);
-		}
 		else {
 			role = getRole(group.getCompanyId(), RoleConstants.USER);
 		}
@@ -439,15 +560,41 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 		return role;
 	}
 
-	/**
-	 * Returns all the roles associated with the group.
-	 *
-	 * @param  groupId the primary key of the group
-	 * @return the roles associated with the group
-	 * @throws SystemException if a system exception occurred
-	 */
-	public List<Role> getGroupRoles(long groupId) throws SystemException {
-		return groupPersistence.getRoles(groupId);
+	@Override
+	public List<Role> getGroupRelatedRoles(long groupId)
+		throws PortalException {
+
+		List<Role> roles = new ArrayList<>();
+
+		Group group = groupLocalService.getGroup(groupId);
+
+		if (group.isStagingGroup()) {
+			group = group.getLiveGroup();
+		}
+
+		int[] types = RoleConstants.TYPES_REGULAR;
+
+		if (group.isOrganization()) {
+			types = RoleConstants.TYPES_ORGANIZATION_AND_REGULAR;
+		}
+		else if (group.isLayout() || group.isLayoutSetPrototype() ||
+				 group.isSite() || group.isUser()) {
+
+			types = RoleConstants.TYPES_REGULAR_AND_SITE;
+		}
+
+		roles.addAll(getRoles(group.getCompanyId(), types));
+
+		roles.addAll(getTeamRoles(groupId));
+
+		return roles;
+	}
+
+	@Override
+	public List<Role> getResourceBlockRoles(
+		long resourceBlockId, String className, String actionId) {
+
+		return roleFinder.findByR_N_A(resourceBlockId, className, actionId);
 	}
 
 	/**
@@ -459,13 +606,12 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  scope the permission scope
 	 * @param  primKey the primary key of the resource's class
 	 * @return the role names and action IDs
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByC_N_S_P(
 	 *         long, String, int, String)
 	 */
+	@Override
 	public Map<String, List<String>> getResourceRoles(
-			long companyId, String name, int scope, String primKey)
-		throws SystemException {
+		long companyId, String name, int scope, String primKey) {
 
 		return roleFinder.findByC_N_S_P(companyId, name, scope, primKey);
 	}
@@ -480,14 +626,13 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  primKey the primary key of the resource's class
 	 * @param  actionId the name of the resource action
 	 * @return the roles
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByC_N_S_P_A(
 	 *         long, String, int, String, String)
 	 */
+	@Override
 	public List<Role> getResourceRoles(
-			long companyId, String name, int scope, String primKey,
-			String actionId)
-		throws SystemException {
+		long companyId, String name, int scope, String primKey,
+		String actionId) {
 
 		return roleFinder.findByC_N_S_P_A(
 			companyId, name, scope, primKey, actionId);
@@ -506,12 +651,10 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @return the role with the name
 	 * @throws PortalException if a role with the name could not be found in the
 	 *         company
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	@Skip
-	public Role getRole(long companyId, String name)
-		throws PortalException, SystemException {
-
+	public Role getRole(long companyId, String name) throws PortalException {
 		String companyIdHexString = StringUtil.toHexString(companyId);
 
 		Role role = _systemRolesMap.get(companyIdHexString.concat(name));
@@ -529,11 +672,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  type the role's type (optionally <code>0</code>)
 	 * @param  subtype the role's subtype (optionally <code>null</code>)
 	 * @return the roles of the type and subtype
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<Role> getRoles(int type, String subtype)
-		throws SystemException {
-
+	@Override
+	public List<Role> getRoles(int type, String subtype) {
 		return rolePersistence.findByT_S(type, subtype);
 	}
 
@@ -542,10 +683,22 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *
 	 * @param  companyId the primary key of the company
 	 * @return the roles in the company
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<Role> getRoles(long companyId) throws SystemException {
+	@Override
+	public List<Role> getRoles(long companyId) {
 		return rolePersistence.findByCompanyId(companyId);
+	}
+
+	/**
+	 * Returns all the roles with the types.
+	 *
+	 * @param  companyId the primary key of the company
+	 * @param  types the role types (optionally <code>null</code>)
+	 * @return the roles with the types
+	 */
+	@Override
+	public List<Role> getRoles(long companyId, int[] types) {
+		return rolePersistence.findByC_T(companyId, types);
 	}
 
 	/**
@@ -555,12 +708,10 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @return the roles with the primary keys
 	 * @throws PortalException if any one of the roles with the primary keys
 	 *         could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<Role> getRoles(long[] roleIds)
-		throws PortalException, SystemException {
-
-		List<Role> roles = new ArrayList<Role>(roleIds.length);
+	@Override
+	public List<Role> getRoles(long[] roleIds) throws PortalException {
+		List<Role> roles = new ArrayList<>(roleIds.length);
 
 		for (long roleId : roleIds) {
 			Role role = getRole(roleId);
@@ -576,9 +727,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *
 	 * @param  subtype the role's subtype (optionally <code>null</code>)
 	 * @return the roles of the subtype
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<Role> getSubtypeRoles(String subtype) throws SystemException {
+	@Override
+	public List<Role> getSubtypeRoles(String subtype) {
 		return rolePersistence.findBySubtype(subtype);
 	}
 
@@ -587,9 +738,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *
 	 * @param  subtype the role's subtype (optionally <code>null</code>)
 	 * @return the number of roles of the subtype
-	 * @throws SystemException if a system exception occurred
 	 */
-	public int getSubtypeRolesCount(String subtype) throws SystemException {
+	@Override
+	public int getSubtypeRolesCount(String subtype) {
 		return rolePersistence.countBySubtype(subtype);
 	}
 
@@ -601,30 +752,100 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @return the team role in the company
 	 * @throws PortalException if a role could not be found in the team and
 	 *         company
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public Role getTeamRole(long companyId, long teamId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		long classNameId = PortalUtil.getClassNameId(Team.class);
+		long classNameId = classNameLocalService.getClassNameId(Team.class);
 
 		return rolePersistence.findByC_C_C(companyId, classNameId, teamId);
 	}
 
 	/**
-	 * Returns all the user's roles within the user group.
+	 * Returns the team role map for the group.
 	 *
-	 * @param  userId the primary key of the user
 	 * @param  groupId the primary key of the group
-	 * @return the user's roles within the user group
-	 * @throws SystemException if a system exception occurred
-	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByUserGroupGroupRole(
-	 *         long, long)
+	 * @return the team role map for the group
+	 * @throws PortalException if a group with the primary key could not be
+	 *         found, if a role could not be found in one of the group's teams,
+	 *         or if a portal exception occurred
 	 */
-	public List<Role> getUserGroupGroupRoles(long userId, long groupId)
-		throws SystemException {
+	@Override
+	public Map<Team, Role> getTeamRoleMap(long groupId) throws PortalException {
+		return getTeamRoleMap(groupId, null);
+	}
 
-		return roleFinder.findByUserGroupGroupRole(userId, groupId);
+	/**
+	 * Returns the team roles in the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @return the team roles in the group
+	 * @throws PortalException if a group with the primary key could not be
+	 *         found, if a role could not be found in one of the group's teams,
+	 *         or if a portal exception occurred
+	 */
+	@Override
+	public List<Role> getTeamRoles(long groupId) throws PortalException {
+		return getTeamRoles(groupId, null);
+	}
+
+	/**
+	 * Returns the team roles in the group, excluding the specified role IDs.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  excludedRoleIds the primary keys of the roles to exclude
+	 *         (optionally <code>null</code>)
+	 * @return the team roles in the group, excluding the specified role IDs
+	 * @throws PortalException if a group with the primary key could not be
+	 *         found, if a role could not be found in one of the group's teams,
+	 *         or if a portal exception occurred
+	 */
+	@Override
+	public List<Role> getTeamRoles(long groupId, long[] excludedRoleIds)
+		throws PortalException {
+
+		Map<Team, Role> teamRoleMap = getTeamRoleMap(groupId, excludedRoleIds);
+
+		Collection<Role> roles = teamRoleMap.values();
+
+		return ListUtil.fromCollection(roles);
+	}
+
+	/**
+	 * Returns all the roles of the type.
+	 *
+	 * @param  type the role's type (optionally <code>0</code>)
+	 * @return the range of the roles of the type
+	 */
+	@Override
+	public List<Role> getTypeRoles(int type) {
+		return rolePersistence.findByType(type);
+	}
+
+	/**
+	 * Returns a range of all the roles of the type.
+	 *
+	 * @param  type the role's type (optionally <code>0</code>)
+	 * @param  start the lower bound of the range of roles to return
+	 * @param  end the upper bound of the range of roles to return (not
+	 *         inclusive)
+	 * @return the range of the roles of the type
+	 */
+	@Override
+	public List<Role> getTypeRoles(int type, int start, int end) {
+		return rolePersistence.findByType(type, start, end);
+	}
+
+	/**
+	 * Returns the number of roles of the type.
+	 *
+	 * @param  type the role's type (optionally <code>0</code>)
+	 * @return the number of roles of the type
+	 */
+	@Override
+	public int getTypeRolesCount(int type) {
+		return rolePersistence.countByType(type);
 	}
 
 	/**
@@ -633,13 +854,37 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  groupId the primary key of the group
 	 * @return the user's roles within the user group
-	 * @throws SystemException if a system exception occurred
+	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByUserGroupGroupRole(
+	 *         long, long)
+	 */
+	@Override
+	public List<Role> getUserGroupGroupRoles(long userId, long groupId) {
+		return roleFinder.findByUserGroupGroupRole(userId, groupId);
+	}
+
+	@Override
+	public List<Role> getUserGroupGroupRoles(
+		long userId, long groupId, int start, int end) {
+
+		return roleFinder.findByUserGroupGroupRole(userId, groupId, start, end);
+	}
+
+	@Override
+	public int getUserGroupGroupRolesCount(long userId, long groupId) {
+		return roleFinder.countByUserGroupGroupRole(userId, groupId);
+	}
+
+	/**
+	 * Returns all the user's roles within the user group.
+	 *
+	 * @param  userId the primary key of the user
+	 * @param  groupId the primary key of the group
+	 * @return the user's roles within the user group
 	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByUserGroupRole(
 	 *         long, long)
 	 */
-	public List<Role> getUserGroupRoles(long userId, long groupId)
-		throws SystemException {
-
+	@Override
+	public List<Role> getUserGroupRoles(long userId, long groupId) {
 		return roleFinder.findByUserGroupRole(userId, groupId);
 	}
 
@@ -649,13 +894,11 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  groups the groups (optionally <code>null</code>)
 	 * @return the union of all the user's roles within the groups
-	 * @throws SystemException if a system exception occurred
-	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByU_G(
-	 *         long, List)
+	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByU_G(long,
+	 *         List)
 	 */
-	public List<Role> getUserRelatedRoles(long userId, List<Group> groups)
-		throws SystemException {
-
+	@Override
+	public List<Role> getUserRelatedRoles(long userId, List<Group> groups) {
 		if ((groups == null) || groups.isEmpty()) {
 			return Collections.emptyList();
 		}
@@ -669,13 +912,11 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  groupId the primary key of the group
 	 * @return the user's roles within the group
-	 * @throws SystemException if a system exception occurred
-	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByU_G(
-	 *         long, long)
+	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByU_G(long,
+	 *         long)
 	 */
-	public List<Role> getUserRelatedRoles(long userId, long groupId)
-		throws SystemException {
-
+	@Override
+	public List<Role> getUserRelatedRoles(long userId, long groupId) {
 		return roleFinder.findByU_G(userId, groupId);
 	}
 
@@ -685,40 +926,12 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  groupIds the primary keys of the groups
 	 * @return the union of all the user's roles within the groups
-	 * @throws SystemException if a system exception occurred
-	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByU_G(
-	 *         long, long[])
+	 * @see    com.liferay.portal.service.persistence.RoleFinder#findByU_G(long,
+	 *         long[])
 	 */
-	public List<Role> getUserRelatedRoles(long userId, long[] groupIds)
-		throws SystemException {
-
+	@Override
+	public List<Role> getUserRelatedRoles(long userId, long[] groupIds) {
 		return roleFinder.findByU_G(userId, groupIds);
-	}
-
-	/**
-	 * Returns all the roles associated with the user.
-	 *
-	 * @param  userId the primary key of the user
-	 * @return the roles associated with the user
-	 * @throws SystemException if a system exception occurred
-	 */
-	public List<Role> getUserRoles(long userId) throws SystemException {
-		return userPersistence.getRoles(userId);
-	}
-
-	/**
-	 * Returns <code>true</code> if the user is associated with the role.
-	 *
-	 * @param  userId the primary key of the user
-	 * @param  roleId the primary key of the role
-	 * @return <code>true</code> if the user is associated with the role;
-	 *         <code>false</code> otherwise
-	 * @throws SystemException if a system exception occurred
-	 */
-	public boolean hasUserRole(long userId, long roleId)
-		throws SystemException {
-
-		return userPersistence.containsRole(userId, roleId);
 	}
 
 	/**
@@ -732,16 +945,20 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         search
 	 * @return <code>true</code> if the user is associated with the regular
 	 *         role; <code>false</code> otherwise
-	 * @throws PortalException if a role with the name could not be found in the
-	 *         company or if a default user for the company could not be found
-	 * @throws SystemException if a system exception occurred
+	 * @throws PortalException if a default user for the company could not be
+	 *         found
 	 */
+	@Override
 	@ThreadLocalCachable
 	public boolean hasUserRole(
 			long userId, long companyId, String name, boolean inherited)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		Role role = rolePersistence.findByC_N(companyId, name);
+		Role role = rolePersistence.fetchByC_N(companyId, name);
+
+		if (role == null) {
+			return false;
+		}
 
 		if (role.getType() != RoleConstants.TYPE_REGULAR) {
 			throw new IllegalArgumentException(name + " is not a regular role");
@@ -763,27 +980,37 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 				return true;
 			}
 
-			ThreadLocalCache<Integer> threadLocalCache =
+			ThreadLocalCache<Boolean> threadLocalCache =
 				ThreadLocalCacheManager.getThreadLocalCache(
 					Lifecycle.REQUEST, RoleLocalServiceImpl.class.getName());
 
 			String key = String.valueOf(role.getRoleId()).concat(
 				String.valueOf(userId));
 
-			Integer value = threadLocalCache.get(key);
+			Boolean value = threadLocalCache.get(key);
+
+			if (value != null) {
+				return value;
+			}
+
+			value = PermissionCacheUtil.getUserRole(userId, role);
 
 			if (value == null) {
-				value = roleFinder.countByR_U(role.getRoleId(), userId);
+				int count = roleFinder.countByR_U(role.getRoleId(), userId);
 
-				threadLocalCache.put(key, value);
+				if (count > 0) {
+					value = true;
+				}
+				else {
+					value = false;
+				}
+
+				PermissionCacheUtil.putUserRole(userId, role, value);
 			}
 
-			if (value > 0) {
-				return true;
-			}
-			else {
-				return false;
-			}
+			threadLocalCache.put(key, value);
+
+			return value;
 		}
 		else {
 			return userPersistence.containsRole(userId, role.getRoleId());
@@ -804,11 +1031,11 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @throws PortalException if any one of the roles with the names could not
 	 *         be found in the company or if the default user for the company
 	 *         could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public boolean hasUserRoles(
 			long userId, long companyId, String[] names, boolean inherited)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		for (String name : names) {
 			if (hasUserRole(userId, companyId, name, inherited)) {
@@ -826,11 +1053,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  name the role's name (optionally <code>null</code>)
 	 * @return the role with the name, or <code>null</code> if a role with the
 	 *         name could not be found in the company
-	 * @throws SystemException if a system exception occurred
 	 */
-	public Role loadFetchRole(long companyId, String name)
-		throws SystemException {
-
+	@Override
+	public Role loadFetchRole(long companyId, String name) {
 		return rolePersistence.fetchByC_N(companyId, name);
 	}
 
@@ -842,10 +1067,10 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @return the role with the name in the company
 	 * @throws PortalException if a role with the name could not be found in the
 	 *         company
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public Role loadGetRole(long companyId, String name)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return rolePersistence.findByC_N(companyId, name);
 	}
@@ -875,13 +1100,12 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         <code>null</code>)
 	 * @return the ordered range of the matching roles, ordered by
 	 *         <code>obc</code>
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.RoleFinder
 	 */
+	@Override
 	public List<Role> search(
-			long companyId, String keywords, Integer[] types, int start,
-			int end, OrderByComparator obc)
-		throws SystemException {
+		long companyId, String keywords, Integer[] types, int start, int end,
+		OrderByComparator<Role> obc) {
 
 		return search(
 			companyId, keywords, types, new LinkedHashMap<String, Object>(),
@@ -916,14 +1140,13 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         <code>null</code>)
 	 * @return the ordered range of the matching roles, ordered by
 	 *         <code>obc</code>
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.RoleFinder
 	 */
+	@Override
 	public List<Role> search(
-			long companyId, String keywords, Integer[] types,
-			LinkedHashMap<String, Object> params, int start, int end,
-			OrderByComparator obc)
-		throws SystemException {
+		long companyId, String keywords, Integer[] types,
+		LinkedHashMap<String, Object> params, int start, int end,
+		OrderByComparator<Role> obc) {
 
 		return roleFinder.findByKeywords(
 			companyId, keywords, types, params, start, end, obc);
@@ -954,13 +1177,12 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         <code>null</code>)
 	 * @return the ordered range of the matching roles, ordered by
 	 *         <code>obc</code>
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.RoleFinder
 	 */
+	@Override
 	public List<Role> search(
-			long companyId, String name, String description, Integer[] types,
-			int start, int end, OrderByComparator obc)
-		throws SystemException {
+		long companyId, String name, String description, Integer[] types,
+		int start, int end, OrderByComparator<Role> obc) {
 
 		return search(
 			companyId, name, description, types,
@@ -995,14 +1217,13 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         <code>null</code>)
 	 * @return the ordered range of the matching roles, ordered by
 	 *         <code>obc</code>
-	 * @throws SystemException if a system exception occurred
 	 * @see    com.liferay.portal.service.persistence.RoleFinder
 	 */
+	@Override
 	public List<Role> search(
-			long companyId, String name, String description, Integer[] types,
-			LinkedHashMap<String, Object> params, int start, int end,
-			OrderByComparator obc)
-		throws SystemException {
+		long companyId, String name, String description, Integer[] types,
+		LinkedHashMap<String, Object> params, int start, int end,
+		OrderByComparator<Role> obc) {
 
 		return roleFinder.findByC_N_D_T(
 			companyId, name, description, types, params, true, start, end, obc);
@@ -1016,11 +1237,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         role's name or description (optionally <code>null</code>)
 	 * @param  types the role types (optionally <code>null</code>)
 	 * @return the number of matching roles
-	 * @throws SystemException if a system exception occurred
 	 */
-	public int searchCount(long companyId, String keywords, Integer[] types)
-		throws SystemException {
-
+	@Override
+	public int searchCount(long companyId, String keywords, Integer[] types) {
 		return searchCount(
 			companyId, keywords, types, new LinkedHashMap<String, Object>());
 	}
@@ -1035,12 +1254,11 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  params the finder parameters. For more information, see {@link
 	 *         com.liferay.portal.service.persistence.RoleFinder}
 	 * @return the number of matching roles
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public int searchCount(
-			long companyId, String keywords, Integer[] types,
-			LinkedHashMap<String, Object> params)
-		throws SystemException {
+		long companyId, String keywords, Integer[] types,
+		LinkedHashMap<String, Object> params) {
 
 		return roleFinder.countByKeywords(companyId, keywords, types, params);
 	}
@@ -1053,11 +1271,10 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  description the role's description (optionally <code>null</code>)
 	 * @param  types the role types (optionally <code>null</code>)
 	 * @return the number of matching roles
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public int searchCount(
-			long companyId, String name, String description, Integer[] types)
-		throws SystemException {
+		long companyId, String name, String description, Integer[] types) {
 
 		return searchCount(
 			companyId, name, description, types,
@@ -1076,12 +1293,11 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 *         "usersRoles" key. For more information, see {@link
 	 *         com.liferay.portal.service.persistence.RoleFinder}
 	 * @return the number of matching roles
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public int searchCount(
-			long companyId, String name, String description, Integer[] types,
-			LinkedHashMap<String, Object> params)
-		throws SystemException {
+		long companyId, String name, String description, Integer[] types,
+		LinkedHashMap<String, Object> params) {
 
 		return roleFinder.countByC_N_D_T(
 			companyId, name, description, types, params, true);
@@ -1095,20 +1311,18 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  roleIds the primary keys of the roles
 	 * @throws PortalException if a user with the primary could not be found or
 	 *         if any one of the roles with the primary keys could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void setUserRoles(long userId, long[] roleIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		roleIds = UsersAdminUtil.addRequiredRoles(userId, roleIds);
 
 		userPersistence.setRoles(userId, roleIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
+		reindex(userId);
 
-		indexer.reindex(userId);
-
-		PermissionCacheUtil.clearCache();
+		PermissionCacheUtil.clearCache(userId);
 	}
 
 	/**
@@ -1119,20 +1333,18 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  roleIds the primary keys of the roles
 	 * @throws PortalException if a user with the primary key could not be found
 	 *         or if a role with any one of the primary keys could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void unsetUserRoles(long userId, long[] roleIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		roleIds = UsersAdminUtil.removeRequiredRoles(userId, roleIds);
 
 		userPersistence.removeRoles(userId, roleIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
+		reindex(userId);
 
-		indexer.reindex(userId);
-
-		PermissionCacheUtil.clearCache();
+		PermissionCacheUtil.clearCache(userId);
 	}
 
 	/**
@@ -1145,21 +1357,25 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	 * @param  descriptionMap the new localized descriptions (optionally
 	 *         <code>null</code>) to replace those existing for the role
 	 * @param  subtype the role's new subtype (optionally <code>null</code>)
+	 * @param  serviceContext the service context to be applied (optionally
+	 *         <code>null</code>). Can set expando bridge attributes for the
+	 *         role.
 	 * @return the role with the primary key
 	 * @throws PortalException if a role with the primary could not be found or
 	 *         if the role's name was invalid
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public Role updateRole(
 			long roleId, String name, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String subtype)
-		throws PortalException, SystemException {
+			Map<Locale, String> descriptionMap, String subtype,
+			ServiceContext serviceContext)
+		throws PortalException {
 
 		Role role = rolePersistence.findByPrimaryKey(roleId);
 
 		validate(roleId, role.getCompanyId(), role.getClassNameId(), name);
 
-		if (PortalUtil.isSystemRole(role.getName())) {
+		if (role.isSystem()) {
 			name = role.getName();
 			subtype = null;
 		}
@@ -1168,8 +1384,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 		role.setTitleMap(titleMap);
 		role.setDescriptionMap(descriptionMap);
 		role.setSubtype(subtype);
+		role.setExpandoBridgeAttributes(serviceContext);
 
-		rolePersistence.update(role, false);
+		rolePersistence.update(role);
 
 		return role;
 	}
@@ -1177,7 +1394,7 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	protected void checkSystemRole(
 			long companyId, String name, Map<Locale, String> descriptionMap,
 			int type)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		String companyIdHexString = StringUtil.toHexString(companyId);
 
@@ -1193,12 +1410,15 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 			if (!descriptionMap.equals(role.getDescriptionMap())) {
 				role.setDescriptionMap(descriptionMap);
 
-				roleLocalService.updateRole(role, false);
+				roleLocalService.updateRole(role);
 			}
 		}
 		catch (NoSuchRoleException nsre) {
+			User user = userLocalService.getDefaultUser(companyId);
+
 			role = roleLocalService.addRole(
-				0, companyId, name, null, descriptionMap, type);
+				user.getUserId(), null, 0, name, null, descriptionMap, type,
+				null, null);
 
 			if (name.equals(RoleConstants.USER)) {
 				initPersonalControlPanelPortletsPermissions(role);
@@ -1209,26 +1429,87 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 	}
 
 	protected String[] getDefaultControlPanelPortlets() {
+		String myAccountPortletId = PortletProviderUtil.getPortletId(
+			PortalMyAccountApplicationType.MyAccount.CLASS_NAME,
+			PortletProvider.Action.VIEW);
+
 		return new String[] {
-			PortletKeys.MY_WORKFLOW_TASKS, PortletKeys.MY_WORKFLOW_INSTANCES
+			myAccountPortletId, PortletKeys.MY_PAGES,
+			PortletKeys.MY_WORKFLOW_INSTANCE, PortletKeys.MY_WORKFLOW_TASK
 		};
 	}
 
+	protected Map<Team, Role> getTeamRoleMap(
+			long groupId, long[] excludedRoleIds)
+		throws PortalException {
+
+		Group group = groupPersistence.findByPrimaryKey(groupId);
+
+		if (group.isLayout()) {
+			group = group.getParentGroup();
+		}
+
+		List<Team> teams = teamPersistence.findByGroupId(group.getGroupId());
+
+		if (teams.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Set<Long> roleIds = SetUtil.fromArray(excludedRoleIds);
+
+		Map<Team, Role> teamRoleMap = new LinkedHashMap<>();
+
+		for (Team team : teams) {
+			Role role = getTeamRole(team.getCompanyId(), team.getTeamId());
+
+			if (roleIds.contains(role.getRoleId())) {
+				continue;
+			}
+
+			teamRoleMap.put(team, role);
+		}
+
+		return teamRoleMap;
+	}
+
 	protected void initPersonalControlPanelPortletsPermissions(Role role)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		for (String portletId : getDefaultControlPanelPortlets()) {
+			int count = resourcePermissionPersistence.countByC_N_S_P_R(
+				role.getCompanyId(), portletId, ResourceConstants.SCOPE_COMPANY,
+				String.valueOf(role.getCompanyId()), role.getRoleId());
+
+			if (count > 0) {
+				continue;
+			}
+
+			ResourceAction resourceAction =
+				resourceActionLocalService.fetchResourceAction(
+					portletId, ActionKeys.ACCESS_IN_CONTROL_PANEL);
+
+			if (resourceAction == null) {
+				continue;
+			}
+
 			setRolePermissions(
 				role, portletId,
-				new String[] {
-					ActionKeys.ACCESS_IN_CONTROL_PANEL
-				});
+				new String[] {ActionKeys.ACCESS_IN_CONTROL_PANEL});
 		}
+	}
+
+	protected void reindex(long userId) throws SearchException {
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
+
+		User user = userLocalService.fetchUser(userId);
+
+		indexer.reindex(user);
 	}
 
 	protected void setRolePermissions(
 			Role role, String name, String[] actionIds)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (resourceBlockLocalService.isSupported(name)) {
 			resourceBlockLocalService.setCompanyScopePermissions(
@@ -1245,9 +1526,9 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 
 	protected void validate(
 			long roleId, long companyId, long classNameId, String name)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		if (classNameId == PortalUtil.getClassNameId(Role.class)) {
+		if (classNameId == classNameLocalService.getClassNameId(Role.class)) {
 			if (Validator.isNull(name) ||
 				(name.indexOf(CharPool.COMMA) != -1) ||
 				(name.indexOf(CharPool.STAR) != -1)) {
@@ -1266,13 +1547,19 @@ public class RoleLocalServiceImpl extends RoleLocalServiceBaseImpl {
 			Role role = roleFinder.findByC_N(companyId, name);
 
 			if (role.getRoleId() != roleId) {
-				throw new DuplicateRoleException();
+				throw new DuplicateRoleException("{roleId=" + roleId + "}");
 			}
 		}
 		catch (NoSuchRoleException nsre) {
 		}
+
+		if (name.equals(RoleConstants.PLACEHOLDER_DEFAULT_GROUP_ROLE)) {
+			throw new RoleNameException(
+				RoleConstants.PLACEHOLDER_DEFAULT_GROUP_ROLE +
+					" is a temporary placeholder that must not be persisted");
+		}
 	}
 
-	private Map<String, Role> _systemRolesMap = new HashMap<String, Role>();
+	private final Map<String, Role> _systemRolesMap = new HashMap<>();
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,19 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
+import com.liferay.portal.model.MVCCModel;
 import com.liferay.portal.model.PortletPreferences;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing PortletPreferences in entity cache.
@@ -28,13 +35,53 @@ import java.io.Serializable;
  * @see PortletPreferences
  * @generated
  */
+@ProviderType
 public class PortletPreferencesCacheModel implements CacheModel<PortletPreferences>,
-	Serializable {
+	Externalizable, MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof PortletPreferencesCacheModel)) {
+			return false;
+		}
+
+		PortletPreferencesCacheModel portletPreferencesCacheModel = (PortletPreferencesCacheModel)obj;
+
+		if ((portletPreferencesId == portletPreferencesCacheModel.portletPreferencesId) &&
+				(mvccVersion == portletPreferencesCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, portletPreferencesId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(13);
+		StringBundler sb = new StringBundler(15);
 
-		sb.append("{portletPreferencesId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", portletPreferencesId=");
 		sb.append(portletPreferencesId);
 		sb.append(", ownerId=");
 		sb.append(ownerId);
@@ -51,9 +98,11 @@ public class PortletPreferencesCacheModel implements CacheModel<PortletPreferenc
 		return sb.toString();
 	}
 
+	@Override
 	public PortletPreferences toEntityModel() {
 		PortletPreferencesImpl portletPreferencesImpl = new PortletPreferencesImpl();
 
+		portletPreferencesImpl.setMvccVersion(mvccVersion);
 		portletPreferencesImpl.setPortletPreferencesId(portletPreferencesId);
 		portletPreferencesImpl.setOwnerId(ownerId);
 		portletPreferencesImpl.setOwnerType(ownerType);
@@ -78,6 +127,42 @@ public class PortletPreferencesCacheModel implements CacheModel<PortletPreferenc
 		return portletPreferencesImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		portletPreferencesId = objectInput.readLong();
+		ownerId = objectInput.readLong();
+		ownerType = objectInput.readInt();
+		plid = objectInput.readLong();
+		portletId = objectInput.readUTF();
+		preferences = objectInput.readUTF();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(portletPreferencesId);
+		objectOutput.writeLong(ownerId);
+		objectOutput.writeInt(ownerType);
+		objectOutput.writeLong(plid);
+
+		if (portletId == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(portletId);
+		}
+
+		if (preferences == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(preferences);
+		}
+	}
+
+	public long mvccVersion;
 	public long portletPreferencesId;
 	public long ownerId;
 	public int ownerType;

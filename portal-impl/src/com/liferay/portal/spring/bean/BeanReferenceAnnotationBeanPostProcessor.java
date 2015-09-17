@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -45,16 +45,30 @@ import org.springframework.util.ReflectionUtils;
 public class BeanReferenceAnnotationBeanPostProcessor
 	implements BeanFactoryAware, BeanPostProcessor {
 
+	public BeanReferenceAnnotationBeanPostProcessor() {
+		if (_log.isDebugEnabled()) {
+			_log.debug("Creating instance " + this.hashCode());
+		}
+	}
+
+	public BeanReferenceAnnotationBeanPostProcessor(BeanFactory beanFactory) {
+		this();
+
+		_beanFactory = beanFactory;
+	}
+
 	public void destroy() {
 		_beans.clear();
 	}
 
+	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName)
 		throws BeansException {
 
 		return bean;
 	}
 
+	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName)
 		throws BeansException {
 
@@ -77,6 +91,7 @@ public class BeanReferenceAnnotationBeanPostProcessor
 		return bean;
 	}
 
+	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		_beanFactory = beanFactory;
 	}
@@ -131,17 +146,18 @@ public class BeanReferenceAnnotationBeanPostProcessor
 					catch (BeanLocatorException ble) {
 						StringWriter stringWriter = new StringWriter();
 
-						PrintWriter printWriter = new PrintWriter(stringWriter);
+						try (PrintWriter printWriter = new PrintWriter(
+								stringWriter)) {
 
-						printWriter.print("BeanFactory could not find bean: ");
+							printWriter.print(
+								"BeanFactory could not find bean: ");
 
-						nsbde.printStackTrace(printWriter);
+							nsbde.printStackTrace(printWriter);
 
-						printWriter.print(
-							" and PortalBeanLocator failed with: ");
-						printWriter.append(ble.getMessage());
-
-						printWriter.close();
+							printWriter.print(
+								" and PortalBeanLocator failed with: ");
+							printWriter.append(ble.getMessage());
+						}
 
 						throw new BeanLocatorException(
 							stringWriter.toString(), ble);
@@ -152,6 +168,9 @@ public class BeanReferenceAnnotationBeanPostProcessor
 			}
 
 			ReflectionUtils.makeAccessible(field);
+
+			BeanReferenceRefreshUtil.registerRefreshPoint(
+				_beanFactory, targetBean, field, referencedBeanName);
 
 			try {
 				field.set(targetBean, referencedBean);
@@ -169,10 +188,10 @@ public class BeanReferenceAnnotationBeanPostProcessor
 
 	private static final String _ORG_SPRINGFRAMEWORK = "org.springframework";
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		BeanReferenceAnnotationBeanPostProcessor.class);
 
 	private BeanFactory _beanFactory;
-	private Map<String, Object> _beans = new HashMap<String, Object>();
+	private final Map<String, Object> _beans = new HashMap<>();
 
 }

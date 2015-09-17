@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,263 +14,134 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.Validator;
+
+import com.liferay.portlet.exportimport.lar.StagedModelType;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * <p>
  * This class is a wrapper for {@link Team}.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       Team
+ * @author Brian Wing Shun Chan
+ * @see Team
  * @generated
  */
+@ProviderType
 public class TeamWrapper implements Team, ModelWrapper<Team> {
 	public TeamWrapper(Team team) {
 		_team = team;
 	}
 
+	@Override
 	public Class<?> getModelClass() {
 		return Team.class;
 	}
 
+	@Override
 	public String getModelClassName() {
 		return Team.class.getName();
 	}
 
-	/**
-	* Returns the primary key of this team.
-	*
-	* @return the primary key of this team
-	*/
-	public long getPrimaryKey() {
-		return _team.getPrimaryKey();
+	@Override
+	public Map<String, Object> getModelAttributes() {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("uuid", getUuid());
+		attributes.put("teamId", getTeamId());
+		attributes.put("companyId", getCompanyId());
+		attributes.put("userId", getUserId());
+		attributes.put("userName", getUserName());
+		attributes.put("createDate", getCreateDate());
+		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("groupId", getGroupId());
+		attributes.put("name", getName());
+		attributes.put("description", getDescription());
+		attributes.put("lastPublishDate", getLastPublishDate());
+
+		return attributes;
 	}
 
-	/**
-	* Sets the primary key of this team.
-	*
-	* @param primaryKey the primary key of this team
-	*/
-	public void setPrimaryKey(long primaryKey) {
-		_team.setPrimaryKey(primaryKey);
-	}
+	@Override
+	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
 
-	/**
-	* Returns the team ID of this team.
-	*
-	* @return the team ID of this team
-	*/
-	public long getTeamId() {
-		return _team.getTeamId();
-	}
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
 
-	/**
-	* Sets the team ID of this team.
-	*
-	* @param teamId the team ID of this team
-	*/
-	public void setTeamId(long teamId) {
-		_team.setTeamId(teamId);
-	}
+		String uuid = (String)attributes.get("uuid");
 
-	/**
-	* Returns the company ID of this team.
-	*
-	* @return the company ID of this team
-	*/
-	public long getCompanyId() {
-		return _team.getCompanyId();
-	}
+		if (uuid != null) {
+			setUuid(uuid);
+		}
 
-	/**
-	* Sets the company ID of this team.
-	*
-	* @param companyId the company ID of this team
-	*/
-	public void setCompanyId(long companyId) {
-		_team.setCompanyId(companyId);
-	}
+		Long teamId = (Long)attributes.get("teamId");
 
-	/**
-	* Returns the user ID of this team.
-	*
-	* @return the user ID of this team
-	*/
-	public long getUserId() {
-		return _team.getUserId();
-	}
+		if (teamId != null) {
+			setTeamId(teamId);
+		}
 
-	/**
-	* Sets the user ID of this team.
-	*
-	* @param userId the user ID of this team
-	*/
-	public void setUserId(long userId) {
-		_team.setUserId(userId);
-	}
+		Long companyId = (Long)attributes.get("companyId");
 
-	/**
-	* Returns the user uuid of this team.
-	*
-	* @return the user uuid of this team
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.lang.String getUserUuid()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return _team.getUserUuid();
-	}
+		if (companyId != null) {
+			setCompanyId(companyId);
+		}
 
-	/**
-	* Sets the user uuid of this team.
-	*
-	* @param userUuid the user uuid of this team
-	*/
-	public void setUserUuid(java.lang.String userUuid) {
-		_team.setUserUuid(userUuid);
-	}
+		Long userId = (Long)attributes.get("userId");
 
-	/**
-	* Returns the user name of this team.
-	*
-	* @return the user name of this team
-	*/
-	public java.lang.String getUserName() {
-		return _team.getUserName();
-	}
+		if (userId != null) {
+			setUserId(userId);
+		}
 
-	/**
-	* Sets the user name of this team.
-	*
-	* @param userName the user name of this team
-	*/
-	public void setUserName(java.lang.String userName) {
-		_team.setUserName(userName);
-	}
+		String userName = (String)attributes.get("userName");
 
-	/**
-	* Returns the create date of this team.
-	*
-	* @return the create date of this team
-	*/
-	public java.util.Date getCreateDate() {
-		return _team.getCreateDate();
-	}
+		if (userName != null) {
+			setUserName(userName);
+		}
 
-	/**
-	* Sets the create date of this team.
-	*
-	* @param createDate the create date of this team
-	*/
-	public void setCreateDate(java.util.Date createDate) {
-		_team.setCreateDate(createDate);
-	}
+		Date createDate = (Date)attributes.get("createDate");
 
-	/**
-	* Returns the modified date of this team.
-	*
-	* @return the modified date of this team
-	*/
-	public java.util.Date getModifiedDate() {
-		return _team.getModifiedDate();
-	}
+		if (createDate != null) {
+			setCreateDate(createDate);
+		}
 
-	/**
-	* Sets the modified date of this team.
-	*
-	* @param modifiedDate the modified date of this team
-	*/
-	public void setModifiedDate(java.util.Date modifiedDate) {
-		_team.setModifiedDate(modifiedDate);
-	}
+		Date modifiedDate = (Date)attributes.get("modifiedDate");
 
-	/**
-	* Returns the group ID of this team.
-	*
-	* @return the group ID of this team
-	*/
-	public long getGroupId() {
-		return _team.getGroupId();
-	}
+		if (modifiedDate != null) {
+			setModifiedDate(modifiedDate);
+		}
 
-	/**
-	* Sets the group ID of this team.
-	*
-	* @param groupId the group ID of this team
-	*/
-	public void setGroupId(long groupId) {
-		_team.setGroupId(groupId);
-	}
+		Long groupId = (Long)attributes.get("groupId");
 
-	/**
-	* Returns the name of this team.
-	*
-	* @return the name of this team
-	*/
-	public java.lang.String getName() {
-		return _team.getName();
-	}
+		if (groupId != null) {
+			setGroupId(groupId);
+		}
 
-	/**
-	* Sets the name of this team.
-	*
-	* @param name the name of this team
-	*/
-	public void setName(java.lang.String name) {
-		_team.setName(name);
-	}
+		String name = (String)attributes.get("name");
 
-	/**
-	* Returns the description of this team.
-	*
-	* @return the description of this team
-	*/
-	public java.lang.String getDescription() {
-		return _team.getDescription();
-	}
+		if (name != null) {
+			setName(name);
+		}
 
-	/**
-	* Sets the description of this team.
-	*
-	* @param description the description of this team
-	*/
-	public void setDescription(java.lang.String description) {
-		_team.setDescription(description);
-	}
+		String description = (String)attributes.get("description");
 
-	public boolean isNew() {
-		return _team.isNew();
-	}
+		if (description != null) {
+			setDescription(description);
+		}
 
-	public void setNew(boolean n) {
-		_team.setNew(n);
-	}
+		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
 
-	public boolean isCachedModel() {
-		return _team.isCachedModel();
-	}
-
-	public void setCachedModel(boolean cachedModel) {
-		_team.setCachedModel(cachedModel);
-	}
-
-	public boolean isEscapedModel() {
-		return _team.isEscapedModel();
-	}
-
-	public java.io.Serializable getPrimaryKeyObj() {
-		return _team.getPrimaryKeyObj();
-	}
-
-	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
-		_team.setPrimaryKeyObj(primaryKeyObj);
-	}
-
-	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
-		return _team.getExpandoBridge();
-	}
-
-	public void setExpandoBridgeAttributes(
-		com.liferay.portal.service.ServiceContext serviceContext) {
-		_team.setExpandoBridgeAttributes(serviceContext);
+		if (lastPublishDate != null) {
+			setLastPublishDate(lastPublishDate);
+		}
 	}
 
 	@Override
@@ -278,8 +149,165 @@ public class TeamWrapper implements Team, ModelWrapper<Team> {
 		return new TeamWrapper((Team)_team.clone());
 	}
 
+	@Override
 	public int compareTo(com.liferay.portal.model.Team team) {
 		return _team.compareTo(team);
+	}
+
+	/**
+	* Returns the company ID of this team.
+	*
+	* @return the company ID of this team
+	*/
+	@Override
+	public long getCompanyId() {
+		return _team.getCompanyId();
+	}
+
+	/**
+	* Returns the create date of this team.
+	*
+	* @return the create date of this team
+	*/
+	@Override
+	public Date getCreateDate() {
+		return _team.getCreateDate();
+	}
+
+	/**
+	* Returns the description of this team.
+	*
+	* @return the description of this team
+	*/
+	@Override
+	public java.lang.String getDescription() {
+		return _team.getDescription();
+	}
+
+	@Override
+	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
+		return _team.getExpandoBridge();
+	}
+
+	/**
+	* Returns the group ID of this team.
+	*
+	* @return the group ID of this team
+	*/
+	@Override
+	public long getGroupId() {
+		return _team.getGroupId();
+	}
+
+	/**
+	* Returns the last publish date of this team.
+	*
+	* @return the last publish date of this team
+	*/
+	@Override
+	public Date getLastPublishDate() {
+		return _team.getLastPublishDate();
+	}
+
+	/**
+	* Returns the modified date of this team.
+	*
+	* @return the modified date of this team
+	*/
+	@Override
+	public Date getModifiedDate() {
+		return _team.getModifiedDate();
+	}
+
+	/**
+	* Returns the mvcc version of this team.
+	*
+	* @return the mvcc version of this team
+	*/
+	@Override
+	public long getMvccVersion() {
+		return _team.getMvccVersion();
+	}
+
+	/**
+	* Returns the name of this team.
+	*
+	* @return the name of this team
+	*/
+	@Override
+	public java.lang.String getName() {
+		return _team.getName();
+	}
+
+	/**
+	* Returns the primary key of this team.
+	*
+	* @return the primary key of this team
+	*/
+	@Override
+	public long getPrimaryKey() {
+		return _team.getPrimaryKey();
+	}
+
+	@Override
+	public java.io.Serializable getPrimaryKeyObj() {
+		return _team.getPrimaryKeyObj();
+	}
+
+	@Override
+	public com.liferay.portal.model.Role getRole()
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return _team.getRole();
+	}
+
+	/**
+	* Returns the team ID of this team.
+	*
+	* @return the team ID of this team
+	*/
+	@Override
+	public long getTeamId() {
+		return _team.getTeamId();
+	}
+
+	/**
+	* Returns the user ID of this team.
+	*
+	* @return the user ID of this team
+	*/
+	@Override
+	public long getUserId() {
+		return _team.getUserId();
+	}
+
+	/**
+	* Returns the user name of this team.
+	*
+	* @return the user name of this team
+	*/
+	@Override
+	public java.lang.String getUserName() {
+		return _team.getUserName();
+	}
+
+	/**
+	* Returns the user uuid of this team.
+	*
+	* @return the user uuid of this team
+	*/
+	@Override
+	public java.lang.String getUserUuid() {
+		return _team.getUserUuid();
+	}
+
+	/**
+	* Returns the uuid of this team.
+	*
+	* @return the uuid of this team
+	*/
+	@Override
+	public java.lang.String getUuid() {
+		return _team.getUuid();
 	}
 
 	@Override
@@ -287,10 +315,204 @@ public class TeamWrapper implements Team, ModelWrapper<Team> {
 		return _team.hashCode();
 	}
 
-	public com.liferay.portal.model.CacheModel<com.liferay.portal.model.Team> toCacheModel() {
+	@Override
+	public boolean isCachedModel() {
+		return _team.isCachedModel();
+	}
+
+	@Override
+	public boolean isEscapedModel() {
+		return _team.isEscapedModel();
+	}
+
+	@Override
+	public boolean isNew() {
+		return _team.isNew();
+	}
+
+	@Override
+	public void persist() {
+		_team.persist();
+	}
+
+	@Override
+	public void setCachedModel(boolean cachedModel) {
+		_team.setCachedModel(cachedModel);
+	}
+
+	/**
+	* Sets the company ID of this team.
+	*
+	* @param companyId the company ID of this team
+	*/
+	@Override
+	public void setCompanyId(long companyId) {
+		_team.setCompanyId(companyId);
+	}
+
+	/**
+	* Sets the create date of this team.
+	*
+	* @param createDate the create date of this team
+	*/
+	@Override
+	public void setCreateDate(Date createDate) {
+		_team.setCreateDate(createDate);
+	}
+
+	/**
+	* Sets the description of this team.
+	*
+	* @param description the description of this team
+	*/
+	@Override
+	public void setDescription(java.lang.String description) {
+		_team.setDescription(description);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(BaseModel<?> baseModel) {
+		_team.setExpandoBridgeAttributes(baseModel);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portlet.expando.model.ExpandoBridge expandoBridge) {
+		_team.setExpandoBridgeAttributes(expandoBridge);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		_team.setExpandoBridgeAttributes(serviceContext);
+	}
+
+	/**
+	* Sets the group ID of this team.
+	*
+	* @param groupId the group ID of this team
+	*/
+	@Override
+	public void setGroupId(long groupId) {
+		_team.setGroupId(groupId);
+	}
+
+	/**
+	* Sets the last publish date of this team.
+	*
+	* @param lastPublishDate the last publish date of this team
+	*/
+	@Override
+	public void setLastPublishDate(Date lastPublishDate) {
+		_team.setLastPublishDate(lastPublishDate);
+	}
+
+	/**
+	* Sets the modified date of this team.
+	*
+	* @param modifiedDate the modified date of this team
+	*/
+	@Override
+	public void setModifiedDate(Date modifiedDate) {
+		_team.setModifiedDate(modifiedDate);
+	}
+
+	/**
+	* Sets the mvcc version of this team.
+	*
+	* @param mvccVersion the mvcc version of this team
+	*/
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		_team.setMvccVersion(mvccVersion);
+	}
+
+	/**
+	* Sets the name of this team.
+	*
+	* @param name the name of this team
+	*/
+	@Override
+	public void setName(java.lang.String name) {
+		_team.setName(name);
+	}
+
+	@Override
+	public void setNew(boolean n) {
+		_team.setNew(n);
+	}
+
+	/**
+	* Sets the primary key of this team.
+	*
+	* @param primaryKey the primary key of this team
+	*/
+	@Override
+	public void setPrimaryKey(long primaryKey) {
+		_team.setPrimaryKey(primaryKey);
+	}
+
+	@Override
+	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
+		_team.setPrimaryKeyObj(primaryKeyObj);
+	}
+
+	/**
+	* Sets the team ID of this team.
+	*
+	* @param teamId the team ID of this team
+	*/
+	@Override
+	public void setTeamId(long teamId) {
+		_team.setTeamId(teamId);
+	}
+
+	/**
+	* Sets the user ID of this team.
+	*
+	* @param userId the user ID of this team
+	*/
+	@Override
+	public void setUserId(long userId) {
+		_team.setUserId(userId);
+	}
+
+	/**
+	* Sets the user name of this team.
+	*
+	* @param userName the user name of this team
+	*/
+	@Override
+	public void setUserName(java.lang.String userName) {
+		_team.setUserName(userName);
+	}
+
+	/**
+	* Sets the user uuid of this team.
+	*
+	* @param userUuid the user uuid of this team
+	*/
+	@Override
+	public void setUserUuid(java.lang.String userUuid) {
+		_team.setUserUuid(userUuid);
+	}
+
+	/**
+	* Sets the uuid of this team.
+	*
+	* @param uuid the uuid of this team
+	*/
+	@Override
+	public void setUuid(java.lang.String uuid) {
+		_team.setUuid(uuid);
+	}
+
+	@Override
+	public CacheModel<com.liferay.portal.model.Team> toCacheModel() {
 		return _team.toCacheModel();
 	}
 
+	@Override
 	public com.liferay.portal.model.Team toEscapedModel() {
 		return new TeamWrapper(_team.toEscapedModel());
 	}
@@ -300,35 +522,67 @@ public class TeamWrapper implements Team, ModelWrapper<Team> {
 		return _team.toString();
 	}
 
+	@Override
+	public com.liferay.portal.model.Team toUnescapedModel() {
+		return new TeamWrapper(_team.toUnescapedModel());
+	}
+
+	@Override
 	public java.lang.String toXmlString() {
 		return _team.toXmlString();
 	}
 
-	public void persist()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		_team.persist();
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof TeamWrapper)) {
+			return false;
+		}
+
+		TeamWrapper teamWrapper = (TeamWrapper)obj;
+
+		if (Validator.equals(_team, teamWrapper._team)) {
+			return true;
+		}
+
+		return false;
 	}
 
-	public com.liferay.portal.model.Role getRole()
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
-		return _team.getRole();
+	@Override
+	public StagedModelType getStagedModelType() {
+		return _team.getStagedModelType();
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedModel}
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedModel}
 	 */
+	@Deprecated
 	public Team getWrappedTeam() {
 		return _team;
 	}
 
+	@Override
 	public Team getWrappedModel() {
 		return _team;
 	}
 
+	@Override
+	public boolean isEntityCacheEnabled() {
+		return _team.isEntityCacheEnabled();
+	}
+
+	@Override
+	public boolean isFinderCacheEnabled() {
+		return _team.isFinderCacheEnabled();
+	}
+
+	@Override
 	public void resetOriginalValues() {
 		_team.resetOriginalValues();
 	}
 
-	private Team _team;
+	private final Team _team;
 }

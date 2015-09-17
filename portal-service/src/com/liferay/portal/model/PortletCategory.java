@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -41,7 +41,7 @@ public class PortletCategory implements Serializable {
 	}
 
 	public PortletCategory(String name, Set<String> portletIds) {
-		_portletCategories = new HashMap<String, PortletCategory>();
+		_portletCategories = new HashMap<>();
 		_portletIds = portletIds;
 
 		if (name.contains(_DELIMITER)) {
@@ -136,7 +136,7 @@ public class PortletCategory implements Serializable {
 	}
 
 	public void separate(String portletId) {
-		Set<String> portletIds = new HashSet<String>(1);
+		Set<String> portletIds = new HashSet<>(1);
 
 		portletIds.add(portletId);
 
@@ -181,10 +181,10 @@ public class PortletCategory implements Serializable {
 
 	private static final String _DELIMITER = StringPool.DOUBLE_SLASH;
 
-	private String _name;
+	private final String _name;
 	private PortletCategory _parentPortletCategory;
 	private String _path;
-	private Map<String, PortletCategory> _portletCategories;
+	private final Map<String, PortletCategory> _portletCategories;
 	private Set<String> _portletIds;
 
 }

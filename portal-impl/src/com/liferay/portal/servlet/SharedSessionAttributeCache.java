@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,8 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpSession;
 
 /**
- * @author Michael C. Han
+ * @author     Michael C. Han
+ * @deprecated As of 7.0.0, with no direct replacement
  */
+@Deprecated
 public class SharedSessionAttributeCache implements Serializable {
 
 	public static SharedSessionAttributeCache getInstance(HttpSession session) {
@@ -58,12 +60,12 @@ public class SharedSessionAttributeCache implements Serializable {
 	}
 
 	private SharedSessionAttributeCache() {
-		_attributes = new ConcurrentHashMap<String, Object>();
+		_attributes = new ConcurrentHashMap<>();
 	}
 
 	private static final String _SESSION_KEY =
 		SharedSessionAttributeCache.class.getName();
 
-	private Map<String, Object> _attributes;
+	private final Map<String, Object> _attributes;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.kernel.bean;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +27,9 @@ import java.util.Map;
 public class PortletBeanLocatorUtil {
 
 	public static BeanLocator getBeanLocator(String servletContextName) {
+		PortalRuntimePermission.checkGetBeanProperty(
+			servletContextName, PortletBeanLocatorUtil.class);
+
 		return _beanLocators.get(servletContextName);
 	}
 
@@ -40,7 +44,7 @@ public class PortletBeanLocatorUtil {
 					servletContextName);
 
 			throw new BeanLocatorException(
-				"BeanLocator has not been set for servlet context " +
+				"BeanLocator is not set for servlet context " +
 					servletContextName);
 		}
 		else {
@@ -50,6 +54,9 @@ public class PortletBeanLocatorUtil {
 
 	public static void setBeanLocator(
 		String servletContextName, BeanLocator beanLocator) {
+
+		PortalRuntimePermission.checkSetBeanProperty(
+			servletContextName, PortletBeanLocatorUtil.class);
 
 		if (_log.isDebugEnabled()) {
 			if (beanLocator != null) {
@@ -67,10 +74,10 @@ public class PortletBeanLocatorUtil {
 		_beanLocators.put(servletContextName, beanLocator);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		PortletBeanLocatorUtil.class);
 
-	private static Map<String, BeanLocator> _beanLocators =
-		new HashMap<String, BeanLocator>();
+	private static final Map<String, BeanLocator> _beanLocators =
+		new HashMap<>();
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,8 @@
 
 package com.liferay.portal.kernel.deploy.hot;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+import com.liferay.portal.kernel.util.PortalLifecycle;
 
 /**
  * @author Ivica Cardic
@@ -33,21 +33,16 @@ public class HotDeployUtil {
 	}
 
 	public static HotDeploy getHotDeploy() {
+		PortalRuntimePermission.checkGetBeanProperty(HotDeployUtil.class);
+
 		return _hotDeploy;
 	}
 
-	public static boolean isMissingDependentServletContext(
-		HotDeployEvent hotDeployEvent) {
+	public static boolean registerDependentPortalLifecycle(
+		String servletContextName, PortalLifecycle portalLifecycle) {
 
-		return getHotDeploy().isMissingDependentServletContext(hotDeployEvent);
-	}
-
-	public static void registerDependentServletContextListener(
-		HotDeployEvent hotDeployEvent, ServletContextEvent servletContextEvent,
-		ServletContextListener servletContextListener) {
-
-		getHotDeploy().registerDependentServletContextListener(
-			hotDeployEvent, servletContextEvent, servletContextListener);
+		return getHotDeploy().registerDependentPortalLifecycle(
+			servletContextName, portalLifecycle);
 	}
 
 	public static void registerListener(HotDeployListener hotDeployListener) {
@@ -73,6 +68,8 @@ public class HotDeployUtil {
 	}
 
 	public void setHotDeploy(HotDeploy hotDeploy) {
+		PortalRuntimePermission.checkSetBeanProperty(getClass());
+
 		_hotDeploy = hotDeploy;
 	}
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.asset.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.asset.model.AssetVocabulary;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,11 +37,36 @@ import java.util.Date;
  * @see AssetVocabulary
  * @generated
  */
+@ProviderType
 public class AssetVocabularyCacheModel implements CacheModel<AssetVocabulary>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof AssetVocabularyCacheModel)) {
+			return false;
+		}
+
+		AssetVocabularyCacheModel assetVocabularyCacheModel = (AssetVocabularyCacheModel)obj;
+
+		if (vocabularyId == assetVocabularyCacheModel.vocabularyId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, vocabularyId);
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(27);
 
 		sb.append("{uuid=");
 		sb.append(uuid);
@@ -61,11 +92,14 @@ public class AssetVocabularyCacheModel implements CacheModel<AssetVocabulary>,
 		sb.append(description);
 		sb.append(", settings=");
 		sb.append(settings);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
 		sb.append("}");
 
 		return sb.toString();
 	}
 
+	@Override
 	public AssetVocabulary toEntityModel() {
 		AssetVocabularyImpl assetVocabularyImpl = new AssetVocabularyImpl();
 
@@ -130,9 +164,89 @@ public class AssetVocabularyCacheModel implements CacheModel<AssetVocabulary>,
 			assetVocabularyImpl.setSettings(settings);
 		}
 
+		if (lastPublishDate == Long.MIN_VALUE) {
+			assetVocabularyImpl.setLastPublishDate(null);
+		}
+		else {
+			assetVocabularyImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
+
 		assetVocabularyImpl.resetOriginalValues();
 
 		return assetVocabularyImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
+		vocabularyId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		name = objectInput.readUTF();
+		title = objectInput.readUTF();
+		description = objectInput.readUTF();
+		settings = objectInput.readUTF();
+		lastPublishDate = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		objectOutput.writeLong(vocabularyId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (title == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(title);
+		}
+
+		if (description == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
+		if (settings == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(settings);
+		}
+
+		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public String uuid;
@@ -147,4 +261,5 @@ public class AssetVocabularyCacheModel implements CacheModel<AssetVocabulary>,
 	public String title;
 	public String description;
 	public String settings;
+	public long lastPublishDate;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -25,7 +25,7 @@ import javax.servlet.jsp.JspException;
  * @author Antonio Junior
  * @generated
  */
-public class BaseButtonItemTag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseButtonItemTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -1136,6 +1136,8 @@ public class BaseButtonItemTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_activeState = false;
 		_boundingBox = null;
 		_classNames = null;
@@ -1148,7 +1150,7 @@ public class BaseButtonItemTag extends com.liferay.taglib.util.IncludeTag {
 		_focused = false;
 		_handler = null;
 		_height = null;
-		_hideClass = "aui-helper-hidden";
+		_hideClass = "aui-hide";
 		_hoverState = true;
 		_icon = null;
 		_iconNode = null;
@@ -1384,7 +1386,7 @@ public class BaseButtonItemTag extends com.liferay.taglib.util.IncludeTag {
 	private boolean _focused = false;
 	private java.lang.Object _handler = null;
 	private java.lang.Object _height = null;
-	private java.lang.String _hideClass = "aui-helper-hidden";
+	private java.lang.String _hideClass = "aui-hide";
 	private boolean _hoverState = true;
 	private java.lang.String _icon = null;
 	private java.lang.String _iconNode = null;

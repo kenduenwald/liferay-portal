@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,19 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
+import com.liferay.portal.model.MVCCModel;
 import com.liferay.portal.model.ResourceAction;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing ResourceAction in entity cache.
@@ -28,13 +35,53 @@ import java.io.Serializable;
  * @see ResourceAction
  * @generated
  */
+@ProviderType
 public class ResourceActionCacheModel implements CacheModel<ResourceAction>,
-	Serializable {
+	Externalizable, MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof ResourceActionCacheModel)) {
+			return false;
+		}
+
+		ResourceActionCacheModel resourceActionCacheModel = (ResourceActionCacheModel)obj;
+
+		if ((resourceActionId == resourceActionCacheModel.resourceActionId) &&
+				(mvccVersion == resourceActionCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, resourceActionId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(9);
+		StringBundler sb = new StringBundler(11);
 
-		sb.append("{resourceActionId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", resourceActionId=");
 		sb.append(resourceActionId);
 		sb.append(", name=");
 		sb.append(name);
@@ -47,9 +94,11 @@ public class ResourceActionCacheModel implements CacheModel<ResourceAction>,
 		return sb.toString();
 	}
 
+	@Override
 	public ResourceAction toEntityModel() {
 		ResourceActionImpl resourceActionImpl = new ResourceActionImpl();
 
+		resourceActionImpl.setMvccVersion(mvccVersion);
 		resourceActionImpl.setResourceActionId(resourceActionId);
 
 		if (name == null) {
@@ -73,6 +122,39 @@ public class ResourceActionCacheModel implements CacheModel<ResourceAction>,
 		return resourceActionImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		resourceActionId = objectInput.readLong();
+		name = objectInput.readUTF();
+		actionId = objectInput.readUTF();
+		bitwiseValue = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(resourceActionId);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (actionId == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(actionId);
+		}
+
+		objectOutput.writeLong(bitwiseValue);
+	}
+
+	public long mvccVersion;
 	public long resourceActionId;
 	public String name;
 	public String actionId;

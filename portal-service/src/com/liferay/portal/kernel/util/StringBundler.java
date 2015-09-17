@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,19 +17,18 @@ package com.liferay.portal.kernel.util;
 import com.liferay.portal.kernel.memory.SoftReferenceThreadLocal;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.Writer;
-
-import java.lang.reflect.Constructor;
 
 /**
  * <p>
- * See http://issues.liferay.com/browse/LPS-6072.
+ * See https://issues.liferay.com/browse/LPS-6072.
  * </p>
  *
  * @author Shuyang Zhou
  * @author Brian Wing Shun Chan
  */
-public class StringBundler {
+public class StringBundler implements Serializable {
 
 	public StringBundler() {
 		_array = new String[_DEFAULT_ARRAY_CAPACITY];
@@ -58,9 +57,7 @@ public class StringBundler {
 	public StringBundler(String[] stringArray, int extraSpace) {
 		_array = new String[stringArray.length + extraSpace];
 
-		for (int i = 0; i < stringArray.length; i++) {
-			String s = stringArray[i];
-
+		for (String s : stringArray) {
 			if ((s != null) && (s.length() > 0)) {
 				_array[_arrayIndex++] = s;
 			}
@@ -69,10 +66,10 @@ public class StringBundler {
 
 	public StringBundler append(boolean b) {
 		if (b) {
-			return append(_TRUE);
+			return append(StringPool.TRUE);
 		}
 		else {
-			return append(_FALSE);
+			return append(StringPool.FALSE);
 		}
 	}
 
@@ -128,7 +125,7 @@ public class StringBundler {
 	}
 
 	public StringBundler append(String[] stringArray) {
-		if ((stringArray == null) || (stringArray.length == 0)) {
+		if (ArrayUtil.isEmpty(stringArray)) {
 			return this;
 		}
 
@@ -136,9 +133,7 @@ public class StringBundler {
 			expandCapacity((_array.length + stringArray.length) * 2);
 		}
 
-		for (int i = 0; i < stringArray.length; i++) {
-			String s = stringArray[i];
-
+		for (String s : stringArray) {
 			if ((s != null) && (s.length() > 0)) {
 				_array[_arrayIndex++] = s;
 			}
@@ -165,6 +160,10 @@ public class StringBundler {
 
 	public int capacity() {
 		return _array.length;
+	}
+
+	public String[] getStrings() {
+		return _array;
 	}
 
 	public int index() {
@@ -227,10 +226,6 @@ public class StringBundler {
 
 	@Override
 	public String toString() {
-		return toString(true);
-	}
-
-	public String toString(boolean unsafeCreate) {
 		if (_arrayIndex == 0) {
 			return StringPool.BLANK;
 		}
@@ -255,31 +250,7 @@ public class StringBundler {
 
 		StringBuilder sb = null;
 
-		if ((length > _unsafeCreateLimit) && (_stringConstructor != null) &&
-			CharBufferPool.isEnabled() && unsafeCreate) {
-
-			char[] charBuffer = CharBufferPool.borrow(length);
-
-			int offset = 0;
-
-			for (int i = 0; i < _arrayIndex; i++) {
-				String s = _array[i];
-
-				s.getChars(0, s.length(), charBuffer, offset);
-
-				offset += s.length();
-			}
-
-			try {
-				return _stringConstructor.newInstance(0, length, charBuffer);
-			}
-			catch (Exception e) {
-				_stringConstructor = null;
-
-				return toString(false);
-			}
-		}
-		else if (length > _threadLocalBufferLimit) {
+		if (length > _THREAD_LOCAL_BUFFER_LIMIT) {
 			sb = _stringBuilderThreadLocal.get();
 
 			if (sb == null) {
@@ -320,49 +291,28 @@ public class StringBundler {
 
 	private static final int _DEFAULT_ARRAY_CAPACITY = 16;
 
-	private static final String _FALSE = "false";
+	private static final int _THREAD_LOCAL_BUFFER_LIMIT;
 
-	private static final int _THREADLOCAL_BUFFER_LIMIT = GetterUtil.getInteger(
-		System.getProperty(
-			StringBundler.class.getName() + ".threadlocal.buffer.limit"));
-
-	private static final String _TRUE = "true";
-
-	private static final int _UNSAFE_CREATE_LIMIT = GetterUtil.getInteger(
-		System.getProperty(
-			StringBundler.class.getName() + ".unsafe.create.limit"));
-
-	private static ThreadLocal<StringBuilder> _stringBuilderThreadLocal;
-	private static Constructor<String> _stringConstructor;
-	private static int _threadLocalBufferLimit;
-	private static int _unsafeCreateLimit;
+	private static final ThreadLocal<StringBuilder> _stringBuilderThreadLocal;
+	private static final long serialVersionUID = 1L;
 
 	static {
-		if (_THREADLOCAL_BUFFER_LIMIT > 0) {
-			_stringBuilderThreadLocal =
-				new SoftReferenceThreadLocal<StringBuilder>();
-			_threadLocalBufferLimit = _THREADLOCAL_BUFFER_LIMIT;
+		int threadLocalBufferLimit = GetterUtil.getInteger(
+			System.getProperty(
+				StringBundler.class.getName() + ".threadlocal.buffer.limit"),
+			Integer.MAX_VALUE);
+
+		if ((threadLocalBufferLimit > 0) &&
+			(threadLocalBufferLimit < Integer.MAX_VALUE)) {
+
+			_THREAD_LOCAL_BUFFER_LIMIT = threadLocalBufferLimit;
+
+			_stringBuilderThreadLocal = new SoftReferenceThreadLocal<>();
 		}
 		else {
+			_THREAD_LOCAL_BUFFER_LIMIT = Integer.MAX_VALUE;
+
 			_stringBuilderThreadLocal = null;
-			_threadLocalBufferLimit = Integer.MAX_VALUE;
-		}
-
-		if (_UNSAFE_CREATE_LIMIT > 0) {
-			try {
-				_unsafeCreateLimit = _UNSAFE_CREATE_LIMIT;
-
-				_stringConstructor = String.class.getDeclaredConstructor(
-					int.class, int.class, char[].class);
-
-				_stringConstructor.setAccessible(true);
-			}
-			catch (Exception e) {
-			}
-		}
-		else {
-			_unsafeCreateLimit = Integer.MAX_VALUE;
-			_stringConstructor = null;
 		}
 	}
 

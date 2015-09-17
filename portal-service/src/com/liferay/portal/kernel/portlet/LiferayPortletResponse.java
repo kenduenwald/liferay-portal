@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +13,8 @@
  */
 
 package com.liferay.portal.kernel.portlet;
+
+import com.liferay.portal.model.Portlet;
 
 import java.util.Map;
 
@@ -40,6 +42,10 @@ public interface LiferayPortletResponse extends PortletResponse {
 	public LiferayPortletURL createLiferayPortletURL(
 		long plid, String portletName, String lifecycle);
 
+	public LiferayPortletURL createLiferayPortletURL(
+		long plid, String portletName, String lifecycle,
+		boolean includeLinkToLayoutUuid);
+
 	public LiferayPortletURL createLiferayPortletURL(String lifecycle);
 
 	public LiferayPortletURL createLiferayPortletURL(
@@ -54,6 +60,8 @@ public interface LiferayPortletResponse extends PortletResponse {
 	public LiferayPortletURL createResourceURL(String portletName);
 
 	public HttpServletResponse getHttpServletResponse();
+
+	public Portlet getPortlet();
 
 	public Map<String, String[]> getProperties();
 

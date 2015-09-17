@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,13 +25,15 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class UserTrackerSoap implements Serializable {
 	public static UserTrackerSoap toSoapModel(UserTracker model) {
 		UserTrackerSoap soapModel = new UserTrackerSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setUserTrackerId(model.getUserTrackerId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
@@ -88,6 +92,14 @@ public class UserTrackerSoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setUserTrackerId(pk);
+	}
+
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
 	}
 
 	public long getUserTrackerId() {
@@ -154,6 +166,7 @@ public class UserTrackerSoap implements Serializable {
 		_userAgent = userAgent;
 	}
 
+	private long _mvccVersion;
 	private long _userTrackerId;
 	private long _companyId;
 	private long _userId;

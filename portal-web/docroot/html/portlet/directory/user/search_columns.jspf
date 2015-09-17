@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,19 +14,7 @@
  */
 --%>
 
-<liferay-ui:search-container-column-text
-	href="<%= rowURL %>"
-	name="first-name"
-	orderable="<%= true %>"
-	property="firstName"
-/>
-
-<liferay-ui:search-container-column-text
-	href="<%= rowURL %>"
-	name="last-name"
-	orderable="<%= true %>"
-	property="lastName"
-/>
+<%@ include file="/html/portlet/directory/user/search_columns_user_name.jspf" %>
 
 <liferay-ui:search-container-column-text
 	href="<%= rowURL %>"
@@ -42,9 +30,13 @@
 	value="<%= user2.getJobTitle() %>"
 />
 
+<%
+List<Organization> userOrganizations = OrganizationLocalServiceUtil.getUserOrganizations(user2.getUserId(), 0, PropsValues.USERS_ADMIN_ORGANIZATION_COLUMN_LIMIT);
+int userOrganizationsCount = OrganizationLocalServiceUtil.getUserOrganizationsCount(user2.getUserId());
+%>
+
 <liferay-ui:search-container-column-text
 	href="<%= rowURL %>"
 	name="organizations"
->
-	<liferay-ui:write bean="<%= user2 %>" property="organizations" />
-</liferay-ui:search-container-column-text>
+	value="<%= HtmlUtil.escape(UsersAdminUtil.getUserColumnText(locale, userOrganizations, Organization.NAME_ACCESSOR, userOrganizationsCount)) %>"
+/>

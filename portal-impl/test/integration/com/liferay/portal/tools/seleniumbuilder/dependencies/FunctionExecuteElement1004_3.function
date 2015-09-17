@@ -1,0 +1,5 @@
+<definition default="name">
+	<command name="name">
+		<execute locator1="locator1" />
+	</command>
+</definition>

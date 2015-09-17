@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,6 @@ package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.cache.CacheRegistryItem;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.spring.aop.Skip;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -36,7 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ClassNameLocalServiceImpl
 	extends ClassNameLocalServiceBaseImpl implements CacheRegistryItem {
 
-	public ClassName addClassName(String value) throws SystemException {
+	@Override
+	public ClassName addClassName(String value) {
 		ClassName className = classNamePersistence.fetchByValue(value);
 
 		if (className == null) {
@@ -46,7 +46,7 @@ public class ClassNameLocalServiceImpl
 
 			className.setValue(value);
 
-			classNamePersistence.update(className, false);
+			classNamePersistence.update(className);
 		}
 
 		return className;
@@ -59,8 +59,9 @@ public class ClassNameLocalServiceImpl
 		CacheRegistryUtil.register(this);
 	}
 
+	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public void checkClassNames() throws SystemException {
+	public void checkClassNames() {
 		List<ClassName> classNames = classNamePersistence.findAll();
 
 		for (ClassName className : classNames) {
@@ -74,8 +75,30 @@ public class ClassNameLocalServiceImpl
 		}
 	}
 
+	@Override
+	public ClassName fetchClassName(String value) {
+		if (Validator.isNull(value)) {
+			return _nullClassName;
+		}
+
+		ClassName className = _classNames.get(value);
+
+		if (className == null) {
+			className = classNamePersistence.fetchByValue(value);
+
+			if (className == null) {
+				return _nullClassName;
+			}
+
+			_classNames.put(value, className);
+		}
+
+		return className;
+	}
+
+	@Override
 	@Skip
-	public ClassName getClassName(String value) throws SystemException {
+	public ClassName getClassName(String value) {
 		if (Validator.isNull(value)) {
 			return _nullClassName;
 		}
@@ -86,42 +109,49 @@ public class ClassNameLocalServiceImpl
 		ClassName className = _classNames.get(value);
 
 		if (className == null) {
-			className = classNameLocalService.addClassName(value);
+			try {
+				className = classNameLocalService.addClassName(value);
 
-			_classNames.put(value, className);
+				_classNames.put(value, className);
+			}
+			catch (Throwable t) {
+				className = classNameLocalService.fetchClassName(value);
+
+				if (className == _nullClassName) {
+					throw t;
+				}
+			}
 		}
 
 		return className;
 	}
 
+	@Override
 	@Skip
 	public long getClassNameId(Class<?> clazz) {
 		return getClassNameId(clazz.getName());
 	}
 
+	@Override
 	@Skip
 	public long getClassNameId(String value) {
-		try {
-			ClassName className = getClassName(value);
+		ClassName className = getClassName(value);
 
-			return className.getClassNameId();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(
-				"Unable to get class name from value " + value, e);
-		}
+		return className.getClassNameId();
 	}
 
+	@Override
 	public String getRegistryName() {
 		return ClassNameLocalServiceImpl.class.getName();
 	}
 
+	@Override
 	public void invalidate() {
 		_classNames.clear();
 	}
 
-	private static Map<String, ClassName> _classNames =
-		new ConcurrentHashMap<String, ClassName>();
-	private static ClassName _nullClassName = new ClassNameImpl();
+	private static final Map<String, ClassName> _classNames =
+		new ConcurrentHashMap<>();
+	private static final ClassName _nullClassName = new ClassNameImpl();
 
 }

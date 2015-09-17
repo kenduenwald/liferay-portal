@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.transaction.Isolation;
@@ -21,11 +23,10 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 
 /**
- * The interface for the layout template local service.
- *
- * <p>
- * This is a local service. Methods of this service will not have security checks based on the propagated JAAS credentials because this service can only be accessed from within the same VM.
- * </p>
+ * Provides the local service interface for LayoutTemplate. Methods of this
+ * service will not have security checks based on the propagated JAAS
+ * credentials because this service can only be accessed from within the same
+ * VM.
  *
  * @author Brian Wing Shun Chan
  * @see LayoutTemplateLocalServiceUtil
@@ -33,9 +34,10 @@ import com.liferay.portal.kernel.transaction.Transactional;
  * @see com.liferay.portal.service.impl.LayoutTemplateLocalServiceImpl
  * @generated
  */
+@ProviderType
 @Transactional(isolation = Isolation.PORTAL, rollbackFor =  {
 	PortalException.class, SystemException.class})
-public interface LayoutTemplateLocalService {
+public interface LayoutTemplateLocalService extends BaseLocalService {
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
@@ -49,17 +51,9 @@ public interface LayoutTemplateLocalService {
 	*/
 	public java.lang.String getBeanIdentifier();
 
-	/**
-	* Sets the Spring bean ID for this bean.
-	*
-	* @param beanIdentifier the Spring bean ID for this bean
-	*/
-	public void setBeanIdentifier(java.lang.String beanIdentifier);
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.lang.String getContent(java.lang.String layoutTemplateId,
-		boolean standard, java.lang.String themeId)
-		throws com.liferay.portal.kernel.exception.SystemException;
+		boolean standard, java.lang.String themeId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public com.liferay.portal.model.LayoutTemplate getLayoutTemplate(
@@ -75,24 +69,30 @@ public interface LayoutTemplateLocalService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.lang.String getWapContent(java.lang.String layoutTemplateId,
-		boolean standard, java.lang.String themeId)
-		throws com.liferay.portal.kernel.exception.SystemException;
+		boolean standard, java.lang.String themeId);
 
-	public java.util.List<com.liferay.portal.kernel.util.ObjectValuePair<java.lang.String, java.lang.Boolean>> init(
+	public java.util.List<com.liferay.portal.model.LayoutTemplate> init(
 		javax.servlet.ServletContext servletContext, java.lang.String[] xmls,
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage);
 
-	public java.util.List<com.liferay.portal.kernel.util.ObjectValuePair<java.lang.String, java.lang.Boolean>> init(
+	public java.util.List<com.liferay.portal.model.LayoutTemplate> init(
 		java.lang.String servletContextName,
 		javax.servlet.ServletContext servletContext, java.lang.String[] xmls,
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage);
 
 	public void readLayoutTemplate(java.lang.String servletContextName,
 		javax.servlet.ServletContext servletContext,
-		java.util.Set<com.liferay.portal.kernel.util.ObjectValuePair<java.lang.String, java.lang.Boolean>> layoutTemplateIds,
+		java.util.Set<com.liferay.portal.model.LayoutTemplate> layoutTemplates,
 		com.liferay.portal.kernel.xml.Element element, boolean standard,
 		java.lang.String themeId,
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage);
+
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public void setBeanIdentifier(java.lang.String beanIdentifier);
 
 	public void uninstallLayoutTemplate(java.lang.String layoutTemplateId,
 		boolean standard);

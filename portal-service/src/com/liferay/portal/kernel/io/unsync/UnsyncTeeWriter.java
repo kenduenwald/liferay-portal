@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -97,7 +97,7 @@ public class UnsyncTeeWriter extends Writer {
 		_writer2.write(string, offset, length);
 	}
 
-	private Writer _writer1;
-	private Writer _writer2;
+	private final Writer _writer1;
+	private final Writer _writer2;
 
 }

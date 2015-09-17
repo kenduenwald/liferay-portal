@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.Role;
 import com.liferay.portal.model.User;
+import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
 import com.liferay.portal.service.UserGroupRoleLocalServiceUtil;
 
 import javax.portlet.RenderResponse;
@@ -53,10 +54,39 @@ public class UserGroupRoleUserChecker extends RowChecker {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	@Override
+	public boolean isDisabled(Object obj) {
+		User user = (User)obj;
+
+		try {
+			if (isChecked(user)) {
+				if (SiteMembershipPolicyUtil.isRoleRequired(
+						user.getUserId(), _group.getGroupId(),
+						_role.getRoleId())) {
+
+					return true;
+				}
+			}
+			else {
+				if (!SiteMembershipPolicyUtil.isRoleAllowed(
+						user.getUserId(), _group.getGroupId(),
+						_role.getRoleId())) {
+
+					return true;
+				}
+			}
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+		}
+
+		return super.isDisabled(obj);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
 		UserGroupRoleUserChecker.class);
 
-	private Group _group;
-	private Role _role;
+	private final Group _group;
+	private final Role _role;
 
 }

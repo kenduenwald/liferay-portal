@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,7 +22,46 @@ import com.liferay.portal.NoSuchModelException;
 public class NoSuchFileException extends NoSuchModelException {
 
 	public NoSuchFileException() {
-		super();
+	}
+
+	public NoSuchFileException(
+		long companyId, long repositoryId, String fileName) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s}",
+				companyId, repositoryId, fileName));
+	}
+
+	public NoSuchFileException(
+		long companyId, long repositoryId, String fileName, String version) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s, version=%s}",
+				companyId, repositoryId, fileName, version));
+	}
+
+	public NoSuchFileException(
+		long companyId, long repositoryId, String fileName, String version,
+		Throwable cause) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s, version=%s, " +
+					"cause=%s}",
+				companyId, repositoryId, fileName, version, cause),
+			cause);
+	}
+
+	public NoSuchFileException(
+		long companyId, long repositoryId, String fileName, Throwable cause) {
+
+		super(
+			String.format(
+				"{companyId=%s, repositoryId=%s, fileName=%s, cause=%s}",
+				companyId, repositoryId, fileName, cause),
+			cause);
 	}
 
 	public NoSuchFileException(String msg) {

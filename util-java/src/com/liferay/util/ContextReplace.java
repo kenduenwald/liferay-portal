@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -64,8 +64,8 @@ public class ContextReplace implements Cloneable {
 	}
 
 	private void _updateArrays() {
-		List<String> keys = new ArrayList<String>();
-		List<String> values = new ArrayList<String>();
+		List<String> keys = new ArrayList<>();
+		List<String> values = new ArrayList<>();
 
 		for (Map.Entry<String, String> entry : _context.entrySet()) {
 			String entryKey = entry.getKey();
@@ -79,7 +79,7 @@ public class ContextReplace implements Cloneable {
 		_values = values.toArray(new String[values.size()]);
 	}
 
-	private Map<String, String> _context = new LinkedHashMap<String, String>();
+	private final Map<String, String> _context = new LinkedHashMap<>();
 	private String[] _keys = new String[0];
 	private String[] _values = new String[0];
 

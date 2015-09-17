@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,15 +22,15 @@ import com.liferay.portal.kernel.util.InitialThreadLocal;
 public class MailingListThreadLocal {
 
 	public static boolean isSourceMailingList() {
-		return _sourceMailingList.get().booleanValue();
+		return _sourceMailingList.get();
 	}
 
 	public static void setSourceMailingList(boolean sourceMailingList) {
 		_sourceMailingList.set(sourceMailingList);
 	}
 
-	private static ThreadLocal<Boolean> _sourceMailingList =
-		new InitialThreadLocal<Boolean>(
+	private static final ThreadLocal<Boolean> _sourceMailingList =
+		new InitialThreadLocal<>(
 			MailingListThreadLocal.class + "._sourceMailingList", false);
 
 }

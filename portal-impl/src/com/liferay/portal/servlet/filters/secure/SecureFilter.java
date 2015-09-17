@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,9 @@ package com.liferay.portal.servlet.filters.secure;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.servlet.HttpHeaders;
+import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
+import com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil;
+import com.liferay.portal.kernel.security.auth.http.HttpAuthorizationHeader;
 import com.liferay.portal.kernel.servlet.ProtectedServletRequest;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Http;
@@ -26,18 +28,15 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.AuthSettingsUtil;
+import com.liferay.portal.security.auth.CompanyThreadLocal;
 import com.liferay.portal.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.security.permission.PermissionThreadLocal;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
-import com.liferay.portal.util.Portal;
-import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.WebKeys;
 
 import java.util.HashSet;
@@ -64,30 +63,30 @@ public class SecureFilter extends BasePortalFilter {
 			filterConfig.getInitParameter("basic_auth"));
 		_digestAuthEnabled = GetterUtil.getBoolean(
 			filterConfig.getInitParameter("digest_auth"));
-		_usePermissionChecker = GetterUtil.getBoolean(
-			filterConfig.getInitParameter("use_permission_checker"));
 
 		String propertyPrefix = filterConfig.getInitParameter(
 			"portal_property_prefix");
 
-		String[] hostsAllowedArray = null;
+		String[] hostsAllowed = null;
 
 		if (Validator.isNull(propertyPrefix)) {
-			hostsAllowedArray = StringUtil.split(
+			hostsAllowed = StringUtil.split(
 				filterConfig.getInitParameter("hosts.allowed"));
 			_httpsRequired = GetterUtil.getBoolean(
 				filterConfig.getInitParameter("https.required"));
 		}
 		else {
-			hostsAllowedArray = PropsUtil.getArray(
-				propertyPrefix + "hosts.allowed");
+			hostsAllowed = PropsUtil.getArray(propertyPrefix + "hosts.allowed");
 			_httpsRequired = GetterUtil.getBoolean(
 				PropsUtil.get(propertyPrefix + "https.required"));
 		}
 
-		for (int i = 0; i < hostsAllowedArray.length; i++) {
-			_hostsAllowed.add(hostsAllowedArray[i]);
+		for (String hostAllowed : hostsAllowed) {
+			_hostsAllowed.add(hostAllowed);
 		}
+
+		_usePermissionChecker = GetterUtil.getBoolean(
+			filterConfig.getInitParameter("use_permission_checker"));
 	}
 
 	protected HttpServletRequest basicAuth(
@@ -96,29 +95,34 @@ public class SecureFilter extends BasePortalFilter {
 
 		HttpSession session = request.getSession();
 
-		session.setAttribute(WebKeys.BASIC_AUTH_ENABLED, Boolean.TRUE);
-
 		long userId = GetterUtil.getLong(
 			(String)session.getAttribute(_AUTHENTICATED_USER));
 
 		if (userId > 0) {
 			request = new ProtectedServletRequest(
-				request, String.valueOf(userId));
+				request, String.valueOf(userId), HttpServletRequest.BASIC_AUTH);
+
+			initThreadLocals(request);
 		}
 		else {
 			try {
-				userId = PortalUtil.getBasicAuthUserId(request);
+				userId = HttpAuthManagerUtil.getBasicUserId(request);
 			}
 			catch (Exception e) {
 				_log.error(e, e);
 			}
 
 			if (userId > 0) {
-				request = setCredentials(request, session, userId);
+				request = setCredentials(
+					request, session, userId, HttpServletRequest.BASIC_AUTH);
 			}
 			else {
-				response.setHeader(HttpHeaders.WWW_AUTHENTICATE, _BASIC_REALM);
-				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				HttpAuthorizationHeader httpAuthorizationHeader =
+					new HttpAuthorizationHeader(
+						HttpAuthorizationHeader.SCHEME_BASIC);
+
+				HttpAuthManagerUtil.generateChallenge(
+					request, response, httpAuthorizationHeader);
 
 				return null;
 			}
@@ -138,44 +142,69 @@ public class SecureFilter extends BasePortalFilter {
 
 		if (userId > 0) {
 			request = new ProtectedServletRequest(
-				request, String.valueOf(userId));
+				request, String.valueOf(userId),
+				HttpServletRequest.DIGEST_AUTH);
+
+			initThreadLocals(request);
 		}
 		else {
 			try {
-				userId = PortalUtil.getDigestAuthUserId(request);
+				userId = HttpAuthManagerUtil.getDigestUserId(request);
 			}
 			catch (Exception e) {
 				_log.error(e, e);
 			}
 
 			if (userId > 0) {
-				request = setCredentials(request, session, userId);
+				request = setCredentials(
+					request, session, userId, HttpServletRequest.DIGEST_AUTH);
 			}
 			else {
+				HttpAuthorizationHeader httpAuthorizationHeader =
+					new HttpAuthorizationHeader(
+						HttpAuthorizationHeader.SCHEME_DIGEST);
 
-				// Must generate a new nonce for each 401 (RFC2617, 3.2.1)
-
-				long companyId = PortalInstances.getCompanyId(request);
-
-				String remoteAddress = request.getRemoteAddr();
-
-				String nonce = NonceUtil.generate(companyId, remoteAddress);
-
-				StringBundler sb = new StringBundler(4);
-
-				sb.append(_DIGEST_REALM);
-				sb.append(", nonce=\"");
-				sb.append(nonce);
-				sb.append("\"");
-
-				response.setHeader(HttpHeaders.WWW_AUTHENTICATE, sb.toString());
-				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				HttpAuthManagerUtil.generateChallenge(
+					request, response, httpAuthorizationHeader);
 
 				return null;
 			}
 		}
 
 		return request;
+	}
+
+	protected void initThreadLocals(HttpServletRequest request)
+		throws Exception {
+
+		HttpSession session = request.getSession();
+
+		User user = (User)session.getAttribute(WebKeys.USER);
+
+		initThreadLocals(user);
+
+		PrincipalThreadLocal.setPassword(PortalUtil.getUserPassword(request));
+	}
+
+	protected void initThreadLocals(User user) throws Exception {
+		CompanyThreadLocal.setCompanyId(user.getCompanyId());
+
+		PrincipalThreadLocal.setName(user.getUserId());
+
+		if (!_usePermissionChecker) {
+			return;
+		}
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if (permissionChecker != null) {
+			return;
+		}
+
+		permissionChecker = PermissionCheckerFactoryUtil.create(user);
+
+		PermissionThreadLocal.setPermissionChecker(permissionChecker);
 	}
 
 	@Override
@@ -186,7 +215,7 @@ public class SecureFilter extends BasePortalFilter {
 
 		String remoteAddr = request.getRemoteAddr();
 
-		if (AuthSettingsUtil.isAccessAllowed(request, _hostsAllowed)) {
+		if (AccessControlUtil.isAccessAllowed(request, _hostsAllowed)) {
 			if (_log.isDebugEnabled()) {
 				_log.debug("Access allowed for " + remoteAddr);
 			}
@@ -245,24 +274,24 @@ public class SecureFilter extends BasePortalFilter {
 				_log.debug("Not securing " + completeURL);
 			}
 
-			// This authentication should only be run if specified by web.xml
-			// and JAAS is disabled. Make sure to run this once per session and
-			// wrap the request if necessary.
+			User user = PortalUtil.getUser(request);
 
-			if (!PropsValues.PORTAL_JAAS_ENABLE) {
-				User user = PortalUtil.getUser(request);
+			if (user == null) {
+				user = PortalUtil.initUser(request);
+			}
 
-				if ((user != null) && !user.isDefaultUser()) {
-					request = setCredentials(
-						request, request.getSession(), user.getUserId());
+			initThreadLocals(user);
+
+			if (!user.isDefaultUser()) {
+				request = setCredentials(
+					request, request.getSession(), user.getUserId(), null);
+			}
+			else {
+				if (_digestAuthEnabled) {
+					request = digestAuth(request, response);
 				}
-				else {
-					if (_digestAuthEnabled) {
-						request = digestAuth(request, response);
-					}
-					else if (_basicAuthEnabled) {
-						request = basicAuth(request, response);
-					}
+				else if (_basicAuthEnabled) {
+					request = basicAuth(request, response);
 				}
 			}
 
@@ -273,28 +302,20 @@ public class SecureFilter extends BasePortalFilter {
 	}
 
 	protected HttpServletRequest setCredentials(
-			HttpServletRequest request, HttpSession session, long userId)
+			HttpServletRequest request, HttpSession session, long userId,
+			String authType)
 		throws Exception {
 
 		User user = UserLocalServiceUtil.getUser(userId);
 
 		String userIdString = String.valueOf(userId);
 
-		request = new ProtectedServletRequest(request, userIdString);
+		request = new ProtectedServletRequest(request, userIdString, authType);
 
 		session.setAttribute(WebKeys.USER, user);
 		session.setAttribute(_AUTHENTICATED_USER, userIdString);
 
-		if (_usePermissionChecker) {
-			PrincipalThreadLocal.setName(userId);
-			PrincipalThreadLocal.setPassword(
-				PortalUtil.getUserPassword(request));
-
-			PermissionChecker permissionChecker =
-				PermissionCheckerFactoryUtil.create(user);
-
-			PermissionThreadLocal.setPermissionChecker(permissionChecker);
-		}
+		initThreadLocals(request);
 
 		return request;
 	}
@@ -306,17 +327,11 @@ public class SecureFilter extends BasePortalFilter {
 	private static final String _AUTHENTICATED_USER =
 		SecureFilter.class + "_AUTHENTICATED_USER";
 
-	private static final String _BASIC_REALM =
-		"Basic realm=\"" + Portal.PORTAL_REALM + "\"";
-
-	private static final String _DIGEST_REALM =
-		"Digest realm=\"" + Portal.PORTAL_REALM + "\"";
-
-	private static Log _log = LogFactoryUtil.getLog(SecureFilter.class);
+	private static final Log _log = LogFactoryUtil.getLog(SecureFilter.class);
 
 	private boolean _basicAuthEnabled;
 	private boolean _digestAuthEnabled;
-	private Set<String> _hostsAllowed = new HashSet<String>();
+	private final Set<String> _hostsAllowed = new HashSet<>();
 	private boolean _httpsRequired;
 	private boolean _usePermissionChecker;
 

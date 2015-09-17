@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,19 +14,24 @@
 
 package com.liferay.portlet.messageboards.service.impl;
 
+import com.liferay.portal.kernel.dao.orm.Disjunction;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.QueryDefinition;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.Group;
 import com.liferay.portlet.messageboards.model.MBStatsUser;
+import com.liferay.portlet.messageboards.model.MBThread;
 import com.liferay.portlet.messageboards.model.impl.MBStatsUserImpl;
 import com.liferay.portlet.messageboards.service.base.MBStatsUserLocalServiceBaseImpl;
 
@@ -39,9 +44,8 @@ import java.util.List;
 public class MBStatsUserLocalServiceImpl
 	extends MBStatsUserLocalServiceBaseImpl {
 
-	public MBStatsUser addStatsUser(long groupId, long userId)
-		throws SystemException {
-
+	@Override
+	public MBStatsUser addStatsUser(long groupId, long userId) {
 		long statsUserId = counterLocalService.increment();
 
 		MBStatsUser statsUser = mbStatsUserPersistence.create(statsUserId);
@@ -50,7 +54,7 @@ public class MBStatsUserLocalServiceImpl
 		statsUser.setUserId(userId);
 
 		try {
-			mbStatsUserPersistence.update(statsUser, false);
+			mbStatsUserPersistence.update(statsUser);
 		}
 		catch (SystemException se) {
 			if (_log.isWarnEnabled()) {
@@ -70,20 +74,21 @@ public class MBStatsUserLocalServiceImpl
 		return statsUser;
 	}
 
-	public void deleteStatsUser(long statsUserId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void deleteStatsUser(long statsUserId) throws PortalException {
 		MBStatsUser statsUser = mbStatsUserPersistence.findByPrimaryKey(
 			statsUserId);
 
 		deleteStatsUser(statsUser);
 	}
 
-	public void deleteStatsUser(MBStatsUser statsUser) throws SystemException {
+	@Override
+	public void deleteStatsUser(MBStatsUser statsUser) {
 		mbStatsUserPersistence.remove(statsUser);
 	}
 
-	public void deleteStatsUsersByGroupId(long groupId) throws SystemException {
+	@Override
+	public void deleteStatsUsersByGroupId(long groupId) {
 		List<MBStatsUser> statsUsers = mbStatsUserPersistence.findByGroupId(
 			groupId);
 
@@ -92,7 +97,8 @@ public class MBStatsUserLocalServiceImpl
 		}
 	}
 
-	public void deleteStatsUsersByUserId(long userId) throws SystemException {
+	@Override
+	public void deleteStatsUsersByUserId(long userId) {
 		List<MBStatsUser> statsUsers = mbStatsUserPersistence.findByUserId(
 			userId);
 
@@ -101,10 +107,65 @@ public class MBStatsUserLocalServiceImpl
 		}
 	}
 
-	public long getMessageCountByUserId(long userId) throws SystemException {
+	@Override
+	public Date getLastPostDateByUserId(long groupId, long userId) {
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			MBThread.class, MBStatsUserImpl.TABLE_NAME,
+			ClassLoaderUtil.getPortalClassLoader());
+
+		Projection projection = ProjectionFactoryUtil.max("lastPostDate");
+
+		dynamicQuery.setProjection(projection);
+
+		Property property = PropertyFactoryUtil.forName("threadId");
+
+		Disjunction disjunction = RestrictionsFactoryUtil.disjunction();
+
+		QueryDefinition<MBThread> queryDefinition = new QueryDefinition<>(
+			WorkflowConstants.STATUS_IN_TRASH);
+
+		List<MBThread> threads = mbThreadLocalService.getGroupThreads(
+			groupId, queryDefinition);
+
+		for (MBThread thread : threads) {
+			disjunction.add(property.ne(thread.getThreadId()));
+		}
+
+		dynamicQuery.add(disjunction);
+
+		List<Date> results = mbStatsUserLocalService.dynamicQuery(dynamicQuery);
+
+		return results.get(0);
+	}
+
+	@Override
+	public long getMessageCountByGroupId(long groupId) {
 		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
 			MBStatsUser.class, MBStatsUserImpl.TABLE_NAME,
-			PortalClassLoaderUtil.getClassLoader());
+			ClassLoaderUtil.getPortalClassLoader());
+
+		Projection projection = ProjectionFactoryUtil.sum("messageCount");
+
+		dynamicQuery.setProjection(projection);
+
+		Property property = PropertyFactoryUtil.forName("groupId");
+
+		dynamicQuery.add(property.eq(groupId));
+
+		List<Long> results = mbStatsUserLocalService.dynamicQuery(dynamicQuery);
+
+		if (results.get(0) == null) {
+			return 0;
+		}
+
+		return results.get(0);
+	}
+
+	@Override
+	public long getMessageCountByUserId(long userId) {
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			MBStatsUser.class, MBStatsUserImpl.TABLE_NAME,
+			ClassLoaderUtil.getPortalClassLoader());
 
 		Projection projection = ProjectionFactoryUtil.sum("messageCount");
 
@@ -116,16 +177,15 @@ public class MBStatsUserLocalServiceImpl
 
 		List<Long> results = mbStatsUserLocalService.dynamicQuery(dynamicQuery);
 
-		if (results.isEmpty()) {
+		if (results.get(0) == null) {
 			return 0;
 		}
 
 		return results.get(0);
 	}
 
-	public MBStatsUser getStatsUser(long groupId, long userId)
-		throws SystemException {
-
+	@Override
+	public MBStatsUser getStatsUser(long groupId, long userId) {
 		MBStatsUser statsUser = mbStatsUserPersistence.fetchByG_U(
 			groupId, userId);
 
@@ -136,9 +196,10 @@ public class MBStatsUserLocalServiceImpl
 		return statsUser;
 	}
 
+	@Override
 	public List<MBStatsUser> getStatsUsersByGroupId(
 			long groupId, int start, int end)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Group group = groupPersistence.findByPrimaryKey(groupId);
 
@@ -149,8 +210,9 @@ public class MBStatsUserLocalServiceImpl
 			groupId, defaultUserId, 0, start, end);
 	}
 
+	@Override
 	public int getStatsUsersByGroupIdCount(long groupId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Group group = groupPersistence.findByPrimaryKey(groupId);
 
@@ -161,23 +223,30 @@ public class MBStatsUserLocalServiceImpl
 			groupId, defaultUserId, 0);
 	}
 
-	public List<MBStatsUser> getStatsUsersByUserId(long userId)
-		throws SystemException {
-
+	@Override
+	public List<MBStatsUser> getStatsUsersByUserId(long userId) {
 		return mbStatsUserPersistence.findByUserId(userId);
 	}
 
-	public MBStatsUser updateStatsUser(long groupId, long userId)
-		throws SystemException {
-
-		return updateStatsUser(groupId, userId, null);
+	@Override
+	public MBStatsUser updateStatsUser(long groupId, long userId) {
+		return updateStatsUser(
+			groupId, userId, getLastPostDateByUserId(groupId, userId));
 	}
 
+	@Override
 	public MBStatsUser updateStatsUser(
-			long groupId, long userId, Date lastPostDate)
-		throws SystemException {
+		long groupId, long userId, Date lastPostDate) {
 
-		int messageCount = mbMessagePersistence.countByG_U(groupId, userId);
+		int messageCount = mbMessagePersistence.countByG_U_S(
+			groupId, userId, WorkflowConstants.STATUS_APPROVED);
+
+		return updateStatsUser(groupId, userId, messageCount, lastPostDate);
+	}
+
+	@Override
+	public MBStatsUser updateStatsUser(
+		long groupId, long userId, int messageCount, Date lastPostDate) {
 
 		MBStatsUser statsUser = getStatsUser(groupId, userId);
 
@@ -187,12 +256,12 @@ public class MBStatsUserLocalServiceImpl
 			statsUser.setLastPostDate(lastPostDate);
 		}
 
-		mbStatsUserPersistence.update(statsUser, false);
+		mbStatsUserPersistence.update(statsUser);
 
 		return statsUser;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		MBStatsUserLocalServiceImpl.class);
 
 }

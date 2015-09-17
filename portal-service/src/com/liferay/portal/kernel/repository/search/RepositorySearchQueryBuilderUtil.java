@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,6 +17,10 @@ package com.liferay.portal.kernel.repository.search;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
 
 /**
  * @author Mika Koivisto
@@ -32,15 +36,26 @@ public class RepositorySearchQueryBuilderUtil {
 	public static RepositorySearchQueryBuilder
 		getRepositorySearchQueryBuilder() {
 
-		return _repositorySearchQueryBuilder;
+		PortalRuntimePermission.checkGetBeanProperty(
+			RepositorySearchQueryBuilderUtil.class);
+
+		return _instance._serviceTracker.getService();
 	}
 
-	public void setRepositorySearchQueryBuilder(
-		RepositorySearchQueryBuilder repositorySearchQueryBuilder) {
+	public RepositorySearchQueryBuilderUtil() {
+		Registry registry = RegistryUtil.getRegistry();
 
-		_repositorySearchQueryBuilder = repositorySearchQueryBuilder;
+		_serviceTracker = registry.trackServices(
+			RepositorySearchQueryBuilder.class);
+
+		_serviceTracker.open();
 	}
 
-	private static RepositorySearchQueryBuilder _repositorySearchQueryBuilder;
+	private static final RepositorySearchQueryBuilderUtil _instance =
+		new RepositorySearchQueryBuilderUtil();
+
+	private final ServiceTracker
+		<RepositorySearchQueryBuilder, RepositorySearchQueryBuilder>
+			_serviceTracker;
 
 }

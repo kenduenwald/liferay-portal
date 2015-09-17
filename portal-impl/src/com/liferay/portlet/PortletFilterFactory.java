@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -46,8 +46,7 @@ public class PortletFilterFactory {
 	}
 
 	private PortletFilterFactory() {
-		_portletFilters =
-			new ConcurrentHashMap<String, Map<String, PortletFilter>>();
+		_portletFilters = new ConcurrentHashMap<>();
 	}
 
 	private PortletFilter _create(
@@ -61,7 +60,7 @@ public class PortletFilterFactory {
 			portletApp.getServletContextName());
 
 		if (portletFilters == null) {
-			portletFilters = new ConcurrentHashMap<String, PortletFilter>();
+			portletFilters = new ConcurrentHashMap<>();
 
 			_portletFilters.put(
 				portletApp.getServletContextName(), portletFilters);
@@ -70,30 +69,31 @@ public class PortletFilterFactory {
 		PortletFilter portletFilter = portletFilters.get(
 			portletFilterModel.getFilterName());
 
-		if (portletFilter == null) {
-			FilterConfig filterConfig = FilterConfigFactory.create(
-				portletFilterModel, portletContext);
-
-			if (portletApp.isWARFile()) {
-				PortletContextBag portletContextBag = PortletContextBagPool.get(
-					portletApp.getServletContextName());
-
-				Map<String, PortletFilter> curPortletFilters =
-					portletContextBag.getPortletFilters();
-
-				portletFilter = curPortletFilters.get(
-					portletFilterModel.getFilterName());
-
-				portletFilter = _init(
-					portletFilterModel, filterConfig, portletFilter);
-			}
-			else {
-				portletFilter = _init(portletFilterModel, filterConfig);
-			}
-
-			portletFilters.put(
-				portletFilterModel.getFilterName(), portletFilter);
+		if (portletFilter != null) {
+			return portletFilter;
 		}
+
+		FilterConfig filterConfig = FilterConfigFactory.create(
+			portletFilterModel, portletContext);
+
+		if (portletApp.isWARFile()) {
+			PortletContextBag portletContextBag = PortletContextBagPool.get(
+				portletApp.getServletContextName());
+
+			Map<String, PortletFilter> curPortletFilters =
+				portletContextBag.getPortletFilters();
+
+			portletFilter = curPortletFilters.get(
+				portletFilterModel.getFilterName());
+
+			portletFilter = _init(
+				portletFilterModel, filterConfig, portletFilter);
+		}
+		else {
+			portletFilter = _init(portletFilterModel, filterConfig);
+		}
+
+		portletFilters.put(portletFilterModel.getFilterName(), portletFilter);
 
 		return portletFilter;
 	}
@@ -155,8 +155,9 @@ public class PortletFilterFactory {
 		return portletFilter;
 	}
 
-	private static PortletFilterFactory _instance = new PortletFilterFactory();
+	private static final PortletFilterFactory _instance =
+		new PortletFilterFactory();
 
-	private Map<String, Map<String, PortletFilter>> _portletFilters;
+	private final Map<String, Map<String, PortletFilter>> _portletFilters;
 
 }

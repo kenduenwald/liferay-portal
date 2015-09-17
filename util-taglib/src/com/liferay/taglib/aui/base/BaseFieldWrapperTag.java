@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,7 +24,7 @@ import javax.servlet.jsp.JspException;
  * @author Julio Camarero
  * @generated
  */
-public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -35,6 +35,10 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 
 	public java.lang.String getCssClass() {
 		return _cssClass;
+	}
+
+	public java.lang.Object getData() {
+		return _data;
 	}
 
 	public boolean getFirst() {
@@ -61,6 +65,10 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 		return _last;
 	}
 
+	public boolean getLocalizeLabel() {
+		return _localizeLabel;
+	}
+
 	public java.lang.String getName() {
 		return _name;
 	}
@@ -73,6 +81,12 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 		_cssClass = cssClass;
 
 		setScopedAttribute("cssClass", cssClass);
+	}
+
+	public void setData(java.lang.Object data) {
+		_data = data;
+
+		setScopedAttribute("data", data);
 	}
 
 	public void setFirst(boolean first) {
@@ -111,6 +125,12 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 		setScopedAttribute("last", last);
 	}
 
+	public void setLocalizeLabel(boolean localizeLabel) {
+		_localizeLabel = localizeLabel;
+
+		setScopedAttribute("localizeLabel", localizeLabel);
+	}
+
 	public void setName(java.lang.String name) {
 		_name = name;
 
@@ -125,13 +145,17 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_cssClass = null;
+		_data = null;
 		_first = false;
 		_helpMessage = null;
 		_inlineField = false;
 		_inlineLabel = null;
 		_label = null;
 		_last = false;
+		_localizeLabel = true;
 		_name = null;
 		_required = false;
 	}
@@ -149,12 +173,14 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 	@Override
 	protected void setAttributes(HttpServletRequest request) {
 		setNamespacedAttribute(request, "cssClass", _cssClass);
+		setNamespacedAttribute(request, "data", _data);
 		setNamespacedAttribute(request, "first", _first);
 		setNamespacedAttribute(request, "helpMessage", _helpMessage);
 		setNamespacedAttribute(request, "inlineField", _inlineField);
 		setNamespacedAttribute(request, "inlineLabel", _inlineLabel);
 		setNamespacedAttribute(request, "label", _label);
 		setNamespacedAttribute(request, "last", _last);
+		setNamespacedAttribute(request, "localizeLabel", _localizeLabel);
 		setNamespacedAttribute(request, "name", _name);
 		setNamespacedAttribute(request, "required", _required);
 	}
@@ -168,12 +194,14 @@ public class BaseFieldWrapperTag extends com.liferay.taglib.util.IncludeTag {
 		"/html/taglib/aui/field_wrapper/start.jsp";
 
 	private java.lang.String _cssClass = null;
+	private java.lang.Object _data = null;
 	private boolean _first = false;
 	private java.lang.String _helpMessage = null;
 	private boolean _inlineField = false;
 	private java.lang.String _inlineLabel = null;
 	private java.lang.String _label = null;
 	private boolean _last = false;
+	private boolean _localizeLabel = true;
 	private java.lang.String _name = null;
 	private boolean _required = false;
 

@@ -1,0 +1,27 @@
+{namespace ddm}
+
+/**
+ * Prints the DDM form checkbox field.
+ *
+ * @param childElementsHTML
+ * @param label
+ * @param name
+ * @param required
+ * @param status
+ * @param visible
+ */
+{template .checkbox}
+	<div class="form-group form-inline{$visible ? '' : ' hide'}" data-fieldname="{$name}">
+		<div class="checkbox checkbox-default">
+			<label class="control-label" for="{$name}">
+				<input id="{$name}" name="{$name}" type="checkbox" {$status} value="true" /> {$label}
+
+				{if $required}
+					<b>*</b>
+				{/if}
+			</label>
+		</div>
+
+		{$childElementsHTML|noAutoescape}
+	</div>
+{/template}

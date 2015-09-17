@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.asset.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.asset.service.http.AssetCategoryServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.asset.service.http.AssetCategoryServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.asset.service.http.AssetCategoryServiceSoap
  * @generated
  */
+@ProviderType
 public class AssetCategorySoap implements Serializable {
 	public static AssetCategorySoap toSoapModel(AssetCategory model) {
 		AssetCategorySoap soapModel = new AssetCategorySoap();
@@ -46,6 +49,7 @@ public class AssetCategorySoap implements Serializable {
 		soapModel.setTitle(model.getTitle());
 		soapModel.setDescription(model.getDescription());
 		soapModel.setVocabularyId(model.getVocabularyId());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 
 		return soapModel;
 	}
@@ -218,6 +222,14 @@ public class AssetCategorySoap implements Serializable {
 		_vocabularyId = vocabularyId;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
 	private String _uuid;
 	private long _categoryId;
 	private long _groupId;
@@ -233,4 +245,5 @@ public class AssetCategorySoap implements Serializable {
 	private String _title;
 	private String _description;
 	private long _vocabularyId;
+	private Date _lastPublishDate;
 }

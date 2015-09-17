@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -27,11 +27,11 @@ public class ListTree<T extends Comparable<T>> {
 	}
 
 	public ListTree(T value) {
-		_rootNode = new TreeNode<T>(value);
+		_rootNode = new TreeNode<>(value);
 	}
 
 	public List<TreeNode<T>> getChildNodes(TreeNode<T> node) {
-		List<TreeNode<T>> nodes = new ArrayList<TreeNode<T>>();
+		List<TreeNode<T>> nodes = new ArrayList<>();
 
 		getChildNodes(node, nodes);
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.expando.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.expando.model.ExpandoColumn;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing ExpandoColumn in entity cache.
@@ -29,8 +35,33 @@ import java.io.Serializable;
  * @see ExpandoColumn
  * @generated
  */
+@ProviderType
 public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof ExpandoColumnCacheModel)) {
+			return false;
+		}
+
+		ExpandoColumnCacheModel expandoColumnCacheModel = (ExpandoColumnCacheModel)obj;
+
+		if (columnId == expandoColumnCacheModel.columnId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, columnId);
+	}
+
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(15);
@@ -54,6 +85,7 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 		return sb.toString();
 	}
 
+	@Override
 	public ExpandoColumn toEntityModel() {
 		ExpandoColumnImpl expandoColumnImpl = new ExpandoColumnImpl();
 
@@ -87,6 +119,48 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 		expandoColumnImpl.resetOriginalValues();
 
 		return expandoColumnImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		columnId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		tableId = objectInput.readLong();
+		name = objectInput.readUTF();
+		type = objectInput.readInt();
+		defaultData = objectInput.readUTF();
+		typeSettings = objectInput.readUTF();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(columnId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(tableId);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		objectOutput.writeInt(type);
+
+		if (defaultData == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(defaultData);
+		}
+
+		if (typeSettings == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(typeSettings);
+		}
 	}
 
 	public long columnId;

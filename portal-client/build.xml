@@ -7,11 +7,7 @@
 	<property name="client.url" value="http://localhost:8080/api/axis" />
 
 	<target name="build-client" depends="clean">
-		<echo message="Make sure the server is listening on ${client.url}." />
-		<echo message="" />
-
-		<delete dir="src" />
-		<mkdir dir="src" />
+		<remake-dir dir="src" />
 
 		<!--
 		<axis-wsdl2java
@@ -26,6 +22,7 @@
 			failonerror="true"
 			fork="true"
 			newenvironment="true"
+			outputproperty="build-client.output"
 		>
 			<jvmarg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
 			<arg value="${project.dir}/portal-web/docroot/WEB-INF/server-config.wsdd" />
@@ -33,6 +30,15 @@
 			<arg value="namespace-mapping.properties" />
 			<arg value="${client.url}" />
 		</java>
+
+		<echo>${build-client.output}</echo>
+
+		<if>
+			<contains string="${build-client.output}" substring="IOException" />
+			<then>
+				<fail>Portal Client Builder generated exceptions.</fail>
+			</then>
+		</if>
 
 		<antcall target="jar" />
 	</target>
@@ -45,7 +51,7 @@
 			<fileset dir="src" />
 		</jar>
 
-		<copy file="portal-client.jar" todir="${project.dir}/lib/portal" />
+		<copy file="portal-client.jar" todir="${project.dir}/lib/portal" preservelastmodified="true" />
 	</target>
 
 	<target name="jar-sources">
@@ -68,8 +74,7 @@
 	</target>
 
 	<target name="java2html">
-		<delete dir="src" />
-		<mkdir dir="src" />
+		<remake-dir dir="src" />
 
 		<unjar src="${jar.file}.jar" dest="src" />
 
@@ -77,8 +82,7 @@
 	</target>
 
 	<target name="javadoc">
-		<delete dir="src" />
-		<mkdir dir="src" />
+		<remake-dir dir="src" />
 
 		<unjar src="${project.dir}/lib/portal/${jar.file}.jar" dest="src" />
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -26,6 +26,8 @@ import java.io.IOException;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import java.util.HashSet;
@@ -52,6 +54,7 @@ public class DB2DB extends BaseDB {
 		template = removeLongInserts(template);
 		template = removeNull(template);
 		template = StringUtil.replace(template, "\\'", "''");
+		template = StringUtil.replace(template, "\\n", "'||CHR(10)||'");
 
 		return template;
 	}
@@ -79,6 +82,8 @@ public class DB2DB extends BaseDB {
 			String[] alterSqls = StringUtil.split(sql, CharPool.SEMICOLON);
 
 			for (String alterSql : alterSqls) {
+				alterSql = StringUtil.trim(alterSql);
+
 				runSQL(alterSql);
 			}
 		}
@@ -91,7 +96,7 @@ public class DB2DB extends BaseDB {
 	public void runSQL(String[] templates) throws IOException, SQLException {
 		super.runSQL(templates);
 
-		_reorgTables(templates);
+		reorgTables(templates);
 	}
 
 	protected DB2DB() {
@@ -105,24 +110,26 @@ public class DB2DB extends BaseDB {
 
 		String suffix = getSuffix(population);
 
-		StringBundler sb = new StringBundler(14);
+		StringBundler sb = new StringBundler(15);
 
 		sb.append("drop database ");
 		sb.append(databaseName);
 		sb.append(";\n");
 		sb.append("create database ");
 		sb.append(databaseName);
-		sb.append(" pagesize 8192;\n");
-		sb.append("connect to ");
-		sb.append(databaseName);
-		sb.append(";\n");
-		sb.append(
-			readFile(
-				sqlDir + "/portal" + suffix + "/portal" + suffix + "-db2.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/indexes/indexes-db2.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/sequences/sequences-db2.sql"));
+		sb.append(" pagesize 32768 temporary tablespace managed by automatic ");
+		sb.append("storage;\n");
+
+		if (population != BARE) {
+			sb.append("connect to ");
+			sb.append(databaseName);
+			sb.append(";\n");
+			sb.append(getCreateTablesContent(sqlDir, suffix));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/indexes/indexes-db2.sql"));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/sequences/sequences-db2.sql"));
+		}
 
 		return sb.toString();
 	}
@@ -137,49 +144,64 @@ public class DB2DB extends BaseDB {
 		return _DB2;
 	}
 
-	@Override
-	protected String reword(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+	protected boolean isRequiresReorgTable(Connection con, String tableName)
+		throws SQLException {
 
-		StringBundler sb = new StringBundler();
+		boolean reorgTableRequired = false;
 
-		String line = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith(ALTER_COLUMN_NAME)) {
-				String[] template = buildColumnNameTokens(line);
+		try {
+			StringBundler sb = new StringBundler(4);
 
-				line = StringUtil.replace(
-					"alter table @table@ add column @new-column@ @type@;\n",
-					REWORD_TEMPLATE, template);
+			sb.append("select num_reorg_rec_alters from table(");
+			sb.append("sysproc.admin_get_tab_info(current_schema, '");
+			sb.append(StringUtil.toUpperCase(tableName));
+			sb.append("')) where reorg_pending = 'Y'");
 
-				line = line + StringUtil.replace(
-					"update @table@ set @new-column@ = @old-column@;\n",
-					REWORD_TEMPLATE, template);
+			ps = con.prepareStatement(sb.toString());
 
-				line = line + StringUtil.replace(
-					"alter table @table@ drop column @old-column@",
-					REWORD_TEMPLATE, template);
+			rs = ps.executeQuery();
+
+			if (rs.next()) {
+				int numReorgRecAlters = rs.getInt(1);
+
+				if (numReorgRecAlters >= 1) {
+					reorgTableRequired = true;
+				}
 			}
-			else if (line.indexOf(DROP_INDEX) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
-
-				line = StringUtil.replace(
-					"drop index @index@;", "@index@", tokens[2]);
-			}
-
-			sb.append(line);
-			sb.append("\n");
+		}
+		finally {
+			DataAccess.cleanUp(null, ps, rs);
 		}
 
-		unsyncBufferedReader.close();
-
-		return sb.toString();
+		return reorgTableRequired;
 	}
 
-	private void _reorgTables(String[] templates) throws SQLException {
-		Set<String> tableNames = new HashSet<String>();
+	protected void reorgTable(Connection con, String tableName)
+		throws SQLException {
+
+		if (!isRequiresReorgTable(con, tableName)) {
+			return;
+		}
+
+		CallableStatement callableStatement = null;
+
+		try {
+			callableStatement = con.prepareCall("call sysproc.admin_cmd(?)");
+
+			callableStatement.setString(1, "reorg table " + tableName);
+
+			callableStatement.execute();
+		}
+		finally {
+			DataAccess.cleanUp(callableStatement);
+		}
+	}
+
+	protected void reorgTables(String[] templates) throws SQLException {
+		Set<String> tableNames = new HashSet<>();
 
 		for (String template : templates) {
 			if (template.startsWith("alter table")) {
@@ -187,37 +209,75 @@ public class DB2DB extends BaseDB {
 			}
 		}
 
-		if (tableNames.size() == 0) {
+		if (tableNames.isEmpty()) {
 			return;
 		}
 
 		Connection con = null;
-		CallableStatement callStmt = null;
 
 		try {
 			con = DataAccess.getConnection();
 
 			for (String tableName : tableNames) {
-				String sql = "call sysproc.admin_cmd(?)";
-
-				callStmt = con.prepareCall(sql);
-
-				String param = "reorg table " + tableName;
-
-				callStmt.setString(1, param);
-
-				callStmt.execute();
+				reorgTable(con, tableName);
 			}
 		}
 		finally {
-			DataAccess.cleanUp(con, callStmt);
+			DataAccess.cleanUp(con);
+		}
+	}
+
+	@Override
+	protected String reword(String data) throws IOException {
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
+
+			StringBundler sb = new StringBundler();
+
+			String line = null;
+
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith(ALTER_COLUMN_NAME)) {
+					String[] template = buildColumnNameTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @table@ add column @new-column@ @type@;\n",
+						REWORD_TEMPLATE, template);
+
+					line = line + StringUtil.replace(
+						"update @table@ set @new-column@ = @old-column@;\n",
+						REWORD_TEMPLATE, template);
+
+					line = line + StringUtil.replace(
+						"alter table @table@ drop column @old-column@",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_TABLE_NAME)) {
+					String[] template = buildTableNameTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @old-table@ to @new-table@;",
+						RENAME_TABLE_TEMPLATE, template);
+				}
+				else if (line.contains(DROP_INDEX)) {
+					String[] tokens = StringUtil.split(line, ' ');
+
+					line = StringUtil.replace(
+						"drop index @index@;", "@index@", tokens[2]);
+				}
+
+				sb.append(line);
+				sb.append("\n");
+			}
+
+			return sb.toString();
 		}
 	}
 
 	private static final String[] _DB2 = {
 		"--", "1", "0", "'1970-01-01-00.00.00.000000'", "current timestamp",
 		" blob", " blob", " smallint", " timestamp", " double", " integer",
-		" bigint", " varchar(600)", " clob", " varchar",
+		" bigint", " varchar(4000)", " clob", " varchar",
 		" generated always as identity", "commit"
 	};
 
@@ -227,6 +287,6 @@ public class DB2DB extends BaseDB {
 
 	private static final boolean _SUPPORTS_SCROLLABLE_RESULTS = false;
 
-	private static DB2DB _instance = new DB2DB();
+	private static final DB2DB _instance = new DB2DB();
 
 }

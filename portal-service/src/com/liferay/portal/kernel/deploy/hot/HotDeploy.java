@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,7 @@
 
 package com.liferay.portal.kernel.deploy.hot;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import com.liferay.portal.kernel.util.PortalLifecycle;
 
 /**
  * @author Raymond Augé
@@ -26,12 +25,8 @@ public interface HotDeploy {
 
 	public void fireUndeployEvent(HotDeployEvent hotDeployEvent);
 
-	public boolean isMissingDependentServletContext(
-		HotDeployEvent hotDeployEvent);
-
-	public void registerDependentServletContextListener(
-		HotDeployEvent hotDeployEvent, ServletContextEvent servletContextEvent,
-		ServletContextListener servletContextListener);
+	public boolean registerDependentPortalLifecycle(
+		String servletContextName, PortalLifecycle portalLifecycle);
 
 	public void registerListener(HotDeployListener hotDeployListener);
 

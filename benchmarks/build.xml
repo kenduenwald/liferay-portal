@@ -3,66 +3,29 @@
 <project name="benchmarks" basedir="." default="run">
 	<import file="../build-common.xml" />
 
-	<path id="grinder.classpath">
-		<fileset dir="lib" includes="*.jar" />
-	</path>
-
-	<property name="grinder.file" value="../tools/grinder-3.1.zip" />
-
 	<target name="build-sample-sql">
+		<path id="sample.sql.builder.classpath">
+			<fileset dir="${sdk.dir}/dist" includes="com.liferay.dynamic.data.*.jar" />
+			<fileset dir="${sdk.dir}/dist" includes="com.liferay.journal.*.jar" />
+			<fileset dir="${sdk.dir}/dist" includes="com.liferay.portal.tools.sample.sql.builder*.jar" />
+			<fileset dir="${sdk.dir}/dist" includes="com.liferay.wiki.*.jar" />
+			<path refid="project.classpath" />
+		</path>
+
+		<property name="sample.sql.properties.file" value="${basedir}/benchmarks.properties" />
+
 		<java
-			classname="com.liferay.portal.tools.samplesqlbuilder.SampleSQLBuilder"
-			classpathref="project.classpath"
+			classname="com.liferay.portal.tools.sample.sql.builder.SampleSQLBuilder"
+			classpathref="sample.sql.builder.classpath"
 		>
-			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<arg value="sample.sql.base.dir=${basedir}" />
-			<arg value="sample.sql.output.dir=${sample.sql.output.dir}" />
-			<arg value="sample.sql.output.merge=${sample.sql.output.merge}" />
-			<arg value="sample.sql.db.type=${sample.sql.db.type}" />
-			<arg value="sample.sql.blogs.entry.comment.count=${sample.sql.blogs.entry.comment.count}" />
-			<arg value="sample.sql.blogs.entry.count=${sample.sql.blogs.entry.count}" />
-			<arg value="sample.sql.ddl.record.count=${sample.sql.ddl.record.count}" />
-			<arg value="sample.sql.ddl.record.set.count=${sample.sql.ddl.record.set.count}" />
-			<arg value="sample.sql.dl.file.entry.count=${sample.sql.dl.file.entry.count}" />
-			<arg value="sample.sql.dl.file.entry.size=${sample.sql.dl.file.entry.size}" />
-			<arg value="sample.sql.dl.folder.count=${sample.sql.dl.folder.count}" />
-			<arg value="sample.sql.dl.folder.depth=${sample.sql.dl.folder.depth}" />
-			<arg value="sample.sql.group.count=${sample.sql.group.count}" />
-			<arg value="sample.sql.journal.article.count=${sample.sql.journal.article.count}" />
-			<arg value="sample.sql.journal.article.size=${sample.sql.journal.article.size}" />
-			<arg value="sample.sql.mb.category.count=${sample.sql.mb.category.count}" />
-			<arg value="sample.sql.mb.message.count=${sample.sql.mb.message.count}" />
-			<arg value="sample.sql.mb.thread.count=${sample.sql.mb.thread.count}" />
-			<arg value="sample.sql.user.count=${sample.sql.user.count}" />
-			<arg value="sample.sql.user.to.group.count=${sample.sql.user.to.group.count}" />
-			<arg value="sample.sql.wiki.node.count=${sample.sql.wiki.node.count}" />
-			<arg value="sample.sql.wiki.page.comment.count=${sample.sql.wiki.page.comment.count}" />
-			<arg value="sample.sql.wiki.page.count=${sample.sql.wiki.page.count}" />
+			<sysproperty key="external-properties" value="com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="${sample.sql.properties.file}" />
 		</java>
 	</target>
 
-	<target name="run" depends="setup">
-		<java
-			classname="net.grinder.Grinder"
-			classpathref="grinder.classpath"
-			fork="true"
-			newenvironment="true"
-		/>
-	</target>
-
-	<target name="setup">
-		<if>
-			<not>
-				<available file="lib" />
-			</not>
-			<then>
-				<unzip src="${grinder.file}" dest="lib">
-					<patternset>
-						<include name="**/lib/*.jar" />
-					</patternset>
-					<mapper type="flatten" />
-				</unzip>
-			</then>
-		</if>
+	<target name="clean">
+		<delete includeemptydirs="true">
+			<fileset dir="." includes="*.csv,*.sql,benchmarks-actual.properties,output/**,temp/**" />
+		</delete>
 	</target>
 </project>

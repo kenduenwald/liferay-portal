@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,19 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.model.ResourceBlock;
 import com.liferay.portal.model.ResourceBlockConstants;
 import com.liferay.portal.model.ResourceBlockPermission;
 import com.liferay.portal.model.ResourceBlockPermissionsContainer;
 import com.liferay.portal.service.base.ResourceBlockPermissionLocalServiceBaseImpl;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Manages resource block permissions.
@@ -36,10 +41,10 @@ import java.util.Map;
 public class ResourceBlockPermissionLocalServiceImpl
 	extends ResourceBlockPermissionLocalServiceBaseImpl {
 
+	@Override
 	public void addResourceBlockPermissions(
-			long resourceBlockId,
-			ResourceBlockPermissionsContainer resourceBlockPermissionsContainer)
-		throws SystemException {
+		long resourceBlockId,
+		ResourceBlockPermissionsContainer resourceBlockPermissionsContainer) {
 
 		Map<Long, Long> permissions =
 			resourceBlockPermissionsContainer.getPermissions();
@@ -59,16 +64,72 @@ public class ResourceBlockPermissionLocalServiceImpl
 		}
 	}
 
-	public void deleteResourceBlockPermissions(long resourceBlockId)
-		throws SystemException {
-
+	@Override
+	public void deleteResourceBlockPermissions(long resourceBlockId) {
 		resourceBlockPermissionPersistence.removeByResourceBlockId(
 			resourceBlockId);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #getAvailableResourceBlockPermissionActionIds(String, long,
+	 *             List)}
+	 */
+	@Deprecated
+	@Override
+	public Map<Long, Set<String>> getAvailableResourceBlockPermissionActionIds(
+			long[] roleIds, String name, long primKey, List<String> actionIds)
+		throws PortalException {
+
+		return getAvailableResourceBlockPermissionActionIds(
+			name, primKey, actionIds);
+	}
+
+	@Override
+	public Map<Long, Set<String>> getAvailableResourceBlockPermissionActionIds(
+			String name, long primKey, List<String> actionIds)
+		throws PortalException {
+
+		if (actionIds.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		ResourceBlock resourceBlock =
+			resourceBlockLocalService.getResourceBlock(name, primKey);
+
+		List<ResourceBlockPermission> resourceBlockPermissions =
+			resourceBlockPermissionPersistence.findByResourceBlockId(
+				resourceBlock.getResourceBlockId());
+
+		Map<Long, Set<String>> roleIdsToActionIds = new HashMap<>();
+
+		for (ResourceBlockPermission resourceBlockPermission :
+				resourceBlockPermissions) {
+
+			Set<String> availableActionIds = new HashSet<>();
+
+			List<String> resourceBlockActionIds =
+				resourceBlockLocalService.getActionIds(
+					name, resourceBlockPermission.getActionIds());
+
+			for (String actionId : actionIds) {
+				if (resourceBlockActionIds.contains(actionId)) {
+					availableActionIds.add(actionId);
+				}
+			}
+
+			if (!availableActionIds.isEmpty()) {
+				roleIdsToActionIds.put(
+					resourceBlockPermission.getRoleId(), availableActionIds);
+			}
+		}
+
+		return roleIdsToActionIds;
+	}
+
+	@Override
 	public ResourceBlockPermissionsContainer
-			getResourceBlockPermissionsContainer(long resourceBlockId)
-		throws SystemException {
+			getResourceBlockPermissionsContainer(long resourceBlockId) {
 
 		List<ResourceBlockPermission> resourceBlockPermissions =
 			resourceBlockPermissionPersistence.findByResourceBlockId(
@@ -88,9 +149,17 @@ public class ResourceBlockPermissionLocalServiceImpl
 		return resourceBlockPermissionContainer;
 	}
 
+	@Override
+	public int getResourceBlockPermissionsCount(
+		long resourceBlockId, long roleId) {
+
+		return resourceBlockPermissionPersistence.countByR_R(
+			resourceBlockId, roleId);
+	}
+
+	@Override
 	public void updateResourceBlockPermission(
-			long resourceBlockId, long roleId, long actionIdsLong, int operator)
-		throws SystemException {
+		long resourceBlockId, long roleId, long actionIdsLong, int operator) {
 
 		ResourceBlockPermission resourceBlockPermission =
 			resourceBlockPermissionPersistence.fetchByR_R(

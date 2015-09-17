@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,9 +24,7 @@ import java.util.Vector;
 public class OrderedProperties extends Properties {
 
 	public OrderedProperties() {
-		super();
-
-		_names = new Vector<String>();
+		_names = new Vector<>();
 	}
 
 	@Override
@@ -52,6 +50,6 @@ public class OrderedProperties extends Properties {
 		return super.remove(key);
 	}
 
-	private Vector<String> _names;
+	private final Vector<String> _names;
 
 }

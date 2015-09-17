@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,7 +17,7 @@ package com.liferay.portal.security.auth;
 import com.liferay.portal.PwdEncryptorException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.security.pwd.PwdEncryptor;
+import com.liferay.portal.security.pwd.PasswordEncryptorUtil;
 
 import java.io.Serializable;
 
@@ -26,8 +26,12 @@ import java.io.Serializable;
  */
 public class HttpPrincipal implements Serializable {
 
+	public HttpPrincipal() {
+		this(null, null, null, true);
+	}
+
 	public HttpPrincipal(String url) {
-		_url = url;
+		this(url, null, null, true);
 	}
 
 	public HttpPrincipal(String url, String login, String password) {
@@ -45,7 +49,7 @@ public class HttpPrincipal implements Serializable {
 		}
 		else {
 			try {
-				_password = PwdEncryptor.encrypt(password);
+				_password = PasswordEncryptorUtil.encrypt(password);
 			}
 			catch (PwdEncryptorException pee) {
 				_log.error(pee, pee);
@@ -73,11 +77,15 @@ public class HttpPrincipal implements Serializable {
 		_companyId = companyId;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(HttpPrincipal.class);
+	public void setPassword(String password) {
+		_password = password;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(HttpPrincipal.class);
 
 	private long _companyId;
-	private String _login;
+	private final String _login;
 	private String _password;
-	private String _url;
+	private final String _url;
 
 }

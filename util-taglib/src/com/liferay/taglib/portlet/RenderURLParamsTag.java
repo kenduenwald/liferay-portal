@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,7 @@
 
 package com.liferay.taglib.portlet;
 
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
@@ -35,28 +36,22 @@ import javax.servlet.jsp.tagext.TagSupport;
  */
 public class RenderURLParamsTag extends TagSupport {
 
+	public static String doTag(PortletURL portletURL, PageContext pageContext)
+		throws Exception {
+
+		return _doTag(portletURL, null, pageContext);
+	}
+
 	public static String doTag(String varImpl, PageContext pageContext)
 		throws Exception {
 
-		PortletURL portletURL = (PortletURL)pageContext.getAttribute(varImpl);
-
-		String params = StringPool.BLANK;
-
-		if (portletURL != null) {
-			params = _toParamsString(portletURL, pageContext);
-
-			JspWriter jspWriter = pageContext.getOut();
-
-			jspWriter.write(params);
-		}
-
-		return params;
+		return _doTag(null, varImpl, pageContext);
 	}
 
 	@Override
 	public int doEndTag() throws JspException {
 		try {
-			doTag(_varImpl, pageContext);
+			_doTag(_portletURL, _varImpl, pageContext);
 
 			return EVAL_PAGE;
 		}
@@ -65,8 +60,33 @@ public class RenderURLParamsTag extends TagSupport {
 		}
 	}
 
+	public void setPortletURL(PortletURL portletURL) {
+		_portletURL = portletURL;
+	}
+
 	public void setVarImpl(String varImpl) {
 		_varImpl = varImpl;
+	}
+
+	private static String _doTag(
+			PortletURL portletURL, String varImpl, PageContext pageContext)
+		throws Exception {
+
+		if (portletURL == null) {
+			portletURL = (PortletURL)pageContext.getAttribute(varImpl);
+		}
+
+		String paramsString = StringPool.BLANK;
+
+		if (portletURL != null) {
+			paramsString = _toParamsString(portletURL, pageContext);
+
+			JspWriter jspWriter = pageContext.getOut();
+
+			jspWriter.write(paramsString);
+		}
+
+		return paramsString;
 	}
 
 	private static String _toParamsString(
@@ -94,7 +114,7 @@ public class RenderURLParamsTag extends TagSupport {
 			if (parameter.length() > 0) {
 				String[] kvp = StringUtil.split(parameter, CharPool.EQUAL);
 
-				if ((kvp != null) && (kvp.length > 0)) {
+				if (ArrayUtil.isNotEmpty(kvp)) {
 					String key = kvp[0];
 					String value = StringPool.BLANK;
 
@@ -116,6 +136,7 @@ public class RenderURLParamsTag extends TagSupport {
 		return sb.toString();
 	}
 
+	private PortletURL _portletURL;
 	private String _varImpl;
 
 }

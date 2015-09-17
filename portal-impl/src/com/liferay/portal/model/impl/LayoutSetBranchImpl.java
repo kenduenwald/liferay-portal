@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,7 +18,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.staging.LayoutStagingUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
@@ -31,6 +30,7 @@ import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.service.ThemeLocalServiceUtil;
 import com.liferay.portal.util.PrefsPropsUtil;
+import com.liferay.portlet.exportimport.staging.LayoutStagingUtil;
 
 import java.io.IOException;
 
@@ -40,18 +40,18 @@ import java.io.IOException;
  */
 public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 
-	public LayoutSetBranchImpl() {
-	}
-
-	public ColorScheme getColorScheme() throws SystemException {
+	@Override
+	public ColorScheme getColorScheme() {
 		return ThemeLocalServiceUtil.getColorScheme(
 			getCompanyId(), getTheme().getThemeId(), getColorSchemeId(), false);
 	}
 
-	public Group getGroup() throws PortalException, SystemException {
+	@Override
+	public Group getGroup() throws PortalException {
 		return GroupLocalServiceUtil.getGroup(getGroupId());
 	}
 
+	@Override
 	public LayoutSet getLayoutSet() {
 		if (_layoutSet != null) {
 			return _layoutSet;
@@ -80,6 +80,7 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 		return _layoutSet;
 	}
 
+	@Override
 	public long getLiveLogoId() {
 		long logoId = getLayoutSet().getLogoId();
 
@@ -88,6 +89,15 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 		}
 
 		return logoId;
+	}
+
+	@Override
+	public boolean getLogo() {
+		if (getLogoId() > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -100,6 +110,7 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 		}
 	}
 
+	@Override
 	public UnicodeProperties getSettingsProperties() {
 		if (_settingsProperties == null) {
 			_settingsProperties = new UnicodeProperties(true);
@@ -115,20 +126,21 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 		return _settingsProperties;
 	}
 
+	@Override
 	public String getSettingsProperty(String key) {
 		UnicodeProperties settingsProperties = getSettingsProperties();
 
 		return settingsProperties.getProperty(key);
 	}
 
-	public Theme getTheme() throws SystemException {
+	@Override
+	public Theme getTheme() {
 		return ThemeLocalServiceUtil.getTheme(
 			getCompanyId(), getThemeId(), false);
 	}
 
-	public String getThemeSetting(String key, String device)
-		throws SystemException {
-
+	@Override
+	public String getThemeSetting(String key, String device) {
 		UnicodeProperties settingsProperties = getSettingsProperties();
 
 		String value = settingsProperties.getProperty(
@@ -170,17 +182,20 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 		return value;
 	}
 
-	public ColorScheme getWapColorScheme() throws SystemException {
+	@Override
+	public ColorScheme getWapColorScheme() {
 		return ThemeLocalServiceUtil.getColorScheme(
 			getCompanyId(), getWapTheme().getThemeId(), getWapColorSchemeId(),
 			true);
 	}
 
-	public Theme getWapTheme() throws SystemException {
+	@Override
+	public Theme getWapTheme() {
 		return ThemeLocalServiceUtil.getTheme(
 			getCompanyId(), getWapThemeId(), true);
 	}
 
+	@Override
 	public boolean isLayoutSetPrototypeLinkActive() {
 		if (isLayoutSetPrototypeLinkEnabled() &&
 			Validator.isNotNull(getLayoutSetPrototypeUuid())) {
@@ -192,19 +207,26 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 	}
 
 	@Override
+	public boolean isLogo() {
+		return getLogo();
+	}
+
+	@Override
 	public void setSettings(String settings) {
 		_settingsProperties = null;
 
 		super.setSettings(settings);
 	}
 
+	@Override
 	public void setSettingsProperties(UnicodeProperties settingsProperties) {
 		_settingsProperties = settingsProperties;
 
 		super.setSettings(_settingsProperties.toString());
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(LayoutSetImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		LayoutSetBranchImpl.class);
 
 	private LayoutSet _layoutSet;
 	private UnicodeProperties _settingsProperties;

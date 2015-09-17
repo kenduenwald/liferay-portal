@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.softwarecatalog.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.softwarecatalog.model.SCProductVersion;
 import com.liferay.portlet.softwarecatalog.service.SCProductVersionLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.softwarecatalog.service.SCProductVersionLocalServiceU
  *
  * @author Brian Wing Shun Chan
  * @see SCProductVersionImpl
- * @see com.liferay.portlet.softwarecatalog.model.SCProductVersion
+ * @see SCProductVersion
  * @generated
  */
+@ProviderType
 public abstract class SCProductVersionBaseImpl extends SCProductVersionModelImpl
 	implements SCProductVersion {
 	/*
@@ -38,7 +39,8 @@ public abstract class SCProductVersionBaseImpl extends SCProductVersionModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a s c product version model instance should use the {@link SCProductVersion} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			SCProductVersionLocalServiceUtil.addSCProductVersion(this);
 		}

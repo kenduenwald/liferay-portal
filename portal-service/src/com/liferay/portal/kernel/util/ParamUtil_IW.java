@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -53,6 +53,11 @@ public class ParamUtil_IW {
 		return ParamUtil.get(request, param, defaultValue);
 	}
 
+	public java.lang.Number get(javax.servlet.http.HttpServletRequest request,
+		java.lang.String param, java.lang.Number defaultValue) {
+		return ParamUtil.get(request, param, defaultValue);
+	}
+
 	public short get(javax.servlet.http.HttpServletRequest request,
 		java.lang.String param, short defaultValue) {
 		return ParamUtil.get(request, param, defaultValue);
@@ -91,6 +96,11 @@ public class ParamUtil_IW {
 
 	public long get(javax.portlet.PortletRequest portletRequest,
 		java.lang.String param, long defaultValue) {
+		return ParamUtil.get(portletRequest, param, defaultValue);
+	}
+
+	public java.lang.Number get(javax.portlet.PortletRequest portletRequest,
+		java.lang.String param, java.lang.Number defaultValue) {
 		return ParamUtil.get(portletRequest, param, defaultValue);
 	}
 
@@ -135,6 +145,12 @@ public class ParamUtil_IW {
 
 	public long get(com.liferay.portal.service.ServiceContext serviceContext,
 		java.lang.String param, long defaultValue) {
+		return ParamUtil.get(serviceContext, param, defaultValue);
+	}
+
+	public java.lang.Number get(
+		com.liferay.portal.service.ServiceContext serviceContext,
+		java.lang.String param, java.lang.Number defaultValue) {
 		return ParamUtil.get(serviceContext, param, defaultValue);
 	}
 
@@ -300,6 +316,16 @@ public class ParamUtil_IW {
 		return ParamUtil.getDouble(request, param, defaultValue);
 	}
 
+	public double getDouble(javax.servlet.http.HttpServletRequest request,
+		java.lang.String param, double defaultValue, java.util.Locale locale) {
+		return ParamUtil.getDouble(request, param, defaultValue, locale);
+	}
+
+	public double getDouble(javax.servlet.http.HttpServletRequest request,
+		java.lang.String param, java.util.Locale locale) {
+		return ParamUtil.getDouble(request, param, locale);
+	}
+
 	public double getDouble(javax.portlet.PortletRequest portletRequest,
 		java.lang.String param) {
 		return ParamUtil.getDouble(portletRequest, param);
@@ -308,6 +334,16 @@ public class ParamUtil_IW {
 	public double getDouble(javax.portlet.PortletRequest portletRequest,
 		java.lang.String param, double defaultValue) {
 		return ParamUtil.getDouble(portletRequest, param, defaultValue);
+	}
+
+	public double getDouble(javax.portlet.PortletRequest portletRequest,
+		java.lang.String param, double defaultValue, java.util.Locale locale) {
+		return ParamUtil.getDouble(portletRequest, param, defaultValue, locale);
+	}
+
+	public double getDouble(javax.portlet.PortletRequest portletRequest,
+		java.lang.String param, java.util.Locale locale) {
+		return ParamUtil.getDouble(portletRequest, param, locale);
 	}
 
 	public double getDouble(
@@ -550,6 +586,74 @@ public class ParamUtil_IW {
 		return ParamUtil.getLongValues(serviceContext, param, defaultValue);
 	}
 
+	public java.lang.Number getNumber(
+		javax.servlet.http.HttpServletRequest request, java.lang.String param) {
+		return ParamUtil.getNumber(request, param);
+	}
+
+	public java.lang.Number getNumber(
+		javax.servlet.http.HttpServletRequest request, java.lang.String param,
+		java.lang.Number defaultValue) {
+		return ParamUtil.getNumber(request, param, defaultValue);
+	}
+
+	public java.lang.Number getNumber(
+		javax.portlet.PortletRequest portletRequest, java.lang.String param) {
+		return ParamUtil.getNumber(portletRequest, param);
+	}
+
+	public java.lang.Number getNumber(
+		javax.portlet.PortletRequest portletRequest, java.lang.String param,
+		java.lang.Number defaultValue) {
+		return ParamUtil.getNumber(portletRequest, param, defaultValue);
+	}
+
+	public java.lang.Number getNumber(
+		com.liferay.portal.service.ServiceContext serviceContext,
+		java.lang.String param) {
+		return ParamUtil.getNumber(serviceContext, param);
+	}
+
+	public java.lang.Number getNumber(
+		com.liferay.portal.service.ServiceContext serviceContext,
+		java.lang.String param, java.lang.Number defaultValue) {
+		return ParamUtil.getNumber(serviceContext, param, defaultValue);
+	}
+
+	public java.lang.Number[] getNumberValues(
+		javax.servlet.http.HttpServletRequest request, java.lang.String param) {
+		return ParamUtil.getNumberValues(request, param);
+	}
+
+	public java.lang.Number[] getNumberValues(
+		javax.servlet.http.HttpServletRequest request, java.lang.String param,
+		java.lang.Number[] defaultValue) {
+		return ParamUtil.getNumberValues(request, param, defaultValue);
+	}
+
+	public java.lang.Number[] getNumberValues(
+		javax.portlet.PortletRequest portletRequest, java.lang.String param) {
+		return ParamUtil.getNumberValues(portletRequest, param);
+	}
+
+	public java.lang.Number[] getNumberValues(
+		javax.portlet.PortletRequest portletRequest, java.lang.String param,
+		java.lang.Number[] defaultValue) {
+		return ParamUtil.getNumberValues(portletRequest, param, defaultValue);
+	}
+
+	public java.lang.Number[] getNumberValues(
+		com.liferay.portal.service.ServiceContext serviceContext,
+		java.lang.String param) {
+		return ParamUtil.getNumberValues(serviceContext, param);
+	}
+
+	public java.lang.Number[] getNumberValues(
+		com.liferay.portal.service.ServiceContext serviceContext,
+		java.lang.String param, java.lang.Number[] defaultValue) {
+		return ParamUtil.getNumberValues(serviceContext, param, defaultValue);
+	}
+
 	public java.lang.String[] getParameterValues(
 		javax.servlet.http.HttpServletRequest request, java.lang.String param) {
 		return ParamUtil.getParameterValues(request, param);
@@ -562,6 +666,12 @@ public class ParamUtil_IW {
 	}
 
 	public java.lang.String[] getParameterValues(
+		javax.servlet.http.HttpServletRequest request, java.lang.String param,
+		java.lang.String[] defaultValue, boolean split) {
+		return ParamUtil.getParameterValues(request, param, defaultValue, split);
+	}
+
+	public java.lang.String[] getParameterValues(
 		javax.portlet.PortletRequest portletRequest, java.lang.String param) {
 		return ParamUtil.getParameterValues(portletRequest, param);
 	}
@@ -570,6 +680,13 @@ public class ParamUtil_IW {
 		javax.portlet.PortletRequest portletRequest, java.lang.String param,
 		java.lang.String[] defaultValue) {
 		return ParamUtil.getParameterValues(portletRequest, param, defaultValue);
+	}
+
+	public java.lang.String[] getParameterValues(
+		javax.portlet.PortletRequest portletRequest, java.lang.String param,
+		java.lang.String[] defaultValue, boolean split) {
+		return ParamUtil.getParameterValues(portletRequest, param,
+			defaultValue, split);
 	}
 
 	public short getShort(javax.servlet.http.HttpServletRequest request,

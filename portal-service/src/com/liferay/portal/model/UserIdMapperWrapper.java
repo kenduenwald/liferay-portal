@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,192 +14,90 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.Validator;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * <p>
  * This class is a wrapper for {@link UserIdMapper}.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       UserIdMapper
+ * @author Brian Wing Shun Chan
+ * @see UserIdMapper
  * @generated
  */
+@ProviderType
 public class UserIdMapperWrapper implements UserIdMapper,
 	ModelWrapper<UserIdMapper> {
 	public UserIdMapperWrapper(UserIdMapper userIdMapper) {
 		_userIdMapper = userIdMapper;
 	}
 
+	@Override
 	public Class<?> getModelClass() {
 		return UserIdMapper.class;
 	}
 
+	@Override
 	public String getModelClassName() {
 		return UserIdMapper.class.getName();
 	}
 
-	/**
-	* Returns the primary key of this user ID mapper.
-	*
-	* @return the primary key of this user ID mapper
-	*/
-	public long getPrimaryKey() {
-		return _userIdMapper.getPrimaryKey();
+	@Override
+	public Map<String, Object> getModelAttributes() {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("userIdMapperId", getUserIdMapperId());
+		attributes.put("userId", getUserId());
+		attributes.put("type", getType());
+		attributes.put("description", getDescription());
+		attributes.put("externalUserId", getExternalUserId());
+
+		return attributes;
 	}
 
-	/**
-	* Sets the primary key of this user ID mapper.
-	*
-	* @param primaryKey the primary key of this user ID mapper
-	*/
-	public void setPrimaryKey(long primaryKey) {
-		_userIdMapper.setPrimaryKey(primaryKey);
-	}
+	@Override
+	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
 
-	/**
-	* Returns the user ID mapper ID of this user ID mapper.
-	*
-	* @return the user ID mapper ID of this user ID mapper
-	*/
-	public long getUserIdMapperId() {
-		return _userIdMapper.getUserIdMapperId();
-	}
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
 
-	/**
-	* Sets the user ID mapper ID of this user ID mapper.
-	*
-	* @param userIdMapperId the user ID mapper ID of this user ID mapper
-	*/
-	public void setUserIdMapperId(long userIdMapperId) {
-		_userIdMapper.setUserIdMapperId(userIdMapperId);
-	}
+		Long userIdMapperId = (Long)attributes.get("userIdMapperId");
 
-	/**
-	* Returns the user ID of this user ID mapper.
-	*
-	* @return the user ID of this user ID mapper
-	*/
-	public long getUserId() {
-		return _userIdMapper.getUserId();
-	}
+		if (userIdMapperId != null) {
+			setUserIdMapperId(userIdMapperId);
+		}
 
-	/**
-	* Sets the user ID of this user ID mapper.
-	*
-	* @param userId the user ID of this user ID mapper
-	*/
-	public void setUserId(long userId) {
-		_userIdMapper.setUserId(userId);
-	}
+		Long userId = (Long)attributes.get("userId");
 
-	/**
-	* Returns the user uuid of this user ID mapper.
-	*
-	* @return the user uuid of this user ID mapper
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.lang.String getUserUuid()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return _userIdMapper.getUserUuid();
-	}
+		if (userId != null) {
+			setUserId(userId);
+		}
 
-	/**
-	* Sets the user uuid of this user ID mapper.
-	*
-	* @param userUuid the user uuid of this user ID mapper
-	*/
-	public void setUserUuid(java.lang.String userUuid) {
-		_userIdMapper.setUserUuid(userUuid);
-	}
+		String type = (String)attributes.get("type");
 
-	/**
-	* Returns the type of this user ID mapper.
-	*
-	* @return the type of this user ID mapper
-	*/
-	public java.lang.String getType() {
-		return _userIdMapper.getType();
-	}
+		if (type != null) {
+			setType(type);
+		}
 
-	/**
-	* Sets the type of this user ID mapper.
-	*
-	* @param type the type of this user ID mapper
-	*/
-	public void setType(java.lang.String type) {
-		_userIdMapper.setType(type);
-	}
+		String description = (String)attributes.get("description");
 
-	/**
-	* Returns the description of this user ID mapper.
-	*
-	* @return the description of this user ID mapper
-	*/
-	public java.lang.String getDescription() {
-		return _userIdMapper.getDescription();
-	}
+		if (description != null) {
+			setDescription(description);
+		}
 
-	/**
-	* Sets the description of this user ID mapper.
-	*
-	* @param description the description of this user ID mapper
-	*/
-	public void setDescription(java.lang.String description) {
-		_userIdMapper.setDescription(description);
-	}
+		String externalUserId = (String)attributes.get("externalUserId");
 
-	/**
-	* Returns the external user ID of this user ID mapper.
-	*
-	* @return the external user ID of this user ID mapper
-	*/
-	public java.lang.String getExternalUserId() {
-		return _userIdMapper.getExternalUserId();
-	}
-
-	/**
-	* Sets the external user ID of this user ID mapper.
-	*
-	* @param externalUserId the external user ID of this user ID mapper
-	*/
-	public void setExternalUserId(java.lang.String externalUserId) {
-		_userIdMapper.setExternalUserId(externalUserId);
-	}
-
-	public boolean isNew() {
-		return _userIdMapper.isNew();
-	}
-
-	public void setNew(boolean n) {
-		_userIdMapper.setNew(n);
-	}
-
-	public boolean isCachedModel() {
-		return _userIdMapper.isCachedModel();
-	}
-
-	public void setCachedModel(boolean cachedModel) {
-		_userIdMapper.setCachedModel(cachedModel);
-	}
-
-	public boolean isEscapedModel() {
-		return _userIdMapper.isEscapedModel();
-	}
-
-	public java.io.Serializable getPrimaryKeyObj() {
-		return _userIdMapper.getPrimaryKeyObj();
-	}
-
-	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
-		_userIdMapper.setPrimaryKeyObj(primaryKeyObj);
-	}
-
-	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
-		return _userIdMapper.getExpandoBridge();
-	}
-
-	public void setExpandoBridgeAttributes(
-		com.liferay.portal.service.ServiceContext serviceContext) {
-		_userIdMapper.setExpandoBridgeAttributes(serviceContext);
+		if (externalUserId != null) {
+			setExternalUserId(externalUserId);
+		}
 	}
 
 	@Override
@@ -207,8 +105,99 @@ public class UserIdMapperWrapper implements UserIdMapper,
 		return new UserIdMapperWrapper((UserIdMapper)_userIdMapper.clone());
 	}
 
+	@Override
 	public int compareTo(com.liferay.portal.model.UserIdMapper userIdMapper) {
 		return _userIdMapper.compareTo(userIdMapper);
+	}
+
+	/**
+	* Returns the description of this user ID mapper.
+	*
+	* @return the description of this user ID mapper
+	*/
+	@Override
+	public java.lang.String getDescription() {
+		return _userIdMapper.getDescription();
+	}
+
+	@Override
+	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
+		return _userIdMapper.getExpandoBridge();
+	}
+
+	/**
+	* Returns the external user ID of this user ID mapper.
+	*
+	* @return the external user ID of this user ID mapper
+	*/
+	@Override
+	public java.lang.String getExternalUserId() {
+		return _userIdMapper.getExternalUserId();
+	}
+
+	/**
+	* Returns the mvcc version of this user ID mapper.
+	*
+	* @return the mvcc version of this user ID mapper
+	*/
+	@Override
+	public long getMvccVersion() {
+		return _userIdMapper.getMvccVersion();
+	}
+
+	/**
+	* Returns the primary key of this user ID mapper.
+	*
+	* @return the primary key of this user ID mapper
+	*/
+	@Override
+	public long getPrimaryKey() {
+		return _userIdMapper.getPrimaryKey();
+	}
+
+	@Override
+	public java.io.Serializable getPrimaryKeyObj() {
+		return _userIdMapper.getPrimaryKeyObj();
+	}
+
+	/**
+	* Returns the type of this user ID mapper.
+	*
+	* @return the type of this user ID mapper
+	*/
+	@Override
+	public java.lang.String getType() {
+		return _userIdMapper.getType();
+	}
+
+	/**
+	* Returns the user ID of this user ID mapper.
+	*
+	* @return the user ID of this user ID mapper
+	*/
+	@Override
+	public long getUserId() {
+		return _userIdMapper.getUserId();
+	}
+
+	/**
+	* Returns the user ID mapper ID of this user ID mapper.
+	*
+	* @return the user ID mapper ID of this user ID mapper
+	*/
+	@Override
+	public long getUserIdMapperId() {
+		return _userIdMapper.getUserIdMapperId();
+	}
+
+	/**
+	* Returns the user uuid of this user ID mapper.
+	*
+	* @return the user uuid of this user ID mapper
+	*/
+	@Override
+	public java.lang.String getUserUuid() {
+		return _userIdMapper.getUserUuid();
 	}
 
 	@Override
@@ -216,10 +205,144 @@ public class UserIdMapperWrapper implements UserIdMapper,
 		return _userIdMapper.hashCode();
 	}
 
-	public com.liferay.portal.model.CacheModel<com.liferay.portal.model.UserIdMapper> toCacheModel() {
+	@Override
+	public boolean isCachedModel() {
+		return _userIdMapper.isCachedModel();
+	}
+
+	@Override
+	public boolean isEscapedModel() {
+		return _userIdMapper.isEscapedModel();
+	}
+
+	@Override
+	public boolean isNew() {
+		return _userIdMapper.isNew();
+	}
+
+	@Override
+	public void persist() {
+		_userIdMapper.persist();
+	}
+
+	@Override
+	public void setCachedModel(boolean cachedModel) {
+		_userIdMapper.setCachedModel(cachedModel);
+	}
+
+	/**
+	* Sets the description of this user ID mapper.
+	*
+	* @param description the description of this user ID mapper
+	*/
+	@Override
+	public void setDescription(java.lang.String description) {
+		_userIdMapper.setDescription(description);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(BaseModel<?> baseModel) {
+		_userIdMapper.setExpandoBridgeAttributes(baseModel);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portlet.expando.model.ExpandoBridge expandoBridge) {
+		_userIdMapper.setExpandoBridgeAttributes(expandoBridge);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		_userIdMapper.setExpandoBridgeAttributes(serviceContext);
+	}
+
+	/**
+	* Sets the external user ID of this user ID mapper.
+	*
+	* @param externalUserId the external user ID of this user ID mapper
+	*/
+	@Override
+	public void setExternalUserId(java.lang.String externalUserId) {
+		_userIdMapper.setExternalUserId(externalUserId);
+	}
+
+	/**
+	* Sets the mvcc version of this user ID mapper.
+	*
+	* @param mvccVersion the mvcc version of this user ID mapper
+	*/
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		_userIdMapper.setMvccVersion(mvccVersion);
+	}
+
+	@Override
+	public void setNew(boolean n) {
+		_userIdMapper.setNew(n);
+	}
+
+	/**
+	* Sets the primary key of this user ID mapper.
+	*
+	* @param primaryKey the primary key of this user ID mapper
+	*/
+	@Override
+	public void setPrimaryKey(long primaryKey) {
+		_userIdMapper.setPrimaryKey(primaryKey);
+	}
+
+	@Override
+	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
+		_userIdMapper.setPrimaryKeyObj(primaryKeyObj);
+	}
+
+	/**
+	* Sets the type of this user ID mapper.
+	*
+	* @param type the type of this user ID mapper
+	*/
+	@Override
+	public void setType(java.lang.String type) {
+		_userIdMapper.setType(type);
+	}
+
+	/**
+	* Sets the user ID of this user ID mapper.
+	*
+	* @param userId the user ID of this user ID mapper
+	*/
+	@Override
+	public void setUserId(long userId) {
+		_userIdMapper.setUserId(userId);
+	}
+
+	/**
+	* Sets the user ID mapper ID of this user ID mapper.
+	*
+	* @param userIdMapperId the user ID mapper ID of this user ID mapper
+	*/
+	@Override
+	public void setUserIdMapperId(long userIdMapperId) {
+		_userIdMapper.setUserIdMapperId(userIdMapperId);
+	}
+
+	/**
+	* Sets the user uuid of this user ID mapper.
+	*
+	* @param userUuid the user uuid of this user ID mapper
+	*/
+	@Override
+	public void setUserUuid(java.lang.String userUuid) {
+		_userIdMapper.setUserUuid(userUuid);
+	}
+
+	@Override
+	public CacheModel<com.liferay.portal.model.UserIdMapper> toCacheModel() {
 		return _userIdMapper.toCacheModel();
 	}
 
+	@Override
 	public com.liferay.portal.model.UserIdMapper toEscapedModel() {
 		return new UserIdMapperWrapper(_userIdMapper.toEscapedModel());
 	}
@@ -229,29 +352,62 @@ public class UserIdMapperWrapper implements UserIdMapper,
 		return _userIdMapper.toString();
 	}
 
+	@Override
+	public com.liferay.portal.model.UserIdMapper toUnescapedModel() {
+		return new UserIdMapperWrapper(_userIdMapper.toUnescapedModel());
+	}
+
+	@Override
 	public java.lang.String toXmlString() {
 		return _userIdMapper.toXmlString();
 	}
 
-	public void persist()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		_userIdMapper.persist();
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof UserIdMapperWrapper)) {
+			return false;
+		}
+
+		UserIdMapperWrapper userIdMapperWrapper = (UserIdMapperWrapper)obj;
+
+		if (Validator.equals(_userIdMapper, userIdMapperWrapper._userIdMapper)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedModel}
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedModel}
 	 */
+	@Deprecated
 	public UserIdMapper getWrappedUserIdMapper() {
 		return _userIdMapper;
 	}
 
+	@Override
 	public UserIdMapper getWrappedModel() {
 		return _userIdMapper;
 	}
 
+	@Override
+	public boolean isEntityCacheEnabled() {
+		return _userIdMapper.isEntityCacheEnabled();
+	}
+
+	@Override
+	public boolean isFinderCacheEnabled() {
+		return _userIdMapper.isFinderCacheEnabled();
+	}
+
+	@Override
 	public void resetOriginalValues() {
 		_userIdMapper.resetOriginalValues();
 	}
 
-	private UserIdMapper _userIdMapper;
+	private final UserIdMapper _userIdMapper;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,8 @@
 package com.liferay.portal.upgrade.v6_1_0;
 
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.CharPool;
@@ -32,10 +34,10 @@ import com.liferay.portlet.documentlibrary.model.impl.DLFileVersionImpl;
 import com.liferay.portlet.documentlibrary.util.ImageProcessorUtil;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 import java.util.Set;
 
@@ -48,16 +50,16 @@ import java.util.Set;
 public class UpgradeDocumentLibrary extends UpgradeProcess {
 
 	protected void addSync(
-			long syncId, long companyId, Date createDate, Date modifiedDate,
-			long fileId, long repositoryId, long parentFolderId, String event,
-			String type)
+			long syncId, long companyId, Timestamp createDate,
+			Timestamp modifiedDate, long fileId, long repositoryId,
+			long parentFolderId, String event, String type)
 		throws Exception {
 
 		Connection con = null;
 		PreparedStatement ps = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"insert into DLSync (syncId, companyId, createDate, " +
@@ -66,8 +68,8 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 
 			ps.setLong(1, syncId);
 			ps.setLong(2, companyId);
-			ps.setDate(3, createDate);
-			ps.setDate(4, createDate);
+			ps.setTimestamp(3, createDate);
+			ps.setTimestamp(4, createDate);
 			ps.setLong(5, fileId);
 			ps.setLong(6, repositoryId);
 			ps.setLong(7, parentFolderId);
@@ -88,7 +90,11 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		updateFileShortcuts();
 		updateFileVersions();
 		updateLocks();
-		updateThumbnails();
+
+		if (PropsValues.DL_FILE_ENTRY_PREVIEW_AUTO_CREATE_ON_UPGRADE) {
+			updateThumbnails();
+		}
+
 		//updateSyncs();
 	}
 
@@ -100,7 +106,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select fileEntryId from DLFileEntry where groupId = ? and " +
@@ -131,7 +137,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		long groupId = 0;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select groupId from DLFolder where folderId = ?");
@@ -157,7 +163,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select fileEntryId, extension from DLFileEntry");
@@ -168,8 +174,8 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 				long fileEntryId = rs.getLong("fileEntryId");
 				String extension = rs.getString("extension");
 
-				String mimeType = MimeTypesUtil.getContentType(
-					"A." + extension);
+				String mimeType = MimeTypesUtil.getExtensionContentType(
+					extension);
 
 				runSQL(
 					"update DLFileEntry set mimeType = '" + mimeType +
@@ -187,7 +193,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select groupId, fileRankId, folderId, name from DLFileRank");
@@ -221,7 +227,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select fileShortcutId, toFolderId, toName from " +
@@ -259,7 +265,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select groupId, fileVersionId, folderId, name, extension " +
@@ -274,8 +280,8 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 				String name = rs.getString("name");
 				String extension = rs.getString("extension");
 
-				String mimeType = MimeTypesUtil.getContentType(
-					"A." + extension);
+				String mimeType = MimeTypesUtil.getExtensionContentType(
+					extension);
 
 				long fileEntryId = getFileEntryId(groupId, folderId, name);
 
@@ -308,7 +314,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select lockId, key_ from Lock_ where className = ?");
@@ -351,7 +357,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			StringBundler sb = new StringBundler(10);
 
@@ -376,7 +382,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 				long fileId = rs.getLong("fileId");
 				long groupId = rs.getLong("groupId");
 				long companyId = rs.getLong("companyId");
-				Date createDate = rs.getDate("createDate");
+				Timestamp createDate = rs.getTimestamp("createDate");
 				long parentFolderId = rs.getLong("parentFolderId");
 				String type = rs.getString("type");
 
@@ -396,7 +402,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement("select fileEntryId from DLFileEntry");
 
@@ -419,7 +425,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select fileVersionId, userId, extension, mimeType, version " +
@@ -448,7 +454,17 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 					FileVersion fileVersion = new LiferayFileVersion(
 						dlFileVersion);
 
-					ImageProcessorUtil.generateImages(fileVersion);
+					try {
+						ImageProcessorUtil.generateImages(null, fileVersion);
+					}
+					catch (Exception e) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(
+								"Unable to generate thumbnails for " +
+									fileVersion.getFileVersionId(),
+								e);
+						}
+					}
 				}
 			}
 		}
@@ -457,7 +473,10 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		}
 	}
 
-	private static Set<String> _imageMimeTypes = SetUtil.fromArray(
+	private static final Log _log = LogFactoryUtil.getLog(
+		UpgradeDocumentLibrary.class);
+
+	private static final Set<String> _imageMimeTypes = SetUtil.fromArray(
 		PropsValues.DL_FILE_ENTRY_PREVIEW_IMAGE_MIME_TYPES);
 
 }

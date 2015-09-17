@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -121,13 +121,15 @@ public class ThreadLocalCacheAdvice
 		}
 	}
 
-	private static ThreadLocalCachable _nullThreadLocalCacheable =
+	private static final ThreadLocalCachable _nullThreadLocalCacheable =
 		new ThreadLocalCachable() {
 
+			@Override
 			public Class<? extends Annotation> annotationType() {
 				return ThreadLocalCachable.class;
 			}
 
+			@Override
 			public Lifecycle scope() {
 				return null;
 			}

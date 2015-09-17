@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,17 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class SubscriptionSoap implements Serializable {
 	public static SubscriptionSoap toSoapModel(Subscription model) {
 		SubscriptionSoap soapModel = new SubscriptionSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setSubscriptionId(model.getSubscriptionId());
+		soapModel.setGroupId(model.getGroupId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
 		soapModel.setUserName(model.getUserName());
@@ -91,12 +96,28 @@ public class SubscriptionSoap implements Serializable {
 		setSubscriptionId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
 	public long getSubscriptionId() {
 		return _subscriptionId;
 	}
 
 	public void setSubscriptionId(long subscriptionId) {
 		_subscriptionId = subscriptionId;
+	}
+
+	public long getGroupId() {
+		return _groupId;
+	}
+
+	public void setGroupId(long groupId) {
+		_groupId = groupId;
 	}
 
 	public long getCompanyId() {
@@ -163,7 +184,9 @@ public class SubscriptionSoap implements Serializable {
 		_frequency = frequency;
 	}
 
+	private long _mvccVersion;
 	private long _subscriptionId;
+	private long _groupId;
 	private long _companyId;
 	private long _userId;
 	private String _userName;

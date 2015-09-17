@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -62,7 +62,7 @@ public class SQLServerDB extends BaseDB {
 
 	@Override
 	public List<Index> getIndexes(Connection con) throws SQLException {
-		List<Index> indexes = new ArrayList<Index>();
+		List<Index> indexes = new ArrayList<>();
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -111,11 +111,6 @@ public class SQLServerDB extends BaseDB {
 		return _SUPPORTS_ALTER_COLUMN_TYPE;
 	}
 
-	@Override
-	public boolean isSupportsInlineDistinct() {
-		return _SUPPORTS_INLINE_DISTINCT;
-	}
-
 	protected SQLServerDB() {
 		super(TYPE_SQLSERVER);
 	}
@@ -138,17 +133,17 @@ public class SQLServerDB extends BaseDB {
 		sb.append("\n");
 		sb.append("go\n");
 		sb.append("\n");
-		sb.append("use ");
-		sb.append(databaseName);
-		sb.append(";\n\n");
-		sb.append(
-			readFile(
-				sqlDir + "/portal" + suffix + "/portal" + suffix +
-					"-sql-server.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/indexes/indexes-sql-server.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/sequences/sequences-sql-server.sql"));
+
+		if (population != BARE) {
+			sb.append("use ");
+			sb.append(databaseName);
+			sb.append(";\n\n");
+			sb.append(getCreateTablesContent(sqlDir, suffix));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/indexes/indexes-sql-server.sql"));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/sequences/sequences-sql-server.sql"));
+		}
 
 		return sb.toString();
 	}
@@ -165,64 +160,69 @@ public class SQLServerDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith(ALTER_COLUMN_NAME)) {
-				String[] template = buildColumnNameTokens(line);
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith(ALTER_COLUMN_NAME)) {
+					String[] template = buildColumnNameTokens(line);
 
-				line = StringUtil.replace(
-					"exec sp_rename '@table@.@old-column@', '@new-column@', " +
-						"'column';",
-					REWORD_TEMPLATE, template);
-			}
-			else if (line.startsWith(ALTER_COLUMN_TYPE)) {
-				String[] template = buildColumnTypeTokens(line);
+					line = StringUtil.replace(
+						"exec sp_rename '@table@.@old-column@', " +
+							"'@new-column@', 'column';",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_COLUMN_TYPE)) {
+					String[] template = buildColumnTypeTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ alter column @old-column@ @type@;",
-					REWORD_TEMPLATE, template);
-			}
-			else if (line.indexOf(DROP_INDEX) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
+					line = StringUtil.replace(
+						"alter table @table@ alter column @old-column@ @type@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_TABLE_NAME)) {
+					String[] template = buildTableNameTokens(line);
 
-				String tableName = tokens[4];
+					line = StringUtil.replace(
+						"exec sp_rename '@old-table@', '@new-table@';",
+						RENAME_TABLE_TEMPLATE, template);
+				}
+				else if (line.contains(DROP_INDEX)) {
+					String[] tokens = StringUtil.split(line, ' ');
 
-				if (tableName.endsWith(StringPool.SEMICOLON)) {
-					tableName = tableName.substring(0, tableName.length() - 1);
+					String tableName = tokens[4];
+
+					if (tableName.endsWith(StringPool.SEMICOLON)) {
+						tableName = tableName.substring(
+							0, tableName.length() - 1);
+					}
+
+					line = StringUtil.replace(
+						"drop index @table@.@index@;", "@table@", tableName);
+					line = StringUtil.replace(line, "@index@", tokens[2]);
 				}
 
-				line = StringUtil.replace(
-					"drop index @table@.@index@;", "@table@", tableName);
-				line = StringUtil.replace(line, "@index@", tokens[2]);
+				sb.append(line);
+				sb.append("\n");
 			}
 
-			sb.append(line);
-			sb.append("\n");
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	private static final String[] _SQL_SERVER = {
 		"--", "1", "0", "'19700101'", "GetDate()", " image", " image", " bit",
-		" datetime", " float", " int", " bigint", " nvarchar(2000)", " ntext",
-		" nvarchar", "  identity(1,1)", "go"
+		" datetime", " float", " int", " bigint", " nvarchar(2000)",
+		" nvarchar(max)", " nvarchar", "  identity(1,1)", "go"
 	};
 
 	private static final int _SQL_SERVER_2000 = 8;
 
 	private static final boolean _SUPPORTS_ALTER_COLUMN_TYPE = false;
 
-	private static final boolean _SUPPORTS_INLINE_DISTINCT = false;
-
-	private static SQLServerDB _instance = new SQLServerDB();
+	private static final SQLServerDB _instance = new SQLServerDB();
 
 }

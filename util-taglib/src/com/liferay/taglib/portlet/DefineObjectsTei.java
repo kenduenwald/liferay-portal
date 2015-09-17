@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.taglib.portlet;
 
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.util.SearchContainerReference;
 
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class DefineObjectsTei extends TagExtraInfo {
 		return _variableInfo;
 	}
 
-	private static VariableInfo[] _variableInfo = new VariableInfo[] {
+	private static final VariableInfo[] _variableInfo = new VariableInfo[] {
 		new VariableInfo(
 			"actionRequest", ActionRequest.class.getName(), true,
 			VariableInfo.AT_END),
@@ -92,7 +93,10 @@ public class DefineObjectsTei extends TagExtraInfo {
 			VariableInfo.AT_END),
 		new VariableInfo(
 			"resourceResponse", ResourceResponse.class.getName(), true,
-			VariableInfo.AT_END)
+			VariableInfo.AT_END),
+		new VariableInfo(
+			"searchContainerReference",
+			SearchContainerReference.class.getName(), true, VariableInfo.AT_END)
 	};
 
 }

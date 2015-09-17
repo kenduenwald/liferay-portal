@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -51,12 +51,12 @@ public class JobState implements Cloneable, Serializable {
 
 		this(triggerState, exceptionsMaxSize);
 
-		_triggerDates = new HashMap<String, Date>(triggerDates);
+		_triggerDates = new HashMap<>(triggerDates);
 	}
 
 	public void addException(Exception exception, Date date) {
 		if (_exceptions == null) {
-			_exceptions = new LinkedList<ObjectValuePair<Exception, Date>>();
+			_exceptions = new LinkedList<>();
 		}
 
 		_exceptions.add(new ObjectValuePair<Exception, Date>(exception, date));
@@ -78,7 +78,7 @@ public class JobState implements Cloneable, Serializable {
 
 		if (_exceptions != null) {
 			Queue<ObjectValuePair<Exception, Date>> exceptions =
-				new LinkedList<ObjectValuePair<Exception, Date>>();
+				new LinkedList<>();
 
 			exceptions.addAll(_exceptions);
 
@@ -86,8 +86,7 @@ public class JobState implements Cloneable, Serializable {
 		}
 
 		if (_triggerDates != null) {
-			Map<String, Date> triggerTimeInfomation =
-				new HashMap<String, Date>();
+			Map<String, Date> triggerTimeInfomation = new HashMap<>();
 
 			triggerTimeInfomation.putAll(_triggerDates);
 
@@ -119,7 +118,7 @@ public class JobState implements Cloneable, Serializable {
 
 	public Map<String, Date> getTriggerDates() {
 		if (_triggerDates == null) {
-			return Collections.EMPTY_MAP;
+			return Collections.emptyMap();
 		}
 
 		return _triggerDates;
@@ -131,7 +130,7 @@ public class JobState implements Cloneable, Serializable {
 
 	public void setTriggerDate(String key, Date date) {
 		if (_triggerDates == null) {
-			_triggerDates = new HashMap<String, Date>();
+			_triggerDates = new HashMap<>();
 		}
 
 		_triggerDates.put(key, date);
@@ -146,7 +145,7 @@ public class JobState implements Cloneable, Serializable {
 	private static final long serialVersionUID = 5747422831990881126L;
 
 	private Queue<ObjectValuePair<Exception, Date>> _exceptions;
-	private int _exceptionsMaxSize;
+	private final int _exceptionsMaxSize;
 	private Map<String, Date> _triggerDates;
 	private TriggerState _triggerState;
 

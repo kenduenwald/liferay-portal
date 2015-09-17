@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,33 +14,32 @@
 
 package com.liferay.portal.dao.jdbc;
 
+import com.liferay.portal.dao.jdbc.util.DataSourceWrapper;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jndi.JNDIUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.SortedProperties;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.FileImpl;
-import com.liferay.portal.util.HttpImpl;
+import com.liferay.portal.util.JarUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.util.PwdGenerator;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceReference;
+import com.liferay.registry.ServiceTracker;
+import com.liferay.registry.ServiceTrackerCustomizer;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
-import java.io.File;
-
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Method;
-
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -49,6 +48,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import javax.naming.Context;
@@ -66,9 +66,17 @@ import org.apache.tomcat.jdbc.pool.jmx.ConnectionPool;
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
  */
+@DoPrivileged
 public class DataSourceFactoryImpl implements DataSourceFactory {
 
+	@Override
 	public void destroyDataSource(DataSource dataSource) throws Exception {
+		while (dataSource instanceof DataSourceWrapper) {
+			DataSourceWrapper dataSourceWrapper = (DataSourceWrapper)dataSource;
+
+			dataSource = dataSourceWrapper.getWrappedDataSource();
+		}
+
 		if (dataSource instanceof ComboPooledDataSource) {
 			ComboPooledDataSource comboPooledDataSource =
 				(ComboPooledDataSource)dataSource;
@@ -79,10 +87,15 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			org.apache.tomcat.jdbc.pool.DataSource tomcatDataSource =
 				(org.apache.tomcat.jdbc.pool.DataSource)dataSource;
 
+			if (_serviceTracker != null) {
+				_serviceTracker.close();
+			}
+
 			tomcatDataSource.close();
 		}
 	}
 
+	@Override
 	public DataSource initDataSource(Properties properties) throws Exception {
 		Properties defaultProperties = PropsUtil.getProperties(
 			"jdbc.default.", true);
@@ -116,15 +129,15 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			_log.debug(PropertiesUtil.toString(sortedProperties));
 		}
 
-		testClassForName(properties);
+		testDatabaseClass(properties);
 
 		DataSource dataSource = null;
 
 		String liferayPoolProvider =
 			PropsValues.JDBC_DEFAULT_LIFERAY_POOL_PROVIDER;
 
-		if (liferayPoolProvider.equalsIgnoreCase("c3p0") ||
-			liferayPoolProvider.equalsIgnoreCase("c3po")) {
+		if (StringUtil.equalsIgnoreCase(liferayPoolProvider, "c3p0") ||
+			StringUtil.equalsIgnoreCase(liferayPoolProvider, "c3po")) {
 
 			if (_log.isDebugEnabled()) {
 				_log.debug("Initializing C3P0 data source");
@@ -132,12 +145,19 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 			dataSource = initDataSourceC3PO(properties);
 		}
-		else if (liferayPoolProvider.equalsIgnoreCase("dbcp")) {
+		else if (StringUtil.equalsIgnoreCase(liferayPoolProvider, "dbcp")) {
 			if (_log.isDebugEnabled()) {
 				_log.debug("Initializing DBCP data source");
 			}
 
 			dataSource = initDataSourceDBCP(properties);
+		}
+		else if (StringUtil.equalsIgnoreCase(liferayPoolProvider, "hikaricp")) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Initializing HikariCP data source");
+			}
+
+			dataSource = initDataSourceHikariCP(properties);
 		}
 		else {
 			if (_log.isDebugEnabled()) {
@@ -151,12 +171,13 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			_log.debug("Created data source " + dataSource.getClass());
 		}
 
-		return dataSource;
+		return _pacl.getDataSource(dataSource);
 	}
 
+	@Override
 	public DataSource initDataSource(
 			String driverClassName, String url, String userName,
-			String password)
+			String password, String jndiName)
 		throws Exception {
 
 		Properties properties = new Properties();
@@ -165,55 +186,15 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 		properties.setProperty("url", url);
 		properties.setProperty("username", userName);
 		properties.setProperty("password", password);
+		properties.setProperty("jndi.name", jndiName);
 
 		return initDataSource(properties);
 	}
 
-	protected void addJarFileToClassLoader(File file) throws Exception {
-		Class<?> clazz = URLClassLoader.class;
+	public interface PACL {
 
-		Method method = clazz.getDeclaredMethod(
-			"addURL", new Class[] {URL.class});
+		public DataSource getDataSource(DataSource dataSource);
 
-		method.setAccessible(true);
-
-		URI uri = file.toURI();
-
-		method.invoke(
-			ClassLoader.getSystemClassLoader(), new Object[] {uri.toURL()});
-	}
-
-	protected File downloadJarFileToGlobalClassPath(String url, String name)
-		throws Exception {
-
-		if (FileUtil.getFile() == null) {
-			FileUtil fileUtil = new FileUtil();
-
-			fileUtil.setFile(new FileImpl());
-		}
-
-		if (HttpUtil.getHttp() == null) {
-			HttpUtil httpUtil = new HttpUtil();
-
-			httpUtil.setHttp(new HttpImpl());
-		}
-
-		File file = new File(
-			PropsValues.LIFERAY_LIB_GLOBAL_DIR + StringPool.SLASH + name);
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Downloading " + url);
-		}
-
-		byte[] bytes = HttpUtil.URLtoByteArray(url);
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Writing " + file);
-		}
-
-		FileUtil.write(file, bytes);
-
-		return file;
 	}
 
 	protected DataSource initDataSourceC3PO(Properties properties)
@@ -222,7 +203,7 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 		ComboPooledDataSource comboPooledDataSource =
 			new ComboPooledDataSource();
 
-		String identityToken = PwdGenerator.getPassword(PwdGenerator.KEY2, 8);
+		String identityToken = StringUtil.randomString();
 
 		comboPooledDataSource.setIdentityToken(identityToken);
 
@@ -235,33 +216,41 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 			// Map org.apache.commons.dbcp.BasicDataSource to C3PO
 
-			if (key.equalsIgnoreCase("driverClassName")) {
+			if (StringUtil.equalsIgnoreCase(key, "driverClassName")) {
 				key = "driverClass";
 			}
-			else if (key.equalsIgnoreCase("url")) {
+			else if (StringUtil.equalsIgnoreCase(key, "url")) {
 				key = "jdbcUrl";
 			}
-			else if (key.equalsIgnoreCase("username")) {
+			else if (StringUtil.equalsIgnoreCase(key, "username")) {
 				key = "user";
 			}
 
-			// Ignore Liferay properties
+			// Ignore Liferay property
 
 			if (isPropertyLiferay(key)) {
 				continue;
 			}
 
-			// Ignore DBCP properties
+			// Ignore DBCP property
 
 			if (isPropertyDBCP(key)) {
 				continue;
 			}
 
-			// Ignore Tomcat
+			// Ignore HikariCP property
+
+			if (isPropertyHikariCP(key)) {
+				continue;
+			}
+
+			// Ignore Tomcat JDBC property
 
 			if (isPropertyTomcat(key)) {
 				continue;
 			}
+
+			// Set C3PO property
 
 			try {
 				BeanUtil.setProperty(comboPooledDataSource, key, value);
@@ -269,7 +258,7 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			catch (Exception e) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"Property " + key + " is not a valid C3PO property");
+						"Property " + key + " is an invalid C3PO property");
 				}
 			}
 		}
@@ -283,6 +272,70 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 		return BasicDataSourceFactory.createDataSource(properties);
 	}
 
+	protected DataSource initDataSourceHikariCP(Properties properties)
+		throws Exception {
+
+		testLiferayPoolProviderClass(_HIKARICP_DATASOURCE_CLASS_NAME);
+
+		Thread currentThread = Thread.currentThread();
+
+		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+
+		Class<?> hikariDataSourceClazz = contextClassLoader.loadClass(
+			_HIKARICP_DATASOURCE_CLASS_NAME);
+
+		Object hikariDataSource = hikariDataSourceClazz.newInstance();
+
+		for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+			String key = (String)entry.getKey();
+			String value = (String)entry.getValue();
+
+			// Map org.apache.commons.dbcp.BasicDataSource to Hikari CP
+
+			if (StringUtil.equalsIgnoreCase(key, "url")) {
+				key = "jdbcUrl";
+			}
+
+			// Ignore Liferay property
+
+			if (isPropertyLiferay(key)) {
+				continue;
+			}
+
+			// Ignore C3P0 property
+
+			if (isPropertyC3PO(key)) {
+				continue;
+			}
+
+			// Ignore DBCP property
+
+			if (isPropertyDBCP(key)) {
+				continue;
+			}
+
+			// Ignore Tomcat JDBC property
+
+			if (isPropertyTomcat(key)) {
+				continue;
+			}
+
+			// Set HikariCP property
+
+			try {
+				BeanUtil.setProperty(hikariDataSource, key, value);
+			}
+			catch (Exception e) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Property " + key + " is an invalid HikariCP property");
+				}
+			}
+		}
+
+		return (DataSource)hikariDataSource;
+	}
+
 	protected DataSource initDataSourceTomcat(Properties properties)
 		throws Exception {
 
@@ -292,17 +345,25 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			String key = (String)entry.getKey();
 			String value = (String)entry.getValue();
 
-			// Ignore Liferay properties
+			// Ignore Liferay property
 
 			if (isPropertyLiferay(key)) {
 				continue;
 			}
 
-			// Ignore C3P0 properties
+			// Ignore C3P0 property
 
 			if (isPropertyC3PO(key)) {
 				continue;
 			}
+
+			// Ignore HikariCP property
+
+			if (isPropertyHikariCP(key)) {
+				continue;
+			}
+
+			// Set Tomcat JDBC property
 
 			try {
 				BeanUtil.setProperty(poolProperties, key, value);
@@ -310,13 +371,13 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			catch (Exception e) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"Property " + key + " is not a valid Tomcat JDBC " +
-							"Connection Pool property");
+						"Property " + key + " is an invalid Tomcat JDBC " +
+							"property");
 				}
 			}
 		}
 
-		String poolName = PwdGenerator.getPassword(PwdGenerator.KEY2, 8);
+		String poolName = StringUtil.randomString();
 
 		poolProperties.setName(poolName);
 
@@ -324,90 +385,97 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			new org.apache.tomcat.jdbc.pool.DataSource(poolProperties);
 
 		if (poolProperties.isJmxEnabled()) {
-			org.apache.tomcat.jdbc.pool.ConnectionPool jdbcConnectionPool =
-				dataSource.createPool();
+			Registry registry = RegistryUtil.getRegistry();
 
-			ConnectionPool jmxConnectionPool = jdbcConnectionPool.getJmxPool();
+			_serviceTracker = registry.trackServices(
+				MBeanServer.class,
+				new MBeanServerServiceTrackerCustomizer(dataSource, poolName));
 
-			MBeanServer mBeanServer =
-				ManagementFactory.getPlatformMBeanServer();
-
-			ObjectName objectName = new ObjectName(
-				_TOMCAT_JDBC_POOL_OBJECT_NAME_PREFIX + poolName);
-
-			mBeanServer.registerMBean(jmxConnectionPool, objectName);
+			_serviceTracker.open();
 		}
 
 		return dataSource;
 	}
 
 	protected boolean isPropertyC3PO(String key) {
-		if (key.equalsIgnoreCase("acquireIncrement") ||
-			key.equalsIgnoreCase("acquireRetryAttempts") ||
-			key.equalsIgnoreCase("acquireRetryDelay") ||
-			key.equalsIgnoreCase("connectionCustomizerClassName") ||
-			key.equalsIgnoreCase("idleConnectionTestPeriod") ||
-			key.equalsIgnoreCase("maxIdleTime") ||
-			key.equalsIgnoreCase("maxPoolSize") ||
-			key.equalsIgnoreCase("minPoolSize") ||
-			key.equalsIgnoreCase("numHelperThreads") ||
-			key.equalsIgnoreCase("preferredTestQuery")) {
+		if (StringUtil.equalsIgnoreCase(key, "acquireIncrement") ||
+			StringUtil.equalsIgnoreCase(key, "acquireRetryAttempts") ||
+			StringUtil.equalsIgnoreCase(key, "acquireRetryDelay") ||
+			StringUtil.equalsIgnoreCase(key, "connectionCustomizerClassName") ||
+			StringUtil.equalsIgnoreCase(key, "idleConnectionTestPeriod") ||
+			StringUtil.equalsIgnoreCase(key, "initialPoolSize") ||
+			StringUtil.equalsIgnoreCase(key, "maxIdleTime") ||
+			StringUtil.equalsIgnoreCase(key, "maxPoolSize") ||
+			StringUtil.equalsIgnoreCase(key, "minPoolSize") ||
+			StringUtil.equalsIgnoreCase(key, "numHelperThreads") ||
+			StringUtil.equalsIgnoreCase(key, "preferredTestQuery")) {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	protected boolean isPropertyDBCP(String key) {
-		if (key.equalsIgnoreCase("defaultTransactionIsolation") ||
-			key.equalsIgnoreCase("maxActive") ||
-			key.equalsIgnoreCase("minIdle") ||
-			key.equalsIgnoreCase("removeAbandonedTimeout")) {
+		if (StringUtil.equalsIgnoreCase(key, "defaultTransactionIsolation") ||
+			StringUtil.equalsIgnoreCase(key, "maxActive") ||
+			StringUtil.equalsIgnoreCase(key, "minIdle") ||
+			StringUtil.equalsIgnoreCase(key, "removeAbandonedTimeout")) {
 
 			return true;
 		}
-		else {
-			return false;
+
+		return false;
+	}
+
+	protected boolean isPropertyHikariCP(String key) {
+		if (StringUtil.equalsIgnoreCase(key, "autoCommit") ||
+			StringUtil.equalsIgnoreCase(key, "connectionTestQuery") ||
+			StringUtil.equalsIgnoreCase(key, "connectionTimeout") ||
+			StringUtil.equalsIgnoreCase(key, "idleTimeout") ||
+			StringUtil.equalsIgnoreCase(key, "initializationFailFast") ||
+			StringUtil.equalsIgnoreCase(key, "maximumPoolSize") ||
+			StringUtil.equalsIgnoreCase(key, "maxLifetime") ||
+			StringUtil.equalsIgnoreCase(key, "minimumIdle") ||
+			StringUtil.equalsIgnoreCase(key, "registerMbeans")) {
+
+			return true;
 		}
+
+		return false;
 	}
 
 	protected boolean isPropertyLiferay(String key) {
-		if (key.equalsIgnoreCase("jndi.name") ||
-			key.equalsIgnoreCase("liferay.pool.provider")) {
+		if (StringUtil.equalsIgnoreCase(key, "jndi.name") ||
+			StringUtil.equalsIgnoreCase(key, "liferay.pool.provider")) {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	protected boolean isPropertyTomcat(String key) {
-		if (key.equalsIgnoreCase("fairQueue") ||
-			key.equalsIgnoreCase("jdbcInterceptors") ||
-			key.equalsIgnoreCase("jmxEnabled") ||
-			key.equalsIgnoreCase("timeBetweenEvictionRunsMillis") ||
-			key.equalsIgnoreCase("useEquals")) {
+		if (StringUtil.equalsIgnoreCase(key, "fairQueue") ||
+			StringUtil.equalsIgnoreCase(key, "jdbcInterceptors") ||
+			StringUtil.equalsIgnoreCase(key, "jmxEnabled") ||
+			StringUtil.equalsIgnoreCase(key, "timeBetweenEvictionRunsMillis") ||
+			StringUtil.equalsIgnoreCase(key, "useEquals")) {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
-	protected void testClassForName(Properties properties) throws Exception {
+	protected void testDatabaseClass(Properties properties) throws Exception {
 		String driverClassName = properties.getProperty("driverClassName");
 
 		try {
 			Class.forName(driverClassName);
 		}
 		catch (ClassNotFoundException cnfe) {
-			if (!ServerDetector.isGeronimo() && !ServerDetector.isJetty() &&
-				!ServerDetector.isTomcat()) {
-
+			if (!ServerDetector.isJetty() && !ServerDetector.isTomcat()) {
 				throw cnfe;
 			}
 
@@ -420,16 +488,145 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 				throw cnfe;
 			}
 
-			File file = downloadJarFileToGlobalClassPath(url, name);
+			ClassLoader classLoader = SystemException.class.getClassLoader();
 
-			addJarFileToClassLoader(file);
+			if (!(classLoader instanceof URLClassLoader)) {
+				_log.error(
+					"Unable to install JAR because the system class loader " +
+						"is not an instance of URLClassLoader");
+
+				return;
+			}
+
+			JarUtil.downloadAndInstallJar(
+				new URL(url), PropsValues.LIFERAY_LIB_GLOBAL_DIR, name,
+				(URLClassLoader)classLoader);
 		}
 	}
+
+	protected void testLiferayPoolProviderClass(String className)
+		throws Exception {
+
+		try {
+			Class.forName(className);
+		}
+		catch (ClassNotFoundException cnfe) {
+			if (!ServerDetector.isJetty() && !ServerDetector.isTomcat()) {
+				throw cnfe;
+			}
+
+			String url = PropsUtil.get(
+				PropsKeys.SETUP_LIFERAY_POOL_PROVIDER_JAR_URL,
+				new Filter(PropsValues.JDBC_DEFAULT_LIFERAY_POOL_PROVIDER));
+			String name = PropsUtil.get(
+				PropsKeys.SETUP_LIFERAY_POOL_PROVIDER_JAR_NAME,
+				new Filter(PropsValues.JDBC_DEFAULT_LIFERAY_POOL_PROVIDER));
+
+			if (Validator.isNull(url) || Validator.isNull(name)) {
+				throw cnfe;
+			}
+
+			ClassLoader classLoader = ClassLoaderUtil.getPortalClassLoader();
+
+			if (!(classLoader instanceof URLClassLoader)) {
+				_log.error(
+					"Unable to install JAR because the portal class loader " +
+						"is not an instance of URLClassLoader");
+
+				return;
+			}
+
+			JarUtil.downloadAndInstallJar(
+				new URL(url), PropsValues.LIFERAY_LIB_PORTAL_DIR, name,
+				(URLClassLoader)classLoader);
+		}
+	}
+
+	private static final String _HIKARICP_DATASOURCE_CLASS_NAME =
+		"com.zaxxer.hikari.HikariDataSource";
 
 	private static final String _TOMCAT_JDBC_POOL_OBJECT_NAME_PREFIX =
 		"TomcatJDBCPool:type=ConnectionPool,name=";
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		DataSourceFactoryImpl.class);
+
+	private static final PACL _pacl = new NoPACL();
+
+	private ServiceTracker <MBeanServer, MBeanServer> _serviceTracker;
+
+	private static class NoPACL implements PACL {
+
+		@Override
+		public DataSource getDataSource(DataSource dataSource) {
+			return dataSource;
+		}
+
+	}
+
+	private class MBeanServerServiceTrackerCustomizer
+		implements ServiceTrackerCustomizer<MBeanServer, MBeanServer> {
+
+		public MBeanServerServiceTrackerCustomizer(
+				org.apache.tomcat.jdbc.pool.DataSource dataSource,
+				String poolName)
+			throws MalformedObjectNameException {
+
+			_dataSource = dataSource;
+			_objectName = new ObjectName(
+				_TOMCAT_JDBC_POOL_OBJECT_NAME_PREFIX + poolName);
+		}
+
+		@Override
+		public MBeanServer addingService(
+			ServiceReference<MBeanServer> serviceReference) {
+
+			Registry registry = RegistryUtil.getRegistry();
+
+			MBeanServer mBeanServer = registry.getService(serviceReference);
+
+			try {
+				org.apache.tomcat.jdbc.pool.ConnectionPool jdbcConnectionPool =
+					_dataSource.createPool();
+
+				ConnectionPool jmxConnectionPool =
+					jdbcConnectionPool.getJmxPool();
+
+				mBeanServer.registerMBean(jmxConnectionPool, _objectName);
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+
+			return mBeanServer;
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<MBeanServer> serviceReference,
+			MBeanServer mBeanServer) {
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<MBeanServer> serviceReference,
+			MBeanServer mBeanServer) {
+
+			Registry registry = RegistryUtil.getRegistry();
+
+			registry.ungetService(serviceReference);
+
+			try {
+				mBeanServer.unregisterMBean(_objectName);
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+		}
+
+		private final org.apache.tomcat.jdbc.pool.DataSource _dataSource;
+		private final ObjectName _objectName;
+
+	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,9 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.service.ServiceContext;
 
 import com.liferay.portlet.expando.model.ExpandoBridge;
@@ -37,8 +38,9 @@ import java.util.Date;
  * @see com.liferay.portal.model.impl.SubscriptionModelImpl
  * @generated
  */
-public interface SubscriptionModel extends AttachedModel, AuditedModel,
-	BaseModel<Subscription> {
+@ProviderType
+public interface SubscriptionModel extends AttachedModel, BaseModel<Subscription>,
+	GroupedModel, MVCCModel {
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
@@ -60,6 +62,22 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	public void setPrimaryKey(long primaryKey);
 
 	/**
+	 * Returns the mvcc version of this subscription.
+	 *
+	 * @return the mvcc version of this subscription
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this subscription.
+	 *
+	 * @param mvccVersion the mvcc version of this subscription
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
+
+	/**
 	 * Returns the subscription ID of this subscription.
 	 *
 	 * @return the subscription ID of this subscription
@@ -74,10 +92,27 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	public void setSubscriptionId(long subscriptionId);
 
 	/**
+	 * Returns the group ID of this subscription.
+	 *
+	 * @return the group ID of this subscription
+	 */
+	@Override
+	public long getGroupId();
+
+	/**
+	 * Sets the group ID of this subscription.
+	 *
+	 * @param groupId the group ID of this subscription
+	 */
+	@Override
+	public void setGroupId(long groupId);
+
+	/**
 	 * Returns the company ID of this subscription.
 	 *
 	 * @return the company ID of this subscription
 	 */
+	@Override
 	public long getCompanyId();
 
 	/**
@@ -85,6 +120,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param companyId the company ID of this subscription
 	 */
+	@Override
 	public void setCompanyId(long companyId);
 
 	/**
@@ -92,6 +128,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @return the user ID of this subscription
 	 */
+	@Override
 	public long getUserId();
 
 	/**
@@ -99,21 +136,23 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param userId the user ID of this subscription
 	 */
+	@Override
 	public void setUserId(long userId);
 
 	/**
 	 * Returns the user uuid of this subscription.
 	 *
 	 * @return the user uuid of this subscription
-	 * @throws SystemException if a system exception occurred
 	 */
-	public String getUserUuid() throws SystemException;
+	@Override
+	public String getUserUuid();
 
 	/**
 	 * Sets the user uuid of this subscription.
 	 *
 	 * @param userUuid the user uuid of this subscription
 	 */
+	@Override
 	public void setUserUuid(String userUuid);
 
 	/**
@@ -122,6 +161,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 * @return the user name of this subscription
 	 */
 	@AutoEscape
+	@Override
 	public String getUserName();
 
 	/**
@@ -129,6 +169,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param userName the user name of this subscription
 	 */
+	@Override
 	public void setUserName(String userName);
 
 	/**
@@ -136,6 +177,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @return the create date of this subscription
 	 */
+	@Override
 	public Date getCreateDate();
 
 	/**
@@ -143,6 +185,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param createDate the create date of this subscription
 	 */
+	@Override
 	public void setCreateDate(Date createDate);
 
 	/**
@@ -150,6 +193,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @return the modified date of this subscription
 	 */
+	@Override
 	public Date getModifiedDate();
 
 	/**
@@ -157,6 +201,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param modifiedDate the modified date of this subscription
 	 */
+	@Override
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
@@ -164,6 +209,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @return the fully qualified class name of this subscription
 	 */
+	@Override
 	public String getClassName();
 
 	public void setClassName(String className);
@@ -173,6 +219,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @return the class name ID of this subscription
 	 */
+	@Override
 	public long getClassNameId();
 
 	/**
@@ -180,6 +227,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param classNameId the class name ID of this subscription
 	 */
+	@Override
 	public void setClassNameId(long classNameId);
 
 	/**
@@ -187,6 +235,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @return the class p k of this subscription
 	 */
+	@Override
 	public long getClassPK();
 
 	/**
@@ -194,6 +243,7 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 *
 	 * @param classPK the class p k of this subscription
 	 */
+	@Override
 	public void setClassPK(long classPK);
 
 	/**
@@ -211,35 +261,60 @@ public interface SubscriptionModel extends AttachedModel, AuditedModel,
 	 */
 	public void setFrequency(String frequency);
 
+	@Override
 	public boolean isNew();
 
+	@Override
 	public void setNew(boolean n);
 
+	@Override
 	public boolean isCachedModel();
 
+	@Override
 	public void setCachedModel(boolean cachedModel);
 
+	@Override
 	public boolean isEscapedModel();
 
+	@Override
 	public Serializable getPrimaryKeyObj();
 
+	@Override
 	public void setPrimaryKeyObj(Serializable primaryKeyObj);
 
+	@Override
 	public ExpandoBridge getExpandoBridge();
 
+	@Override
+	public void setExpandoBridgeAttributes(BaseModel<?> baseModel);
+
+	@Override
+	public void setExpandoBridgeAttributes(ExpandoBridge expandoBridge);
+
+	@Override
 	public void setExpandoBridgeAttributes(ServiceContext serviceContext);
 
+	@Override
 	public Object clone();
 
-	public int compareTo(Subscription subscription);
+	@Override
+	public int compareTo(com.liferay.portal.model.Subscription subscription);
 
+	@Override
 	public int hashCode();
 
-	public CacheModel<Subscription> toCacheModel();
+	@Override
+	public CacheModel<com.liferay.portal.model.Subscription> toCacheModel();
 
-	public Subscription toEscapedModel();
+	@Override
+	public com.liferay.portal.model.Subscription toEscapedModel();
 
+	@Override
+	public com.liferay.portal.model.Subscription toUnescapedModel();
+
+	@Override
 	public String toString();
 
+	@Override
 	public String toXmlString();
 }

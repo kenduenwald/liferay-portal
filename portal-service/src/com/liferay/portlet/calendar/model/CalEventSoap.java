@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.calendar.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -21,12 +23,14 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.calendar.service.http.CalEventServiceSoap}.
+ * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.calendar.service.http.CalEventServiceSoap
+ * @author Brian Wing Shun Chan
+ * @deprecated As of 7.0.0, with no direct replacement
  * @generated
  */
+@Deprecated
+@ProviderType
 public class CalEventSoap implements Serializable {
 	public static CalEventSoap toSoapModel(CalEvent model) {
 		CalEventSoap soapModel = new CalEventSoap();

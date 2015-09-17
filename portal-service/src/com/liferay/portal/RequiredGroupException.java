@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,23 +18,86 @@ import com.liferay.portal.kernel.exception.PortalException;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Isaac Obrist
  */
 public class RequiredGroupException extends PortalException {
 
-	public RequiredGroupException() {
-		super();
+	@Deprecated
+	public static final int CURRENT_GROUP = 3;
+
+	@Deprecated
+	public static final int PARENT_GROUP = 2;
+
+	@Deprecated
+	public static final int SYSTEM_GROUP = 1;
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by the inner classes
+	 */
+	@Deprecated
+	public int getType() {
+		return _type;
 	}
 
-	public RequiredGroupException(String msg) {
-		super(msg);
+	public static class MustNotDeleteCurrentGroup
+		extends RequiredGroupException {
+
+		public MustNotDeleteCurrentGroup(long groupId) {
+			super(
+				String.format(
+					"Site %s cannot be deleted because it is currently being " +
+						"accessed",
+					groupId),
+				CURRENT_GROUP);
+
+			this.groupId = groupId;
+		}
+
+		public long groupId;
+
 	}
 
-	public RequiredGroupException(String msg, Throwable cause) {
-		super(msg, cause);
+	public static class MustNotDeleteGroupThatHasChild
+		extends RequiredGroupException {
+
+		public MustNotDeleteGroupThatHasChild(long groupId) {
+			super(
+				String.format(
+					"Site %s cannot be deleted because it has child sites",
+					groupId),
+				PARENT_GROUP);
+
+			this.groupId = groupId;
+		}
+
+		public long groupId;
+
 	}
 
-	public RequiredGroupException(Throwable cause) {
-		super(cause);
+	public static class MustNotDeleteSystemGroup
+		extends RequiredGroupException {
+
+		public MustNotDeleteSystemGroup(long groupId) {
+			super(
+				String.format(
+					"Site %s cannot be deleted because it is a system " +
+						"required site",
+					groupId),
+				SYSTEM_GROUP);
+
+			this.groupId = groupId;
+		}
+
+		public long groupId;
+
 	}
+
+	private RequiredGroupException(String message, int type) {
+		super(message);
+
+		_type = type;
+	}
+
+	private final int _type;
 
 }

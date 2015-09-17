@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,19 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
+import com.liferay.portal.model.MVCCModel;
 import com.liferay.portal.model.ResourceBlock;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing ResourceBlock in entity cache.
@@ -28,13 +35,53 @@ import java.io.Serializable;
  * @see ResourceBlock
  * @generated
  */
+@ProviderType
 public class ResourceBlockCacheModel implements CacheModel<ResourceBlock>,
-	Serializable {
+	Externalizable, MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof ResourceBlockCacheModel)) {
+			return false;
+		}
+
+		ResourceBlockCacheModel resourceBlockCacheModel = (ResourceBlockCacheModel)obj;
+
+		if ((resourceBlockId == resourceBlockCacheModel.resourceBlockId) &&
+				(mvccVersion == resourceBlockCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, resourceBlockId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(13);
+		StringBundler sb = new StringBundler(15);
 
-		sb.append("{resourceBlockId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", resourceBlockId=");
 		sb.append(resourceBlockId);
 		sb.append(", companyId=");
 		sb.append(companyId);
@@ -51,9 +98,11 @@ public class ResourceBlockCacheModel implements CacheModel<ResourceBlock>,
 		return sb.toString();
 	}
 
+	@Override
 	public ResourceBlock toEntityModel() {
 		ResourceBlockImpl resourceBlockImpl = new ResourceBlockImpl();
 
+		resourceBlockImpl.setMvccVersion(mvccVersion);
 		resourceBlockImpl.setResourceBlockId(resourceBlockId);
 		resourceBlockImpl.setCompanyId(companyId);
 		resourceBlockImpl.setGroupId(groupId);
@@ -79,6 +128,43 @@ public class ResourceBlockCacheModel implements CacheModel<ResourceBlock>,
 		return resourceBlockImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		resourceBlockId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		name = objectInput.readUTF();
+		permissionsHash = objectInput.readUTF();
+		referenceCount = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(resourceBlockId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(groupId);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (permissionsHash == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(permissionsHash);
+		}
+
+		objectOutput.writeLong(referenceCount);
+	}
+
+	public long mvccVersion;
 	public long resourceBlockId;
 	public long companyId;
 	public long groupId;

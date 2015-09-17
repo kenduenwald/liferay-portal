@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -46,7 +46,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select fileVersionId from DLFileVersion where folderId = ? " +
@@ -57,7 +57,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 
 			rs = ps.executeQuery();
 
-			List<Long> fileVersionIds = new ArrayList<Long>();
+			List<Long> fileVersionIds = new ArrayList<>();
 
 			while (rs.next()) {
 				long fileVersionId = rs.getLong("fileVersionId");
@@ -77,12 +77,12 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		List<Long> tableIds = new ArrayList<Long>();
+		List<Long> tableIds = new ArrayList<>();
 
 		try {
 			long classNameId = PortalUtil.getClassNameId(DLFileEntry.class);
 
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select tableId from ExpandoTable where classNameId = " +
@@ -101,7 +101,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		}
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select uuid_, fileEntryId, groupId, folderId, name, title " +
@@ -151,15 +151,15 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 	}
 
 	protected void updateFileVersion(
-			long fileVersionId, String extension, String title, String
-			description, String extraSettings)
+			long fileVersionId, String extension, String title,
+			String description, String extraSettings)
 		throws Exception {
 
 		Connection con = null;
 		PreparedStatement ps = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"update DLFileVersion set extension = ?, title = ?, " +
@@ -185,7 +185,7 @@ public class UpgradeDocumentLibrary extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select folderId, name, extension, title, description, " +

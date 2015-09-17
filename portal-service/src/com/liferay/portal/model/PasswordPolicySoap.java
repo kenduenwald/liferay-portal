@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,17 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.PasswordPolicyServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.PasswordPolicyServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.PasswordPolicyServiceSoap
  * @generated
  */
+@ProviderType
 public class PasswordPolicySoap implements Serializable {
 	public static PasswordPolicySoap toSoapModel(PasswordPolicy model) {
 		PasswordPolicySoap soapModel = new PasswordPolicySoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
+		soapModel.setUuid(model.getUuid());
 		soapModel.setPasswordPolicyId(model.getPasswordPolicyId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
@@ -51,6 +56,7 @@ public class PasswordPolicySoap implements Serializable {
 		soapModel.setMinNumbers(model.getMinNumbers());
 		soapModel.setMinSymbols(model.getMinSymbols());
 		soapModel.setMinUpperCase(model.getMinUpperCase());
+		soapModel.setRegex(model.getRegex());
 		soapModel.setHistory(model.getHistory());
 		soapModel.setHistoryCount(model.getHistoryCount());
 		soapModel.setExpireable(model.getExpireable());
@@ -63,6 +69,7 @@ public class PasswordPolicySoap implements Serializable {
 		soapModel.setRequireUnlock(model.getRequireUnlock());
 		soapModel.setResetFailureCount(model.getResetFailureCount());
 		soapModel.setResetTicketMaxAge(model.getResetTicketMaxAge());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 
 		return soapModel;
 	}
@@ -113,6 +120,22 @@ public class PasswordPolicySoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setPasswordPolicyId(pk);
+	}
+
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
+	public String getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String uuid) {
+		_uuid = uuid;
 	}
 
 	public long getPasswordPolicyId() {
@@ -295,6 +318,14 @@ public class PasswordPolicySoap implements Serializable {
 		_minUpperCase = minUpperCase;
 	}
 
+	public String getRegex() {
+		return _regex;
+	}
+
+	public void setRegex(String regex) {
+		_regex = regex;
+	}
+
 	public boolean getHistory() {
 		return _history;
 	}
@@ -407,6 +438,16 @@ public class PasswordPolicySoap implements Serializable {
 		_resetTicketMaxAge = resetTicketMaxAge;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	private long _mvccVersion;
+	private String _uuid;
 	private long _passwordPolicyId;
 	private long _companyId;
 	private long _userId;
@@ -427,6 +468,7 @@ public class PasswordPolicySoap implements Serializable {
 	private int _minNumbers;
 	private int _minSymbols;
 	private int _minUpperCase;
+	private String _regex;
 	private boolean _history;
 	private int _historyCount;
 	private boolean _expireable;
@@ -439,4 +481,5 @@ public class PasswordPolicySoap implements Serializable {
 	private boolean _requireUnlock;
 	private long _resetFailureCount;
 	private long _resetTicketMaxAge;
+	private Date _lastPublishDate;
 }

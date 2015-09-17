@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -36,6 +36,8 @@ import com.liferay.portal.security.auth.CompanyThreadLocal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import javax.servlet.Servlet;
 
 /**
  * @author Brian Wing Shun Chan
@@ -93,6 +95,8 @@ public class PropsUtil {
 	}
 
 	private PropsUtil() {
+		Configuration configuration = null;
+
 		try {
 
 			// Default liferay home directory
@@ -100,21 +104,20 @@ public class PropsUtil {
 			SystemProperties.set(
 				PropsKeys.DEFAULT_LIFERAY_HOME, _getDefaultLiferayHome());
 
-			// Global lib directory
+			// Global shared lib directory
 
-			String globalLibDir = ClassUtil.getParentPath(
-				ReleaseInfo.class.getClassLoader(),
-				ReleaseInfo.class.getName());
+			String globalSharedLibDir = _getLibDir(Servlet.class);
 
-			int pos = globalLibDir.lastIndexOf(".jar!");
-
-			if (pos == -1) {
-				pos = globalLibDir.lastIndexOf(".jar/");
+			if (_log.isInfoEnabled()) {
+				_log.info("Global shared lib directory " + globalSharedLibDir);
 			}
 
-			pos = globalLibDir.lastIndexOf(CharPool.SLASH, pos);
+			SystemProperties.set(
+				PropsKeys.LIFERAY_LIB_GLOBAL_SHARED_DIR, globalSharedLibDir);
 
-			globalLibDir = globalLibDir.substring(0, pos + 1);
+			// Global lib directory
+
+			String globalLibDir = _getLibDir(ReleaseInfo.class);
 
 			if (_log.isInfoEnabled()) {
 				_log.info("Global lib directory " + globalLibDir);
@@ -125,7 +128,9 @@ public class PropsUtil {
 
 			// Portal lib directory
 
-			ClassLoader classLoader = getClass().getClassLoader();
+			Class<?> clazz = getClass();
+
+			ClassLoader classLoader = clazz.getClassLoader();
 
 			String portalLibDir = WebDirDetector.getLibDir(classLoader);
 
@@ -160,32 +165,35 @@ public class PropsUtil {
 
 			// Liferay home directory
 
-			_configuration = new ConfigurationImpl(
+			configuration = new ConfigurationImpl(
 				PropsUtil.class.getClassLoader(), PropsFiles.PORTAL);
-
-			String liferayHome = _get(PropsKeys.LIFERAY_HOME);
-
-			if (_log.isDebugEnabled()) {
-				_log.debug("Configured Liferay home " + liferayHome);
-			}
-
-			SystemProperties.set(PropsKeys.LIFERAY_HOME, liferayHome);
-
-			// Ehcache disk directory
-
-			SystemProperties.set(
-				"ehcache.disk.store.dir", liferayHome + "/data/ehcache");
-
-			if (GetterUtil.getBoolean(
-					SystemProperties.get("company-id-properties"))) {
-
-				_configurations = new HashMap<Long, Configuration>();
-			}
 		}
 		catch (Exception e) {
-			if (_log.isErrorEnabled()) {
-				_log.error("Unable to initialize PropsUtil", e);
-			}
+			_log.error("Unable to initialize PropsUtil", e);
+		}
+
+		_configuration = configuration;
+
+		String liferayHome = _get(PropsKeys.LIFERAY_HOME);
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Configured Liferay home " + liferayHome);
+		}
+
+		SystemProperties.set(PropsKeys.LIFERAY_HOME, liferayHome);
+
+		// Ehcache disk directory
+
+		SystemProperties.set(
+			"ehcache.disk.store.dir", liferayHome + "/data/ehcache");
+
+		if (GetterUtil.getBoolean(
+				SystemProperties.get("company-id-properties"))) {
+
+			_configurations = new HashMap<>();
+		}
+		else {
+			_configurations = null;
 		}
 	}
 
@@ -249,11 +257,7 @@ public class PropsUtil {
 	private String _getDefaultLiferayHome() {
 		String defaultLiferayHome = null;
 
-		if (ServerDetector.isGeronimo()) {
-			defaultLiferayHome =
-				SystemProperties.get("org.apache.geronimo.home.dir") + "/..";
-		}
-		else if (ServerDetector.isGlassfish()) {
+		if (ServerDetector.isGlassfish()) {
 			defaultLiferayHome =
 				SystemProperties.get("com.sun.aas.installRoot") + "/..";
 		}
@@ -302,6 +306,23 @@ public class PropsUtil {
 		return defaultLiferayHome;
 	}
 
+	private String _getLibDir(Class<?> clazz) {
+		String path = ClassUtil.getParentPath(
+			clazz.getClassLoader(), clazz.getName());
+
+		int pos = path.lastIndexOf(".jar!");
+
+		if (pos == -1) {
+			pos = path.lastIndexOf(".jar/");
+		}
+
+		pos = path.lastIndexOf(CharPool.SLASH, pos);
+
+		path = path.substring(0, pos + 1);
+
+		return path;
+	}
+
 	private Properties _getProperties() {
 		return _getConfiguration().getProperties();
 	}
@@ -318,11 +339,11 @@ public class PropsUtil {
 		_getConfiguration().set(key, value);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PropsUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(PropsUtil.class);
 
 	private static PropsUtil _instance = new PropsUtil();
 
-	private Configuration _configuration;
-	private Map<Long, Configuration> _configurations;
+	private final Configuration _configuration;
+	private final Map<Long, Configuration> _configurations;
 
 }

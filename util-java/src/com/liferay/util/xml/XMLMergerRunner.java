@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -35,23 +35,12 @@ import org.dom4j.io.XMLWriter;
  */
 public class XMLMergerRunner {
 
-	public static void main(String[] args)
-		throws ClassNotFoundException, DocumentException,
-			   IllegalAccessException, InstantiationException, IOException {
-
-		if ((args != null) && (args.length == 4)) {
-			XMLMergerRunner runner = new XMLMergerRunner(args[3]);
-
-			runner.mergeAndSave(args[0], args[1], args[2]);
-		}
-		else {
-			throw new IllegalArgumentException();
-		}
-	}
-
 	public XMLMergerRunner(String descriptorClassName) {
 		if (Validator.isNotNull(descriptorClassName)) {
 			_descriptorClassName = descriptorClassName;
+		}
+		else {
+			_descriptorClassName = _AUTO_DESCRIPTOR;
 		}
 	}
 
@@ -147,8 +136,9 @@ public class XMLMergerRunner {
 			descriptor = XMLTypeDetector.determineType(doctype, masterDoc);
 		}
 		else {
-			descriptor = (XMLDescriptor)Class.forName(
-				_descriptorClassName).newInstance();
+			Class<?> clazz = Class.forName(_descriptorClassName);
+
+			descriptor = (XMLDescriptor)clazz.newInstance();
 		}
 
 		XMLMerger merger = new XMLMerger(descriptor);
@@ -160,6 +150,6 @@ public class XMLMergerRunner {
 
 	private static final String _AUTO_DESCRIPTOR = "auto";
 
-	private String _descriptorClassName = _AUTO_DESCRIPTOR;
+	private final String _descriptorClassName;
 
 }

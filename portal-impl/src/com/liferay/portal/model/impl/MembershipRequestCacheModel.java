@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,19 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
+import com.liferay.portal.model.MVCCModel;
 import com.liferay.portal.model.MembershipRequest;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -30,13 +37,53 @@ import java.util.Date;
  * @see MembershipRequest
  * @generated
  */
+@ProviderType
 public class MembershipRequestCacheModel implements CacheModel<MembershipRequest>,
-	Serializable {
+	Externalizable, MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof MembershipRequestCacheModel)) {
+			return false;
+		}
+
+		MembershipRequestCacheModel membershipRequestCacheModel = (MembershipRequestCacheModel)obj;
+
+		if ((membershipRequestId == membershipRequestCacheModel.membershipRequestId) &&
+				(mvccVersion == membershipRequestCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, membershipRequestId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(21);
+		StringBundler sb = new StringBundler(23);
 
-		sb.append("{membershipRequestId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", membershipRequestId=");
 		sb.append(membershipRequestId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -61,9 +108,11 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 		return sb.toString();
 	}
 
+	@Override
 	public MembershipRequest toEntityModel() {
 		MembershipRequestImpl membershipRequestImpl = new MembershipRequestImpl();
 
+		membershipRequestImpl.setMvccVersion(mvccVersion);
 		membershipRequestImpl.setMembershipRequestId(membershipRequestId);
 		membershipRequestImpl.setGroupId(groupId);
 		membershipRequestImpl.setCompanyId(companyId);
@@ -105,6 +154,51 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 		return membershipRequestImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		membershipRequestId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		createDate = objectInput.readLong();
+		comments = objectInput.readUTF();
+		replyComments = objectInput.readUTF();
+		replyDate = objectInput.readLong();
+		replierUserId = objectInput.readLong();
+		statusId = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(membershipRequestId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+		objectOutput.writeLong(createDate);
+
+		if (comments == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(comments);
+		}
+
+		if (replyComments == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(replyComments);
+		}
+
+		objectOutput.writeLong(replyDate);
+		objectOutput.writeLong(replierUserId);
+		objectOutput.writeLong(statusId);
+	}
+
+	public long mvccVersion;
 	public long membershipRequestId;
 	public long groupId;
 	public long companyId;
@@ -114,5 +208,5 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 	public String replyComments;
 	public long replyDate;
 	public long replierUserId;
-	public int statusId;
+	public long statusId;
 }

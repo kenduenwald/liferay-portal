@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,23 @@
 
 package com.liferay.portal.kernel.dao.search;
 
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.theme.ThemeDisplay;
+
+import java.util.Locale;
+import java.util.Map;
 
 import javax.portlet.PortletResponse;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -56,24 +67,12 @@ public class RowChecker {
 	}
 
 	public String getAllRowsCheckBox() {
-		if (Validator.isNull(_allRowIds)) {
-			return StringPool.BLANK;
-		}
-		else {
-			StringBuilder sb = new StringBuilder();
+		return getAllRowsCheckBox(null);
+	}
 
-			sb.append("<input name=\"");
-			sb.append(_allRowIds);
-			sb.append("\" type=\"checkbox\" ");
-			sb.append("onClick=\"Liferay.Util.checkAll(");
-			sb.append("AUI().one(this).ancestor('");
-			sb.append("table.taglib-search-iterator'), '");
-			sb.append(_rowIds);
-			sb.append("', this, '.results-row'");
-			sb.append(");\">");
-
-			return sb.toString();
-		}
+	public String getAllRowsCheckBox(HttpServletRequest request) {
+		return getAllRowsCheckbox(
+			request, _allRowIds, StringUtil.quote(_rowIds));
 	}
 
 	public String getAllRowsId() {
@@ -88,16 +87,34 @@ public class RowChecker {
 		return _cssClass;
 	}
 
+	public Map<String, Object> getData(Object obj) {
+		return _data;
+	}
+
 	public String getFormName() {
 		return _formName;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0, replaced by  {@link
+	 *             #getRowCheckBox(HttpServletRequest, boolean, boolean,
+	 *             String)}
+	 */
+	@Deprecated
 	public String getRowCheckBox(
 		boolean checked, boolean disabled, String primaryKey) {
 
+		return getRowCheckBox(null, checked, disabled, primaryKey);
+	}
+
+	public String getRowCheckBox(
+		HttpServletRequest request, boolean checked, boolean disabled,
+		String primaryKey) {
+
 		return getRowCheckBox(
-			checked, disabled, _rowIds, primaryKey, StringUtil.quote(_rowIds),
-			StringUtil.quote(_allRowIds), StringPool.BLANK);
+			request, checked, disabled, _rowIds, primaryKey,
+			StringUtil.quote(_rowIds), StringUtil.quote(_allRowIds),
+			StringPool.BLANK);
 	}
 
 	public String getRowId() {
@@ -136,6 +153,10 @@ public class RowChecker {
 		_cssClass = cssClass;
 	}
 
+	public void setData(Map<String, Object> data) {
+		_data = data;
+	}
+
 	public void setFormName(String formName) {
 		_formName = getNamespacedValue(formName);
 	}
@@ -148,25 +169,67 @@ public class RowChecker {
 		_valign = valign;
 	}
 
+	protected String getAllRowsCheckbox(
+		HttpServletRequest request, String name, String checkBoxRowIds) {
+
+		if (Validator.isNull(name)) {
+			return StringPool.BLANK;
+		}
+
+		StringBuilder sb = new StringBuilder(10);
+
+		sb.append("<input name=\"");
+		sb.append(name);
+		sb.append("\" title=\"");
+		sb.append(LanguageUtil.get(getLocale(request), "select-all"));
+		sb.append("\" type=\"checkbox\" ");
+		sb.append(HtmlUtil.buildData(_data));
+		sb.append("onClick=\"Liferay.Util.checkAll(AUI().one(this).ancestor(");
+		sb.append("'.table'), ");
+		sb.append(checkBoxRowIds);
+		sb.append(", this, 'tr:not(.lfr-template)');\">");
+
+		return sb.toString();
+	}
+
+	protected Locale getLocale(HttpServletRequest request) {
+		Locale locale = null;
+
+		if (request != null) {
+			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+			locale = themeDisplay.getLocale();
+		}
+		else {
+			locale = LocaleThreadLocal.getThemeDisplayLocale();
+		}
+
+		if (locale == null) {
+			locale = LocaleUtil.getDefault();
+		}
+
+		return locale;
+	}
+
 	protected String getNamespacedValue(String value) {
 		if (Validator.isNull(value)) {
 			return StringPool.BLANK;
 		}
-		else {
-			if (!value.startsWith(_portletResponse.getNamespace())) {
-				value = _portletResponse.getNamespace() + value;
-			}
 
-			return value;
+		if (!value.startsWith(_portletResponse.getNamespace())) {
+			value = _portletResponse.getNamespace() + value;
 		}
+
+		return value;
 	}
 
 	protected String getRowCheckBox(
-		boolean checked, boolean disabled, String name, String value,
-		String checkBoxRowIds, String checkBoxAllRowIds,
-		String checkBoxPostOnClick) {
+		HttpServletRequest request, boolean checked, boolean disabled,
+		String name, String value, String checkBoxRowIds,
+		String checkBoxAllRowIds, String checkBoxPostOnClick) {
 
-		StringBundler sb = new StringBundler();
+		StringBundler sb = new StringBundler(21);
 
 		sb.append("<input ");
 
@@ -178,22 +241,24 @@ public class RowChecker {
 			sb.append("disabled ");
 		}
 
-		sb.append("name=\"");
+		sb.append("class=\"");
+		sb.append(_cssClass);
+		sb.append("\" name=\"");
 		sb.append(name);
+		sb.append("\" title=\"");
+		sb.append(LanguageUtil.get(request.getLocale(), "select"));
 		sb.append("\" type=\"checkbox\" value=\"");
-		sb.append(value);
+		sb.append(HtmlUtil.escapeAttribute(value));
 		sb.append("\" ");
 
 		if (Validator.isNotNull(_allRowIds)) {
-			sb.append("onClick=\"Liferay.Util.checkAllBox(");
-			sb.append("AUI().one(this).ancestor('");
-			sb.append("table.taglib-search-iterator'), ");
+			sb.append("onClick=\"Liferay.Util.rowCheckerCheckAllBox(AUI().");
+			sb.append("one(this).ancestor('.table'), AUI().one(this).");
+			sb.append("ancestor('tr:not(.lfr-template)'), ");
 			sb.append(checkBoxRowIds);
 			sb.append(", ");
 			sb.append(checkBoxAllRowIds);
-			sb.append(");");
-			sb.append("AUI().one(this).ancestor('.results-row').toggleClass('");
-			sb.append("selected');");
+			sb.append(", 'info');");
 
 			if (Validator.isNotNull(checkBoxPostOnClick)) {
 				sb.append(checkBoxPostOnClick);
@@ -211,8 +276,9 @@ public class RowChecker {
 	private String _allRowIds;
 	private int _colspan = COLSPAN;
 	private String _cssClass = CSS_CLASS;
+	private Map<String, Object> _data;
 	private String _formName;
-	private PortletResponse _portletResponse;
+	private final PortletResponse _portletResponse;
 	private String _rowIds;
 	private String _valign = VALIGN;
 

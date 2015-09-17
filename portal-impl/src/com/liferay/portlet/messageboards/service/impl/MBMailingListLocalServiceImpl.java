@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,11 @@
 package com.liferay.portlet.messageboards.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.messaging.DestinationNames;
-import com.liferay.portal.kernel.scheduler.CronText;
-import com.liferay.portal.kernel.scheduler.CronTrigger;
-import com.liferay.portal.kernel.scheduler.SchedulerEngineUtil;
+import com.liferay.portal.kernel.scheduler.IntervalTrigger;
+import com.liferay.portal.kernel.scheduler.SchedulerEngineHelperUtil;
 import com.liferay.portal.kernel.scheduler.StorageType;
+import com.liferay.portal.kernel.scheduler.TimeUnit;
 import com.liferay.portal.kernel.scheduler.Trigger;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.StringPool;
@@ -38,7 +37,6 @@ import com.liferay.portlet.messageboards.model.MBMailingList;
 import com.liferay.portlet.messageboards.service.base.MBMailingListLocalServiceBaseImpl;
 
 import java.util.Calendar;
-import java.util.Date;
 
 /**
  * @author Thiago Moreira
@@ -46,6 +44,7 @@ import java.util.Date;
 public class MBMailingListLocalServiceImpl
 	extends MBMailingListLocalServiceBaseImpl {
 
+	@Override
 	public MBMailingList addMailingList(
 			long userId, long groupId, long categoryId, String emailAddress,
 			String inProtocol, String inServerName, int inServerPort,
@@ -54,12 +53,11 @@ public class MBMailingListLocalServiceImpl
 			String outServerName, int outServerPort, boolean outUseSSL,
 			String outUserName, String outPassword, boolean allowAnonymous,
 			boolean active, ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		// Mailing list
 
 		User user = userPersistence.findByPrimaryKey(userId);
-		Date now = new Date();
 
 		validate(
 			emailAddress, inServerName, inUserName, outEmailAddress, outCustom,
@@ -75,8 +73,6 @@ public class MBMailingListLocalServiceImpl
 		mailingList.setCompanyId(user.getCompanyId());
 		mailingList.setUserId(user.getUserId());
 		mailingList.setUserName(user.getFullName());
-		mailingList.setCreateDate(serviceContext.getCreateDate(now));
-		mailingList.setModifiedDate(serviceContext.getModifiedDate(now));
 		mailingList.setCategoryId(categoryId);
 		mailingList.setEmailAddress(emailAddress);
 		mailingList.setInProtocol(inUseSSL ? inProtocol + "s" : inProtocol);
@@ -96,7 +92,7 @@ public class MBMailingListLocalServiceImpl
 		mailingList.setAllowAnonymous(allowAnonymous);
 		mailingList.setActive(active);
 
-		mbMailingListPersistence.update(mailingList, false);
+		mbMailingListPersistence.update(mailingList);
 
 		// Scheduler
 
@@ -107,8 +103,9 @@ public class MBMailingListLocalServiceImpl
 		return mailingList;
 	}
 
+	@Override
 	public void deleteCategoryMailingList(long groupId, long categoryId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		MBMailingList mailingList = mbMailingListPersistence.findByG_C(
 			groupId, categoryId);
@@ -116,29 +113,38 @@ public class MBMailingListLocalServiceImpl
 		deleteMailingList(mailingList);
 	}
 
-	public void deleteMailingList(long mailingListId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void deleteMailingList(long mailingListId) throws PortalException {
 		MBMailingList mailingList = mbMailingListPersistence.findByPrimaryKey(
 			mailingListId);
 
 		deleteMailingList(mailingList);
 	}
 
+	@Override
 	public void deleteMailingList(MBMailingList mailingList)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		unscheduleMailingList(mailingList);
 
 		mbMailingListPersistence.remove(mailingList);
 	}
 
+	@Override
+	public MBMailingList fetchCategoryMailingList(
+		long groupId, long categoryId) {
+
+		return mbMailingListPersistence.fetchByG_C(groupId, categoryId);
+	}
+
+	@Override
 	public MBMailingList getCategoryMailingList(long groupId, long categoryId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return mbMailingListPersistence.findByG_C(groupId, categoryId);
 	}
 
+	@Override
 	public MBMailingList updateMailingList(
 			long mailingListId, String emailAddress, String inProtocol,
 			String inServerName, int inServerPort, boolean inUseSSL,
@@ -147,7 +153,7 @@ public class MBMailingListLocalServiceImpl
 			int outServerPort, boolean outUseSSL, String outUserName,
 			String outPassword, boolean allowAnonymous, boolean active,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		// Mailing list
 
@@ -158,7 +164,6 @@ public class MBMailingListLocalServiceImpl
 		MBMailingList mailingList = mbMailingListPersistence.findByPrimaryKey(
 			mailingListId);
 
-		mailingList.setModifiedDate(serviceContext.getModifiedDate(null));
 		mailingList.setEmailAddress(emailAddress);
 		mailingList.setInProtocol(inUseSSL ? inProtocol + "s" : inProtocol);
 		mailingList.setInServerName(inServerName);
@@ -177,7 +182,7 @@ public class MBMailingListLocalServiceImpl
 		mailingList.setAllowAnonymous(allowAnonymous);
 		mailingList.setActive(active);
 
-		mbMailingListPersistence.update(mailingList, false);
+		mbMailingListPersistence.update(mailingList);
 
 		// Scheduler
 
@@ -201,13 +206,9 @@ public class MBMailingListLocalServiceImpl
 
 		Calendar startDate = CalendarFactoryUtil.getCalendar();
 
-		CronText cronText = new CronText(
-			startDate, CronText.MINUTELY_FREQUENCY,
-			mailingList.getInReadInterval());
-
-		Trigger trigger = new CronTrigger(
+		Trigger trigger = new IntervalTrigger(
 			groupName, groupName, startDate.getTime(), null,
-			cronText.toString());
+			mailingList.getInReadInterval(), TimeUnit.MINUTE);
 
 		MailingListRequest mailingListRequest = new MailingListRequest();
 
@@ -223,8 +224,8 @@ public class MBMailingListLocalServiceImpl
 		mailingListRequest.setInPassword(mailingList.getInPassword());
 		mailingListRequest.setAllowAnonymous(mailingList.getAllowAnonymous());
 
-		SchedulerEngineUtil.schedule(
-			trigger, StorageType.MEMORY_CLUSTERED, null,
+		SchedulerEngineHelperUtil.schedule(
+			trigger, StorageType.PERSISTED, null,
 			DestinationNames.MESSAGE_BOARDS_MAILING_LIST, mailingListRequest,
 			0);
 	}
@@ -234,7 +235,7 @@ public class MBMailingListLocalServiceImpl
 
 		String groupName = getSchedulerGroupName(mailingList);
 
-		SchedulerEngineUtil.unschedule(groupName, StorageType.MEMORY_CLUSTERED);
+		SchedulerEngineHelperUtil.unschedule(groupName, StorageType.PERSISTED);
 	}
 
 	protected void validate(

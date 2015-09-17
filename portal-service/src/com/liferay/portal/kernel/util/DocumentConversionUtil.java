@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,7 +28,7 @@ public class DocumentConversionUtil {
 		throws Exception {
 
 		Object returnObj = PortalClassInvoker.invoke(
-			false, _convertMethodKey, id, inputStream, sourceExtension,
+			_convertMethodKey, id, inputStream, sourceExtension,
 			targetExtension);
 
 		if (returnObj != null) {
@@ -41,7 +41,7 @@ public class DocumentConversionUtil {
 
 	public static String[] getConversions(String extension) throws Exception {
 		Object returnObj = PortalClassInvoker.invoke(
-			false, _getConversionsMethodKey, extension);
+			_getConversionsMethodKey, extension);
 
 		if (returnObj != null) {
 			return (String[])returnObj;
@@ -54,10 +54,11 @@ public class DocumentConversionUtil {
 	private static final String _CLASS_NAME =
 		"com.liferay.portlet.documentlibrary.util.DocumentConversionUtil";
 
-	private static MethodKey _convertMethodKey = new MethodKey(
-		_CLASS_NAME, "convert", String.class, InputStream.class, String.class,
-		String.class);
-	private static MethodKey _getConversionsMethodKey = new MethodKey(
-		_CLASS_NAME, "getConversions", String.class);
+	private static final MethodKey _convertMethodKey = new MethodKey(
+		ClassResolverUtil.resolveByPortalClassLoader(_CLASS_NAME), "convert",
+		String.class, InputStream.class, String.class, String.class);
+	private static final MethodKey _getConversionsMethodKey = new MethodKey(
+		ClassResolverUtil.resolveByPortalClassLoader(_CLASS_NAME),
+		"getConversions", String.class);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.ratings.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.ratings.service.http.RatingsEntryServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.ratings.service.http.RatingsEntryServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.ratings.service.http.RatingsEntryServiceSoap
  * @generated
  */
+@ProviderType
 public class RatingsEntrySoap implements Serializable {
 	public static RatingsEntrySoap toSoapModel(RatingsEntry model) {
 		RatingsEntrySoap soapModel = new RatingsEntrySoap();
 
+		soapModel.setUuid(model.getUuid());
 		soapModel.setEntryId(model.getEntryId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
@@ -40,6 +44,7 @@ public class RatingsEntrySoap implements Serializable {
 		soapModel.setClassNameId(model.getClassNameId());
 		soapModel.setClassPK(model.getClassPK());
 		soapModel.setScore(model.getScore());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 
 		return soapModel;
 	}
@@ -90,6 +95,14 @@ public class RatingsEntrySoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setEntryId(pk);
+	}
+
+	public String getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String uuid) {
+		_uuid = uuid;
 	}
 
 	public long getEntryId() {
@@ -164,6 +177,15 @@ public class RatingsEntrySoap implements Serializable {
 		_score = score;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	private String _uuid;
 	private long _entryId;
 	private long _companyId;
 	private long _userId;
@@ -173,4 +195,5 @@ public class RatingsEntrySoap implements Serializable {
 	private long _classNameId;
 	private long _classPK;
 	private double _score;
+	private Date _lastPublishDate;
 }

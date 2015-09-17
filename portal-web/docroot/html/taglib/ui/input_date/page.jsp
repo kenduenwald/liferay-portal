@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,204 +24,204 @@ if (GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:di
 }
 
 String cssClass = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-date:cssClass"));
-String formName = namespace + request.getAttribute("liferay-ui:input-date:formName");
-String monthParam = namespace + request.getAttribute("liferay-ui:input-date:monthParam");
-int monthValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:monthValue"));
-boolean monthNullable = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:monthNullable"));
-String dayParam = namespace + request.getAttribute("liferay-ui:input-date:dayParam");
-int dayValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:dayValue"));
-boolean dayNullable = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:dayNullable"));
-String yearParam = namespace + request.getAttribute("liferay-ui:input-date:yearParam");
-int yearValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:yearValue"));
-boolean yearNullable = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:yearNullable"));
-int yearRangeStart = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:yearRangeStart"));
-int yearRangeEnd = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:yearRangeEnd"));
-String monthAndYearParam = namespace + request.getAttribute("liferay-ui:input-date:monthAndYearParam");
-boolean monthAndYearNullable = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:monthAndYearNullable"));
-int firstDayOfWeek = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:firstDayOfWeek"));
-String imageInputId = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-date:imageInputId"));
 boolean disabled = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:disabled"));
+String dayParam = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-date:dayParam"));
+int dayValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:dayValue"));
+int firstDayOfWeek = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:firstDayOfWeek"));
+Date firstEnabledDate = GetterUtil.getDate(request.getAttribute("liferay-ui:input-date:firstEnabledDate"), DateFormatFactoryUtil.getDate(locale), null);
+Date lastEnabledDate = GetterUtil.getDate(request.getAttribute("liferay-ui:input-date:lastEnabledDate"), DateFormatFactoryUtil.getDate(locale), null);
+String monthParam = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-date:monthParam"));
+int monthValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:monthValue"));
+String name = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-date:name"));
+boolean nullable = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-date:nullable"));
+String yearParam = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-date:yearParam"));
+int yearValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-date:yearValue"));
 
-if (Validator.isNull(imageInputId)) {
-	imageInputId = randomNamespace + "imageInputId";
+String dayParamId = namespace + HtmlUtil.getAUICompatibleId(dayParam);
+String monthParamId = namespace + HtmlUtil.getAUICompatibleId(monthParam);
+String nameId = namespace + HtmlUtil.getAUICompatibleId(name);
+String yearParamId = namespace + HtmlUtil.getAUICompatibleId(yearParam);
+
+Calendar calendar = CalendarFactoryUtil.getCalendar(yearValue, monthValue, dayValue);
+
+String mask = _MASK_MDY;
+String simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN_MDY;
+
+if (BrowserSnifferUtil.isMobile(request)) {
+	simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN_HTML5;
 }
 else {
-	imageInputId = namespace + imageInputId;
+	DateFormat shortDateFormat = DateFormat.getDateInstance(DateFormat.SHORT, locale);
+
+	SimpleDateFormat shortDateFormatSimpleDateFormat = (SimpleDateFormat)shortDateFormat;
+
+	String shortDateFormatSimpleDateFormatPattern = shortDateFormatSimpleDateFormat.toPattern();
+
+	if (shortDateFormatSimpleDateFormatPattern.indexOf("y") == 0) {
+		mask = _MASK_YMD;
+		simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN_YMD;
+	}
+	else if (shortDateFormatSimpleDateFormatPattern.indexOf("d") == 0) {
+		mask = _MASK_DMY;
+		simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN_DMY;
+	}
 }
 
-String dateFormatPattern = ((SimpleDateFormat)(DateFormat.getDateInstance(DateFormat.SHORT, locale))).toPattern();
-
-String dateFormatOrder = _DATE_FORMAT_ORDER_MDY;
-
-if (dateFormatPattern.indexOf("y") == 0) {
-	dateFormatOrder = _DATE_FORMAT_ORDER_YMD;
-}
-else if (dateFormatPattern.indexOf("d") == 0) {
-	dateFormatOrder = _DATE_FORMAT_ORDER_DMY;
-}
-
-Date selectedDate = new Date();
-
-Calendar cal = new GregorianCalendar();
-
-cal.setTime(selectedDate);
-
-boolean dayEmpty = false;
-
-if (dayValue > 0) {
-	cal.set(Calendar.DATE, dayValue);
-}
-else if (dayNullable) {
-	dayEmpty = true;
-}
-
-boolean monthEmpty = false;
-
-if (monthValue > -1) {
-	cal.set(Calendar.MONTH, monthValue);
-}
-else if (monthNullable) {
-	monthEmpty = true;
-}
-
-boolean yearEmpty = false;
-
-if (yearValue > 0) {
-	cal.set(Calendar.YEAR, yearValue);
-}
-else if (yearNullable) {
-	yearEmpty = true;
-}
+Format format = FastDateFormatFactoryUtil.getSimpleDateFormat(simpleDateFormatPattern, locale);
 %>
 
-<div class="aui-datepicker aui-datepicker-display aui-helper-clearfix <%= Validator.isNotNull(cssClass) ? cssClass : StringPool.BLANK %>" id="<%= randomNamespace %>displayDate">
-	<div class="aui-datepicker-content" id="<%= randomNamespace %>displayDateContent">
-		<div class="aui-datepicker-select-wrapper">
-			<c:choose>
-				<c:when test="<%= monthAndYearParam.equals(namespace) %>">
+<span class="lfr-input-date <%= cssClass %>" id="<%= randomNamespace %>displayDate">
+	<c:choose>
+		<c:when test="<%= BrowserSnifferUtil.isMobile(request) %>">
+			<input class="form-control" <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= nameId %>" name="<%= namespace + HtmlUtil.escapeAttribute(name) %>" type="date" value="<%= format.format(calendar.getTime()) %>" />
+		</c:when>
+		<c:otherwise>
+			<aui:input disabled="<%= disabled %>" id="<%= HtmlUtil.getAUICompatibleId(name) %>" label="" name="<%= name %>" placeholder="<%= StringUtil.toLowerCase(simpleDateFormatPattern) %>" title="" type="text" value="<%= nullable ? StringPool.BLANK : format.format(calendar.getTime()) %>" wrappedField="<%= true %>">
+				<aui:validator errorMessage="please-enter-a-valid-date" name="custom">
+					function(val) {
+						return AUI().use('aui-datatype-date-parse').Parsers.date('<%= mask %>', val);
+					}
+				</aui:validator>
+			</aui:input>
+		</c:otherwise>
+	</c:choose>
 
-					<%
-					int[] monthIds = CalendarUtil.getMonthIds();
-					String[] months = CalendarUtil.getMonths(locale);
-					%>
+	<input <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= dayParamId %>" name="<%= namespace + HtmlUtil.escapeAttribute(dayParam) %>" type="hidden" value="<%= (!BrowserSnifferUtil.isMobile(request) && nullable) ? "" : dayValue %>" />
+	<input <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= monthParamId %>" name="<%= namespace + HtmlUtil.escapeAttribute(monthParam) %>" type="hidden" value="<%= (!BrowserSnifferUtil.isMobile(request) && nullable) ? "" : monthValue %>" />
+	<input <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= yearParamId %>" name="<%= namespace + HtmlUtil.escapeAttribute(yearParam) %>" type="hidden" value="<%= (!BrowserSnifferUtil.isMobile(request) && nullable) ? "" : yearValue %>" />
+</span>
 
-					<c:choose>
-						<c:when test="<%= dateFormatOrder.equals(_DATE_FORMAT_ORDER_MDY) %>">
-							<%@ include file="/html/taglib/ui/input_date/select_month.jspf" %>
-
-							<%@ include file="/html/taglib/ui/input_date/select_day.jspf" %>
-
-							<%@ include file="/html/taglib/ui/input_date/select_year.jspf" %>
-						</c:when>
-						<c:when test="<%= dateFormatOrder.equals(_DATE_FORMAT_ORDER_YMD) %>">
-							<%@ include file="/html/taglib/ui/input_date/select_year.jspf" %>
-
-							<%@ include file="/html/taglib/ui/input_date/select_month.jspf" %>
-
-							<%@ include file="/html/taglib/ui/input_date/select_day.jspf" %>
-						</c:when>
-						<c:otherwise>
-							<%@ include file="/html/taglib/ui/input_date/select_day.jspf" %>
-
-							<%@ include file="/html/taglib/ui/input_date/select_month.jspf" %>
-
-							<%@ include file="/html/taglib/ui/input_date/select_year.jspf" %>
-						</c:otherwise>
-					</c:choose>
-				</c:when>
-			</c:choose>
-		</div>
-		<div class="aui-datepicker-button-wrapper">
-			<button class="aui-buttonitem aui-buttonitem-content aui-buttonitem-icon-only aui-component aui-state-default yui3-widget" id="buttonTest" type="button">
-				<span class="aui-buttonitem-icon aui-icon aui-icon-calendar"></span>
-			</button>
-		</div>
-	</div>
-</div>
-
-<input class="<%= disabled ? "disabled" : "" %>" id="<%= imageInputId %>Input" type="hidden" />
-
-<aui:script use="aui-datepicker-select">
-	var displayDateNode = A.one('#<%= randomNamespace %>displayDate');
-
-	var displayDatePickerHandle = displayDateNode.on(
-		['click', 'mousemove'],
-		function(event) {
-			new A.DatePickerSelect(
+<aui:script use='<%= "aui-datepicker" + (BrowserSnifferUtil.isMobile(request) ? "-native" : StringPool.BLANK) %>'>
+	Liferay.component(
+		'<%= nameId %>DatePicker',
+		function() {
+			var datePicker = new A.DatePicker<%= BrowserSnifferUtil.isMobile(request) ? "Native" : StringPool.BLANK %>(
 				{
-					after: {
-						render: function(event) {
+					calendar: {
+
+						<%
+						String calendarOptions = StringPool.BLANK;
+
+						if (lastEnabledDate != null) {
+							calendarOptions += String.format("maximumDate: new Date(%s)", lastEnabledDate.getTime());
+						}
+
+						if (firstEnabledDate != null) {
+							if (Validator.isNotNull(calendarOptions)) {
+								calendarOptions += StringPool.COMMA;
+							}
+
+							calendarOptions += String.format("minimumDate: new Date(%s)", firstEnabledDate.getTime());
+						}
+
+						if (firstDayOfWeek != -1) {
+							if (Validator.isNotNull(calendarOptions)) {
+								calendarOptions += StringPool.COMMA;
+							}
+
+							calendarOptions += String.format("'strings.first_weekday': %d", firstDayOfWeek);
+						}
+						%>
+
+						<%= calendarOptions %>
+					},
+					container: '#<%= randomNamespace %>displayDate',
+					mask: '<%= mask %>',
+					on: {
+						disabledChange: function(event) {
 							var instance = this;
 
-							<c:if test="<%= dayEmpty %>">
-								instance.get('dayNode').val('-1');
-							</c:if>
+							var container = instance.get('container');
 
-							<c:if test="<%= monthEmpty %>">
-								instance.get('monthNode').val('-1');
-							</c:if>
+							var newVal = event.newVal;
 
-							<c:if test="<%= yearEmpty %>">
-								instance.get('yearNode').val('-1');
-							</c:if>
+							container.one('#<%= dayParamId %>').attr('disabled', newVal);
+							container.one('#<%= monthParamId %>').attr('disabled', newVal);
+							container.one('#<%= nameId %>').attr('disabled', newVal);
+							container.one('#<%= yearParamId %>').attr('disabled', newVal);
+						},
+						enterKey: function(event) {
+							var instance = this;
+
+							var inputVal = instance.get('activeInput').val();
+
+							var date = instance.getParsedDatesFromInputValue(inputVal);
+
+							if (date) {
+								datePicker.updateValue(date[0]);
+							}
+						},
+						selectionChange: function(event) {
+							if (isNaN(event.newSelection[0])) {
+								event.newSelection[0] = new Date();
+							}
+
+							datePicker.updateValue(event.newSelection[0]);
 						}
 					},
-					appendOrder: '<%= dateFormatOrder %>',
-					boundingBox: displayDateNode,
-					calendar: {
-						dates: [
-							<c:if test="<%= !monthEmpty && !dayEmpty && !yearEmpty %>">
-								new Date(
-									<%= cal.get(Calendar.YEAR) %>,
-									<%= cal.get(Calendar.MONTH) %>,
-									<%= cal.get(Calendar.DATE) %>
-								)
-							</c:if>
-						],
-
-						<c:choose>
-							<c:when test="<%= dateFormatOrder.equals(_DATE_FORMAT_ORDER_MDY) %>">
-								dateFormat: '%m/%d/%y',
-							</c:when>
-							<c:when test="<%= dateFormatOrder.equals(_DATE_FORMAT_ORDER_YMD) %>">
-								dateFormat: '%y/%m/%d',
-							</c:when>
-							<c:otherwise>
-								dateFormat: '%d/%m/%y',
-							</c:otherwise>
-						</c:choose>
-
-						firstDayOfWeek: <%= firstDayOfWeek %>,
-						locale: '<%= LanguageUtil.getLanguageId(request) %>'
+					popover: {
+						zIndex: Liferay.zIndex.TOOLTIP
 					},
-					dayNode: '#<%= dayParam %>',
-					disabled: <%= disabled %>,
-					monthNode: '#<%= monthParam %>',
-					nullableDay: <%= dayNullable %>,
-					nullableMonth: <%= monthNullable %>,
-					nullableYear: <%= yearNullable %>,
-					on: {
-						'calendar:select': function(event) {
-							var formatted = event.date.formatted[0];
-
-							A.one('#<%= imageInputId %>Input').val(formatted);
-						}
-					},
-					srcNode: '#<%= randomNamespace %>displayDateContent',
-					yearNode: '#<%= yearParam %>',
-					yearRange: [<%= yearRangeStart %>, <%= yearRangeEnd %>]
+					trigger: '#<%= nameId %>'
 				}
-			).render();
+			);
 
-			displayDatePickerHandle.detach();
+			datePicker.getDate = function() {
+				var instance = this;
+
+				var container = instance.get('container');
+
+				return new Date(container.one('#<%= yearParamId %>').val(), container.one('#<%= monthParamId %>').val(), container.one('#<%= dayParamId %>').val());
+			};
+
+			datePicker.updateValue = function(date) {
+				var instance = this;
+
+				var container = instance.get('container');
+
+				if (date) {
+					container.one('#<%= dayParamId %>').val(date.getDate());
+					container.one('#<%= monthParamId %>').val(date.getMonth());
+					container.one('#<%= yearParamId %>').val(date.getFullYear());
+				}
+			};
+
+			datePicker.after(
+				'selectionChange',
+				function(event) {
+					var input = A.one('#<%= nameId %>');
+
+					if (input) {
+						var form = input.get('form');
+
+						var formId = form.get('id');
+
+						var formInstance = Liferay.Form.get(formId);
+
+						formInstance.formValidator.validateField('<%= namespace + HtmlUtil.escapeAttribute(name) %>');
+					}
+				}
+			);
+
+			return datePicker;
 		}
 	);
+
+	Liferay.component('<%= nameId %>DatePicker');
 </aui:script>
 
 <%!
-private static final String _DATE_FORMAT_ORDER_DMY = "[\\'d\\', \\'m\\', \\'y\\']";
+private static final String _SIMPLE_DATE_FORMAT_PATTERN_DMY = "dd/MM/yyyy";
 
-private static final String _DATE_FORMAT_ORDER_MDY = "[\\'m\\', \\'d\\', \\'y\\']";
+private static final String _SIMPLE_DATE_FORMAT_PATTERN_HTML5 = "yyyy-MM-dd";
 
-private static final String _DATE_FORMAT_ORDER_YMD = "[\\'y\\', \\'m\\', \\'d\\']";
+private static final String _SIMPLE_DATE_FORMAT_PATTERN_MDY = "MM/dd/yyyy";
+
+private static final String _SIMPLE_DATE_FORMAT_PATTERN_YMD = "yyyy/MM/dd";
+
+private static final String _MASK_DMY = "%d/%m/%Y";
+
+private static final String _MASK_MDY = "%m/%d/%Y";
+
+private static final String _MASK_YMD = "%Y/%m/%d";
 %>

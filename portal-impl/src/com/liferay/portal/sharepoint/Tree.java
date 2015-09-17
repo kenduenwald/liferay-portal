@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -33,6 +33,7 @@ public class Tree implements ResponseElement {
 		_children.add(node);
 	}
 
+	@Override
 	public String parse() {
 		StringBundler sb = new StringBundler(_children.size() * 4 + 4);
 
@@ -49,6 +50,6 @@ public class Tree implements ResponseElement {
 		return sb.toString();
 	}
 
-	private List<ResponseElement> _children = new ArrayList<ResponseElement>();
+	private final List<ResponseElement> _children = new ArrayList<>();
 
 }

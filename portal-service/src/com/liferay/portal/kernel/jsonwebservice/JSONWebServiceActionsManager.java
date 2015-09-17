@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,7 +18,9 @@ import java.lang.reflect.Method;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -26,23 +28,50 @@ import javax.servlet.http.HttpServletRequest;
  */
 public interface JSONWebServiceActionsManager {
 
-	public JSONWebServiceAction getJSONWebServiceAction(
-		HttpServletRequest request);
+	public Set<String> getContextNames();
 
 	public JSONWebServiceAction getJSONWebServiceAction(
-		HttpServletRequest request, String path, String method,
-		Map<String, Object> parameters);
+			HttpServletRequest request)
+		throws NoSuchJSONWebServiceException;
+
+	public JSONWebServiceAction getJSONWebServiceAction(
+			HttpServletRequest request, String path, String method,
+			Map<String, Object> parameters)
+		throws NoSuchJSONWebServiceException;
 
 	public JSONWebServiceActionMapping getJSONWebServiceActionMapping(
 		String signature);
 
 	public List<JSONWebServiceActionMapping> getJSONWebServiceActionMappings(
-		String servletContextPath);
+		String contextName);
+
+	public int getJSONWebServiceActionsCount(String contextName);
+
+	public JSONWebServiceNaming getJSONWebServiceNaming();
 
 	public void registerJSONWebServiceAction(
-		String servletContextPath, Class<?> actionClass, Method actionMethod,
-		String path, String method);
+		String contextName, String contextPath, Class<?> actionClass,
+		Method actionMethod, String path, String method);
 
-	public int unregisterJSONWebServiceActions(String servletContextPath);
+	public void registerJSONWebServiceAction(
+		String contextName, String contextPath, Object actionObject,
+		Class<?> actionClass, Method actionMethod, String path, String method);
+
+	public int registerService(String contextPath, Object service);
+
+	public int registerService(
+		String contextName, String contextPath, Object service);
+
+	public int registerService(
+		String contextName, String contextPath, Object service,
+		JSONWebServiceRegistrator jsonWebServiceRegistrator);
+
+	public int registerServletContext(ServletContext servletContext);
+
+	public int unregisterJSONWebServiceActions(Object actionObject);
+
+	public int unregisterJSONWebServiceActions(String contextPath);
+
+	public int unregisterServletContext(ServletContext servletContext);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,11 @@
 package com.liferay.portal.tools.deploy;
 
 import com.liferay.portal.kernel.plugin.PluginPackage;
-import com.liferay.portal.kernel.servlet.ThemeContextListener;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.Plugin;
-import com.liferay.portal.util.InitUtil;
+import com.liferay.portal.tools.ToolDependencies;
 
 import java.io.File;
 
@@ -34,10 +33,10 @@ import java.util.Map;
 public class ThemeDeployer extends BaseDeployer {
 
 	public static void main(String[] args) {
-		InitUtil.initWithSpring();
+		ToolDependencies.wireDeployers();
 
-		List<String> wars = new ArrayList<String>();
-		List<String> jars = new ArrayList<String>();
+		List<String> wars = new ArrayList<>();
+		List<String> jars = new ArrayList<>();
 
 		for (String arg : args) {
 			if (arg.endsWith(".war")) {
@@ -96,11 +95,6 @@ public class ThemeDeployer extends BaseDeployer {
 	}
 
 	@Override
-	public Class<?> getPluginContextListenerClass() {
-		return ThemeContextListener.class;
-	}
-
-	@Override
 	public String getPluginType() {
 		return Plugin.TYPE_THEME;
 	}
@@ -127,7 +121,7 @@ public class ThemeDeployer extends BaseDeployer {
 
 		String themeName = filterMap.get("plugin_name");
 
-		filterMap.put("theme_name", themeName);
+		filterMap.put("theme_name", StringUtil.stripCDATA(themeName));
 
 		String liferayVersions = filterMap.get("liferay_versions");
 

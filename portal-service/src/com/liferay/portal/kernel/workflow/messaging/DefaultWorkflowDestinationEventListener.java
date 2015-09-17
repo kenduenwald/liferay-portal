@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,7 @@ package com.liferay.portal.kernel.workflow.messaging;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.BaseDestinationEventListener;
+import com.liferay.portal.kernel.messaging.DestinationEventListener;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
 import com.liferay.portal.kernel.messaging.MessageListener;
@@ -25,7 +25,7 @@ import com.liferay.portal.kernel.messaging.MessageListener;
  * @author Michael C. Han
  */
 public class DefaultWorkflowDestinationEventListener
-	extends BaseDestinationEventListener {
+	implements DestinationEventListener {
 
 	@Override
 	public void messageListenerRegistered(
@@ -134,7 +134,7 @@ public class DefaultWorkflowDestinationEventListener
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		DefaultWorkflowDestinationEventListener.class);
 
 	private MessageListener _workflowDefinitionManagerListener;

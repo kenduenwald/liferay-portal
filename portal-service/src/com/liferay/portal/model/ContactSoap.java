@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.ContactServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.ContactServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.ContactServiceSoap
  * @generated
  */
+@ProviderType
 public class ContactSoap implements Serializable {
 	public static ContactSoap toSoapModel(Contact model) {
 		ContactSoap soapModel = new ContactSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setContactId(model.getContactId());
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
@@ -114,6 +118,14 @@ public class ContactSoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setContactId(pk);
+	}
+
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
 	}
 
 	public long getContactId() {
@@ -228,19 +240,19 @@ public class ContactSoap implements Serializable {
 		_lastName = lastName;
 	}
 
-	public int getPrefixId() {
+	public long getPrefixId() {
 		return _prefixId;
 	}
 
-	public void setPrefixId(int prefixId) {
+	public void setPrefixId(long prefixId) {
 		_prefixId = prefixId;
 	}
 
-	public int getSuffixId() {
+	public long getSuffixId() {
 		return _suffixId;
 	}
 
-	public void setSuffixId(int suffixId) {
+	public void setSuffixId(long suffixId) {
 		_suffixId = suffixId;
 	}
 
@@ -384,6 +396,7 @@ public class ContactSoap implements Serializable {
 		_hoursOfOperation = hoursOfOperation;
 	}
 
+	private long _mvccVersion;
 	private long _contactId;
 	private long _companyId;
 	private long _userId;
@@ -398,8 +411,8 @@ public class ContactSoap implements Serializable {
 	private String _firstName;
 	private String _middleName;
 	private String _lastName;
-	private int _prefixId;
-	private int _suffixId;
+	private long _prefixId;
+	private long _suffixId;
 	private boolean _male;
 	private Date _birthday;
 	private String _smsSn;

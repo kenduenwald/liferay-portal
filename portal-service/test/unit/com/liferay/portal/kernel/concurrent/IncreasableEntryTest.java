@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,61 +14,81 @@
 
 package com.liferay.portal.kernel.concurrent;
 
-import com.liferay.portal.kernel.test.TestCase;
+import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.kernel.util.HashUtil;
+import com.liferay.portal.kernel.util.StringBundler;
+
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
  * @author Shuyang Zhou
  */
-public class IncreasableEntryTest extends TestCase {
+public class IncreasableEntryTest {
 
-	public void testGettingKey() {
+	@ClassRule
+	public static final CodeCoverageAssertor codeCoverageAssertor =
+		CodeCoverageAssertor.INSTANCE;
+
+	@Test
+	public void testEqualsAndHashCode() {
 		IncreasableEntry<String, Integer> increasableEntry =
 			new IntegerIncreasableEntry("test", 0);
 
-		assertEquals("test", increasableEntry.getKey());
-		assertEquals("test", increasableEntry.getKey());
-		assertEquals("test", increasableEntry.getKey());
+		Assert.assertTrue(increasableEntry.equals(increasableEntry));
+		Assert.assertFalse(increasableEntry.equals(new Object()));
+		Assert.assertFalse(
+			increasableEntry.equals(new IntegerIncreasableEntry("test1", 0)));
+		Assert.assertFalse(
+			increasableEntry.equals(new IntegerIncreasableEntry("test", 1)));
+		Assert.assertTrue(
+			increasableEntry.equals(new IntegerIncreasableEntry("test", 0)));
+
+		int hash = HashUtil.hash(0, increasableEntry.getKey());
+
+		Assert.assertEquals(
+			HashUtil.hash(hash, increasableEntry.getValue()),
+			increasableEntry.hashCode());
 	}
 
-	public void testIncreaseAndGet() {
+	@Test
+	public void testGetters() {
 		IncreasableEntry<String, Integer> increasableEntry =
 			new IntegerIncreasableEntry("test", 0);
 
-		// Simple increase
+		Assert.assertEquals("test", increasableEntry.getKey());
+		Assert.assertEquals(0, (int)increasableEntry.getValue());
+	}
 
-		assertTrue(increasableEntry.increase(1));
+	@Test
+	public void testIncrease() {
+		IncreasableEntry<String, Integer> increasableEntry1 =
+			new IntegerIncreasableEntry("test", 0);
 
-		// Simple get
+		IncreasableEntry<String, Integer> increasableEntry2 =
+			increasableEntry1.increase(2);
 
-		assertEquals(1, (int)increasableEntry.getValue());
+		Assert.assertNotSame(increasableEntry1, increasableEntry2);
+		Assert.assertEquals(
+			increasableEntry1.getKey(), increasableEntry2.getKey());
+		Assert.assertEquals(2, (int)increasableEntry2.getValue());
+	}
 
-		increasableEntry = new IntegerIncreasableEntry("test", 0);
+	@Test
+	public void testToString() {
+		IncreasableEntry<String, Integer> increasableEntry =
+			new IntegerIncreasableEntry("test", 0);
 
-		// Continue get
+		StringBundler sb = new StringBundler(5);
 
-		assertEquals(0, (int)increasableEntry.getValue());
-		assertEquals(0, (int)increasableEntry.getValue());
-		assertEquals(0, (int)increasableEntry.getValue());
+		sb.append("{key=");
+		sb.append(increasableEntry.getKey());
+		sb.append(", value=");
+		sb.append(increasableEntry.getValue());
+		sb.append("}");
 
-		increasableEntry = new IntegerIncreasableEntry("test", 0);
-
-		// Continue increase
-
-		assertTrue(increasableEntry.increase(1));
-		assertTrue(increasableEntry.increase(2));
-		assertTrue(increasableEntry.increase(3));
-
-		// Check value
-
-		assertEquals(6, (int)increasableEntry.getValue());
-
-		// Increase after get
-
-		increasableEntry = new IntegerIncreasableEntry("test", 0);
-
-		assertEquals(0, (int)increasableEntry.getValue());
-		assertFalse(increasableEntry.increase(1));
-		assertEquals(0, (int)increasableEntry.getValue());
+		Assert.assertEquals(sb.toString(), increasableEntry.toString());
 	}
 
 	private class IntegerIncreasableEntry
@@ -79,8 +99,8 @@ public class IncreasableEntryTest extends TestCase {
 		}
 
 		@Override
-		public Integer doIncrease(Integer originalValue, Integer deltaValue) {
-			return originalValue + deltaValue;
+		public IncreasableEntry<String, Integer> increase(Integer deltaValue) {
+			return new IntegerIncreasableEntry(key, value + deltaValue);
 		}
 
 	}

@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,7 +17,7 @@
 <%@ include file="/html/portlet/recent_documents/init.jsp" %>
 
 <%
-List fileRanks = DLAppLocalServiceUtil.getFileRanks(scopeGroupId, user.getUserId());
+List<DLFileRank> fileRanks = DLAppLocalServiceUtil.getFileRanks(scopeGroupId, user.getUserId());
 %>
 
 <c:choose>
@@ -25,30 +25,24 @@ List fileRanks = DLAppLocalServiceUtil.getFileRanks(scopeGroupId, user.getUserId
 		<liferay-ui:message key="there-are-no-recent-downloads" />
 	</c:when>
 	<c:otherwise>
-		<table class="lfr-table">
+		<ul class="recent-documents">
 
 		<%
-		for (int i = 0; i < fileRanks.size(); i++) {
-			DLFileRank fileRank = (DLFileRank)fileRanks.get(i);
-
+		for (DLFileRank fileRank : fileRanks) {
 			try {
 				FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(fileRank.getFileEntryId());
 
 				fileEntry = fileEntry.toEscapedModel();
-
-				PortletURL rowURL = renderResponse.createActionURL();
-
-				rowURL.setWindowState(LiferayWindowState.EXCLUSIVE);
-
-				rowURL.setParameter("struts_action", "/recent_documents/get_file");
-				rowURL.setParameter("fileEntryId", String.valueOf(fileRank.getFileEntryId()));
 		%>
 
-				<tr>
-					<td>
-						<a href="<%= rowURL.toString() %>"><img align="left" border="0" src="<%= themeDisplay.getPathThemeImages() %>/file_system/small/<%= fileEntry.getIcon() %>.png" /><%= fileEntry.getTitle() %></a>
-					</td>
-				</tr>
+				<li>
+					<liferay-ui:icon
+						iconCssClass="<%= fileEntry.getIconCssClass() %>"
+						label="<%= true %>"
+						message="<%= fileEntry.getTitle() %>"
+						url="<%= DLUtil.getPreviewURL(fileEntry, fileEntry.getFileVersion(), themeDisplay, StringPool.BLANK, false, true) %>"
+					/>
+				</li>
 
 		<%
 			}
@@ -57,6 +51,6 @@ List fileRanks = DLAppLocalServiceUtil.getFileRanks(scopeGroupId, user.getUserId
 		}
 		%>
 
-		</table>
+		</ul>
 	</c:otherwise>
 </c:choose>

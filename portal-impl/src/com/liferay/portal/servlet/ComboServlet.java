@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,32 +14,56 @@
 
 package com.liferay.portal.servlet;
 
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.SingleVMPoolUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
-import com.liferay.portal.kernel.servlet.ServletContextUtil;
+import com.liferay.portal.kernel.servlet.RequestDispatcherUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.language.AggregateResourceBundle;
+import com.liferay.portal.language.LanguageResources;
+import com.liferay.portal.minifier.MinifierUtil;
+import com.liferay.portal.model.Portlet;
+import com.liferay.portal.model.PortletApp;
+import com.liferay.portal.service.PortletLocalServiceUtil;
 import com.liferay.portal.servlet.filters.dynamiccss.DynamicCSSUtil;
-import com.liferay.portal.util.MinifierUtil;
+import com.liferay.portal.util.AggregateUtil;
 import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.portlet.PortletConfigFactoryUtil;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.Set;
 
+import javax.portlet.PortletConfig;
+
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -50,8 +74,14 @@ import javax.servlet.http.HttpServletResponse;
  * @author Eduardo Lundgren
  * @author Edward Han
  * @author Zsigmond Rab
+ * @author Raymond Augé
  */
 public class ComboServlet extends HttpServlet {
+
+	public static void clearCache() {
+		_bytesArrayPortalCache.removeAll();
+		_fileContentBagPortalCache.removeAll();
+	}
 
 	@Override
 	public void service(
@@ -70,21 +100,75 @@ public class ComboServlet extends HttpServlet {
 		}
 	}
 
+	protected static String getModulePortletId(String modulePath) {
+		int index = modulePath.indexOf(CharPool.COLON);
+
+		if (index > 0) {
+			return modulePath.substring(0, index);
+		}
+
+		return PortletKeys.PORTAL;
+	}
+
+	protected static String getResourcePath(String modulePath) {
+		int index = modulePath.indexOf(CharPool.COLON);
+
+		if (index > 0) {
+			return modulePath.substring(index + 1);
+		}
+
+		return modulePath;
+	}
+
 	protected void doService(
 			HttpServletRequest request, HttpServletResponse response)
 		throws Exception {
 
-		String contextPath = PortalUtil.getPathContext();
+		Set<String> modulePathsSet = new LinkedHashSet<>();
 
-		String[] modulePaths = request.getParameterValues("m");
+		Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
+			request.getQueryString());
 
-		if ((modulePaths == null) || (modulePaths.length == 0)) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+		Enumeration<String> enu = Collections.enumeration(
+			parameterMap.keySet());
 
-			return;
+		while (enu.hasMoreElements()) {
+			String name = enu.nextElement();
+
+			if (_protectedParameters.contains(name)) {
+				continue;
+			}
+
+			name = HttpUtil.decodePath(name);
+
+			modulePathsSet.add(name);
 		}
 
-		Arrays.sort(modulePaths);
+		if (modulePathsSet.isEmpty()) {
+			throw new IllegalArgumentException(
+				"Query string translates to an empty module paths set");
+		}
+
+		String[] modulePaths = modulePathsSet.toArray(
+			new String[modulePathsSet.size()]);
+
+		String firstModulePath = modulePaths[0];
+
+		String extension = FileUtil.getExtension(firstModulePath);
+
+		String minifierType = ParamUtil.getString(request, "minifierType");
+
+		if (Validator.isNull(minifierType)) {
+			minifierType = "js";
+
+			if (StringUtil.equalsIgnoreCase(extension, _CSS_EXTENSION)) {
+				minifierType = "css";
+			}
+		}
+
+		if (!minifierType.equals("css") && !minifierType.equals("js")) {
+			minifierType = "js";
+		}
 
 		String modulePathsString = null;
 
@@ -93,35 +177,30 @@ public class ComboServlet extends HttpServlet {
 		if (!PropsValues.COMBO_CHECK_TIMESTAMP) {
 			modulePathsString = Arrays.toString(modulePaths);
 
-			bytesArray = _byteArrays.get(modulePathsString);
-		}
+			if (minifierType.equals("css") &&
+				PortalUtil.isRightToLeft(request)) {
 
-		String firstModulePath = modulePaths[0];
-
-		String extension = FileUtil.getExtension(firstModulePath);
-
-		if (bytesArray == null) {
-			String p = ParamUtil.getString(request, "p");
-
-			String minifierType = ParamUtil.getString(request, "minifierType");
-
-			if (Validator.isNull(minifierType)) {
-				minifierType = "js";
-
-				if (extension.equalsIgnoreCase(_CSS_EXTENSION)) {
-					minifierType = "css";
-				}
+				modulePathsString += ".rtl";
+			}
+			else if (minifierType.equals("js")) {
+				modulePathsString +=
+					StringPool.POUND + LanguageUtil.getLanguageId(request);
 			}
 
-			int length = modulePaths.length;
+			bytesArray = _bytesArrayPortalCache.get(modulePathsString);
+		}
 
-			bytesArray = new byte[length][];
+		if (bytesArray == null) {
+			bytesArray = new byte[modulePaths.length][];
 
-			for (String modulePath : modulePaths) {
+			for (int i = 0; i < modulePaths.length; i++) {
+				String modulePath = modulePaths[i];
+
 				if (!validateModuleExtension(modulePath)) {
-					PortalUtil.sendError(
-						HttpServletResponse.SC_NOT_FOUND, new IOException(),
-						request, response);
+					response.setHeader(
+						HttpHeaders.CACHE_CONTROL,
+						HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 
 					return;
 				}
@@ -129,24 +208,37 @@ public class ComboServlet extends HttpServlet {
 				byte[] bytes = new byte[0];
 
 				if (Validator.isNotNull(modulePath)) {
-					modulePath = StringUtil.replaceFirst(
-						p.concat(modulePath), contextPath, StringPool.BLANK);
+					RequestDispatcher requestDispatcher =
+						getResourceRequestDispatcher(
+							request, response, modulePath);
 
-					bytes = getFileContent(
-						request, response, modulePath, minifierType);
+					if (requestDispatcher == null) {
+						response.setHeader(
+							HttpHeaders.CACHE_CONTROL,
+							HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
+						response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+
+						return;
+					}
+
+					bytes = getResourceContent(
+						requestDispatcher, request, response, modulePath,
+						minifierType);
 				}
 
-				bytesArray[--length] = bytes;
+				bytesArray[i] = bytes;
 			}
 
-			if (modulePathsString != null) {
-				_byteArrays.put(modulePathsString, bytesArray);
+			if ((modulePathsString != null) &&
+				!PropsValues.COMBO_CHECK_TIMESTAMP) {
+
+				_bytesArrayPortalCache.put(modulePathsString, bytesArray);
 			}
 		}
 
 		String contentType = ContentTypes.TEXT_JAVASCRIPT;
 
-		if (extension.equalsIgnoreCase(_CSS_EXTENSION)) {
+		if (StringUtil.equalsIgnoreCase(extension, _CSS_EXTENSION)) {
 			contentType = ContentTypes.TEXT_CSS;
 		}
 
@@ -155,100 +247,71 @@ public class ComboServlet extends HttpServlet {
 		ServletResponseUtil.write(response, bytesArray);
 	}
 
-	protected File getFile(String path) throws IOException {
-		ServletContext servletContext = getServletContext();
+	protected byte[] getResourceContent(
+			RequestDispatcher requestDispatcher, HttpServletRequest request,
+			HttpServletResponse response, String modulePath,
+			String minifierType)
+		throws Exception {
 
-		String basePath = ServletContextUtil.getRealPath(
-			servletContext, _JAVASCRIPT_DIR);
+		String resourcePath = getResourcePath(modulePath);
 
-		if (basePath == null) {
-			return null;
+		String portletId = getModulePortletId(modulePath);
+
+		Portlet portlet = PortletLocalServiceUtil.getPortletById(portletId);
+
+		if (!resourcePath.startsWith(portlet.getContextPath())) {
+			resourcePath = portlet.getContextPath() + resourcePath;
 		}
 
-		basePath = StringUtil.replace(
-			basePath, CharPool.BACK_SLASH, CharPool.SLASH);
-
-		File baseDir = new File(basePath);
-
-		if (!baseDir.exists()) {
-			return null;
-		}
-
-		String filePath = ServletContextUtil.getRealPath(servletContext, path);
-
-		if (filePath == null) {
-			return null;
-		}
-
-		filePath = StringUtil.replace(
-			filePath, CharPool.BACK_SLASH, CharPool.SLASH);
-
-		File file = new File(filePath);
-
-		if (!file.exists()) {
-			return null;
-		}
-
-		String baseCanonicalPath = baseDir.getCanonicalPath();
-		String fileCanonicalPath = file.getCanonicalPath();
-
-		if (fileCanonicalPath.indexOf(baseCanonicalPath) == 0) {
-			return file;
-		}
-
-		return null;
-	}
-
-	protected byte[] getFileContent(
-			HttpServletRequest request, HttpServletResponse response,
-			String path, String minifierType)
-		throws IOException {
-
-		String fileContentKey = path.concat(StringPool.QUESTION).concat(
+		String fileContentKey = resourcePath.concat(StringPool.QUESTION).concat(
 			minifierType);
 
-		FileContentBag fileContentBag = _fileContentBags.get(fileContentKey);
+		FileContentBag fileContentBag = _fileContentBagPortalCache.get(
+			fileContentKey);
 
 		if ((fileContentBag != null) && !PropsValues.COMBO_CHECK_TIMESTAMP) {
 			return fileContentBag._fileContent;
 		}
 
-		File file = getFile(path);
-
 		if ((fileContentBag != null) && PropsValues.COMBO_CHECK_TIMESTAMP) {
 			long elapsedTime =
 				System.currentTimeMillis() - fileContentBag._lastModified;
 
-			if ((file != null) &&
+			if ((requestDispatcher != null) &&
 				(elapsedTime <= PropsValues.COMBO_CHECK_TIMESTAMP_INTERVAL) &&
-				(file.lastModified() == fileContentBag._lastModified)) {
+				(RequestDispatcherUtil.getLastModifiedTime(
+					requestDispatcher, request, response) ==
+						fileContentBag._lastModified)) {
 
 				return fileContentBag._fileContent;
 			}
-			else {
-				_fileContentBags.remove(fileContentKey, fileContentBag);
-			}
+
+			_fileContentBagPortalCache.remove(fileContentKey);
 		}
 
-		if (file == null) {
+		if (requestDispatcher == null) {
 			fileContentBag = _EMPTY_FILE_CONTENT_BAG;
 		}
 		else {
-			String stringFileContent = FileUtil.read(file);
+			ObjectValuePair<String, Long> objectValuePair =
+				RequestDispatcherUtil.getContentAndLastModifiedTime(
+					requestDispatcher, request, response);
 
-			if (!StringUtil.endsWith(path, _CSS_MINIFIED_SUFFIX) &&
-				!StringUtil.endsWith(path, _JAVASCRIPT_MINIFIED_SUFFIX)) {
+			String stringFileContent = objectValuePair.getKey();
+
+			if (!StringUtil.endsWith(resourcePath, _CSS_MINIFIED_SUFFIX) &&
+				!StringUtil.endsWith(
+					resourcePath, _JAVASCRIPT_MINIFIED_SUFFIX)) {
 
 				if (minifierType.equals("css")) {
-					String cssRealPath = file.getAbsolutePath();
-
 					try {
-						stringFileContent = DynamicCSSUtil.parseSass(
-							request, cssRealPath, stringFileContent);
+						stringFileContent = DynamicCSSUtil.replaceToken(
+							getServletContext(), request, stringFileContent);
 					}
 					catch (Exception e) {
 						_log.error(
-							"Unable to parse SASS on CSS " + cssRealPath, e);
+							"Unable to replace tokens in CSS " + resourcePath,
+							e);
 
 						if (_log.isDebugEnabled()) {
 							_log.debug(stringFileContent);
@@ -259,41 +322,120 @@ public class ComboServlet extends HttpServlet {
 							HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
 					}
 
+					String baseURL = StringPool.BLANK;
+
+					int slashIndex = resourcePath.lastIndexOf(CharPool.SLASH);
+
+					if (slashIndex != -1) {
+						baseURL = resourcePath.substring(0, slashIndex + 1);
+					}
+
+					stringFileContent = AggregateUtil.updateRelativeURLs(
+						stringFileContent, baseURL);
+
 					stringFileContent = MinifierUtil.minifyCss(
 						stringFileContent);
 				}
 				else if (minifierType.equals("js")) {
+					stringFileContent = translate(
+						request, portletId, stringFileContent);
+
 					stringFileContent = MinifierUtil.minifyJavaScript(
-						stringFileContent);
+						resourcePath, stringFileContent);
 				}
 			}
 
 			fileContentBag = new FileContentBag(
 				stringFileContent.getBytes(StringPool.UTF8),
-				file.lastModified());
+				objectValuePair.getValue());
 		}
 
-		FileContentBag oldFileContentBag = _fileContentBags.putIfAbsent(
-			fileContentKey, fileContentBag);
+		if (PropsValues.COMBO_CHECK_TIMESTAMP) {
+			int timeToLive =
+				(int)(PropsValues.COMBO_CHECK_TIMESTAMP_INTERVAL / Time.SECOND);
 
-		if (oldFileContentBag != null) {
-			fileContentBag = oldFileContentBag;
+			_fileContentBagPortalCache.put(
+				fileContentKey, fileContentBag, timeToLive);
 		}
 
 		return fileContentBag._fileContent;
 	}
 
+	protected RequestDispatcher getResourceRequestDispatcher(
+			HttpServletRequest request, HttpServletResponse response,
+			String modulePath)
+		throws Exception {
+
+		String portletId = getModulePortletId(modulePath);
+
+		Portlet portlet = PortletLocalServiceUtil.getPortletById(portletId);
+
+		if (portlet.isUndeployedPortlet()) {
+			return null;
+		}
+
+		PortletApp portletApp = portlet.getPortletApp();
+
+		ServletContext servletContext = portletApp.getServletContext();
+
+		String resourcePath = getResourcePath(modulePath);
+
+		if (!PortalUtil.isValidResourceId(resourcePath)) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Invalid resource " + request.getRequestURL() + "?" +
+						request.getQueryString());
+			}
+
+			return null;
+		}
+
+		return servletContext.getRequestDispatcher(resourcePath);
+	}
+
+	protected String translate(
+		HttpServletRequest request, String portletId,
+		String stringFileContent) {
+
+		String languageId = LanguageUtil.getLanguageId(request);
+
+		Locale locale = LocaleUtil.fromLanguageId(languageId);
+
+		ResourceBundle resourceBundle = LanguageResources.getResourceBundle(
+			locale);
+
+		Portlet portlet = PortletLocalServiceUtil.getPortletById(portletId);
+
+		if (portlet != null) {
+			PortletConfig portletConfig = PortletConfigFactoryUtil.create(
+				portlet, getServletContext());
+
+			if (portletConfig != null) {
+				resourceBundle = new AggregateResourceBundle(
+					portletConfig.getResourceBundle(locale), resourceBundle);
+			}
+		}
+
+		return LanguageUtil.process(resourceBundle, locale, stringFileContent);
+	}
+
 	protected boolean validateModuleExtension(String moduleName)
 		throws Exception {
+
+		int index = moduleName.indexOf(CharPool.QUESTION);
+
+		if (index != -1) {
+			moduleName = moduleName.substring(0, index);
+		}
 
 		boolean validModuleExtension = false;
 
 		String[] fileExtensions = PrefsPropsUtil.getStringArray(
 			PropsKeys.COMBO_ALLOWED_FILE_EXTENSIONS, StringPool.COMMA);
 
-		for (int i = 0; i < fileExtensions.length; i++) {
-			if (StringPool.STAR.equals(fileExtensions[i]) ||
-				StringUtil.endsWith(moduleName, fileExtensions[i])) {
+		for (String fileExtension : fileExtensions) {
+			if (StringPool.STAR.equals(fileExtension) ||
+				StringUtil.endsWith(moduleName, fileExtension)) {
 
 				validModuleExtension = true;
 
@@ -311,26 +453,30 @@ public class ComboServlet extends HttpServlet {
 	private static final FileContentBag _EMPTY_FILE_CONTENT_BAG =
 		new FileContentBag(new byte[0], 0);
 
-	private static final String _JAVASCRIPT_DIR = "html/js";
-
 	private static final String _JAVASCRIPT_MINIFIED_SUFFIX = "-min.js";
 
-	private static Log _log = LogFactoryUtil.getLog(ComboServlet.class);
+	private static final Log _log = LogFactoryUtil.getLog(ComboServlet.class);
 
-	private ConcurrentMap<String, byte[][]> _byteArrays =
-		new ConcurrentHashMap<String, byte[][]>();
-	private ConcurrentMap<String, FileContentBag> _fileContentBags =
-		new ConcurrentHashMap<String, FileContentBag>();
+	private static final PortalCache<String, byte[][]> _bytesArrayPortalCache =
+		SingleVMPoolUtil.getPortalCache(ComboServlet.class.getName());
+	private static final PortalCache<String, FileContentBag>
+		_fileContentBagPortalCache = SingleVMPoolUtil.getPortalCache(
+			FileContentBag.class.getName());
 
-	private static class FileContentBag {
+	private final Set<String> _protectedParameters = SetUtil.fromArray(
+		new String[] {
+			"b", "browserId", "minifierType", "languageId", "t", "themeId"
+		});
+
+	private static class FileContentBag implements Serializable {
 
 		public FileContentBag(byte[] fileContent, long lastModifiedTime) {
 			_fileContent = fileContent;
 			_lastModified = lastModifiedTime;
 		}
 
-		private byte[] _fileContent;
-		private long _lastModified;
+		private final byte[] _fileContent;
+		private final long _lastModified;
 
 	}
 

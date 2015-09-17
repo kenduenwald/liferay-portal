@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -65,8 +65,8 @@ public class ComponentTag extends BaseComponentTag {
 	protected void proccessAttributes(
 		Map<String, Object> options, Map<String, Object> jsonifiedOptions) {
 
-		Map<String, String> afterEventOptions = new HashMap<String, String>();
-		Map<String, String> onEventOptions = new HashMap<String, String>();
+		Map<String, String> afterEventOptions = new HashMap<>();
+		Map<String, String> onEventOptions = new HashMap<>();
 
 		for (String key : options.keySet()) {
 			if (!isValidAttribute(key)) {
@@ -79,8 +79,7 @@ public class ComponentTag extends BaseComponentTag {
 				getName(), key);
 
 			if (value instanceof Map) {
-				Map<String, Object> childOptions =
-					new HashMap<String, Object>();
+				Map<String, Object> childOptions = new HashMap<>();
 
 				proccessAttributes((Map<String, Object>)value, childOptions);
 
@@ -109,8 +108,8 @@ public class ComponentTag extends BaseComponentTag {
 	}
 
 	protected void processEventAttribute(
-			String key, String value, Map<String, String> afterEventOptions,
-			Map<String, String> onEventsOptions) {
+		String key, String value, Map<String, String> afterEventOptions,
+		Map<String, String> onEventsOptions) {
 
 		if (key.startsWith("after")) {
 			String eventName = StringUtils.uncapitalize(key.substring(5));
@@ -128,7 +127,7 @@ public class ComponentTag extends BaseComponentTag {
 	protected void setAttributes(HttpServletRequest request) {
 		Map<String, Object> options = getOptions();
 
-		Map<String, Object> jsonifiedOptions = new HashMap<String, Object>();
+		Map<String, Object> jsonifiedOptions = new HashMap<>();
 
 		proccessAttributes(options, jsonifiedOptions);
 

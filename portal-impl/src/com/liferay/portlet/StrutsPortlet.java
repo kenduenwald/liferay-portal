@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,7 +15,9 @@
 package com.liferay.portlet;
 
 import com.liferay.portal.kernel.portlet.LiferayPortlet;
+import com.liferay.portal.kernel.portlet.LiferayPortletConfig;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.struts.PortletRequestProcessor;
 import com.liferay.portal.struts.StrutsUtil;
@@ -28,6 +30,8 @@ import java.util.Map;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
+import javax.portlet.EventRequest;
+import javax.portlet.EventResponse;
 import javax.portlet.PortletConfig;
 import javax.portlet.PortletContext;
 import javax.portlet.PortletException;
@@ -40,6 +44,7 @@ import javax.servlet.ServletException;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Raymond Augé
  */
 public class StrutsPortlet extends LiferayPortlet {
 
@@ -156,6 +161,27 @@ public class StrutsPortlet extends LiferayPortlet {
 	public void init(PortletConfig portletConfig) throws PortletException {
 		super.init(portletConfig);
 
+		templatePath = getInitParameter("template-path");
+
+		if (Validator.isNull(templatePath)) {
+			templatePath = StringPool.SLASH;
+		}
+		else if (templatePath.contains(StringPool.BACK_SLASH) ||
+				 templatePath.contains(StringPool.DOUBLE_SLASH) ||
+				 templatePath.contains(StringPool.PERIOD) ||
+				 templatePath.contains(StringPool.SPACE)) {
+
+			throw new PortletException(
+				"template-path " + templatePath + " has invalid characters");
+		}
+		else if (!templatePath.startsWith(StringPool.SLASH) ||
+				 !templatePath.endsWith(StringPool.SLASH)) {
+
+			throw new PortletException(
+				"template-path " + templatePath +
+					" must start and end with a /");
+		}
+
 		aboutAction = getInitParameter("about-action");
 		configAction = getInitParameter("config-action");
 		editAction = getInitParameter("edit-action");
@@ -169,7 +195,7 @@ public class StrutsPortlet extends LiferayPortlet {
 		copyRequestParameters = GetterUtil.getBoolean(
 			getInitParameter("copy-request-parameters"), true);
 
-		_portletConfig = (PortletConfigImpl)portletConfig;
+		_liferayPortletConfig = (LiferayPortletConfig)portletConfig;
 	}
 
 	@Override
@@ -200,9 +226,31 @@ public class StrutsPortlet extends LiferayPortlet {
 	}
 
 	@Override
+	public void processEvent(EventRequest request, EventResponse response)
+		throws IOException, PortletException {
+
+		request.setAttribute(WebKeys.PORTLET_STRUTS_ACTION, viewAction);
+
+		// Call processEvent of com.liferay.portal.struts.PortletAction
+
+		try {
+			PortletRequestProcessor processor = _getPortletRequestProcessor();
+
+			processor.process(request, response);
+		}
+		catch (ServletException se) {
+			throw new PortletException(se);
+		}
+	}
+
+	@Override
 	public void serveResource(
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws IOException, PortletException {
+
+		String resourceID = resourceRequest.getResourceID();
+
+		checkPath(resourceID);
 
 		resourceRequest.setAttribute(WebKeys.PORTLET_STRUTS_ACTION, viewAction);
 
@@ -218,6 +266,17 @@ public class StrutsPortlet extends LiferayPortlet {
 		}
 	}
 
+	protected void checkPath(String path) throws PortletException {
+		if (Validator.isNotNull(path) &&
+			(!path.startsWith(templatePath) ||
+			 !PortalUtil.isValidResourceId(path) ||
+			 !Validator.isFilePath(path, false))) {
+
+			throw new PortletException(
+				"Path " + path + " is not accessible by this portlet");
+		}
+	}
+
 	protected void include(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
@@ -226,7 +285,7 @@ public class StrutsPortlet extends LiferayPortlet {
 
 		Map<String, Object> strutsAttributes = null;
 
-		if (_portletConfig.isWARFile()) {
+		if (_liferayPortletConfig.isWARFile()) {
 			strutsAttributes = StrutsUtil.removeStrutsAttributes(
 				getPortletContext(), renderRequest);
 		}
@@ -240,7 +299,7 @@ public class StrutsPortlet extends LiferayPortlet {
 			throw new PortletException(se);
 		}
 		finally {
-			if (_portletConfig.isWARFile()) {
+			if (_liferayPortletConfig.isWARFile()) {
 				StrutsUtil.setStrutsAttributes(renderRequest, strutsAttributes);
 			}
 		}
@@ -259,6 +318,7 @@ public class StrutsPortlet extends LiferayPortlet {
 	protected String helpAction;
 	protected String previewAction;
 	protected String printAction;
+	protected String templatePath;
 	protected String viewAction;
 
 	private PortletRequestProcessor _getPortletRequestProcessor() {
@@ -268,6 +328,6 @@ public class StrutsPortlet extends LiferayPortlet {
 			WebKeys.PORTLET_STRUTS_PROCESSOR);
 	}
 
-	private PortletConfigImpl _portletConfig;
+	private LiferayPortletConfig _liferayPortletConfig;
 
 }

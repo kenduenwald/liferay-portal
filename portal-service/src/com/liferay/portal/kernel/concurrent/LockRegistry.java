@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,7 +28,7 @@ public class LockRegistry {
 			groupName);
 
 		if (lockGroup == null) {
-			lockGroup = new ConcurrentHashMap<String, ReentrantLock>();
+			lockGroup = new ConcurrentHashMap<>();
 
 			ConcurrentHashMap<String, ReentrantLock> oldLockGroup =
 				_lockGroupMap.putIfAbsent(groupName, lockGroup);
@@ -153,13 +153,11 @@ public class LockRegistry {
 		return lockGroup.get(key);
 	}
 
-	private static Object _dummyValue = new Object();
-	private static ConcurrentHashMap
+	private static final Object _dummyValue = new Object();
+	private static final ConcurrentHashMap
 		<String, ConcurrentHashMap<String, ReentrantLock>>
-			_lockGroupMap =
-				new ConcurrentHashMap
-					<String, ConcurrentHashMap<String, ReentrantLock>>();
-	private static Map<String, Object> _prematureLockReleases =
-		new ConcurrentHashMap<String, Object>();
+			_lockGroupMap = new ConcurrentHashMap<>();
+	private static final Map<String, Object> _prematureLockReleases =
+		new ConcurrentHashMap<>();
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,10 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.model.Ticket;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.base.TicketLocalServiceBaseImpl;
-import com.liferay.portal.util.PortalUtil;
 
 import java.util.Date;
 
@@ -29,21 +27,33 @@ import java.util.Date;
  */
 public class TicketLocalServiceImpl extends TicketLocalServiceBaseImpl {
 
-	public Ticket addTicket(
-			long companyId, String className, long classPK, int type,
-			String extraInfo, Date expirationDate,
-			ServiceContext serviceContext)
-		throws SystemException {
+	@Override
+	public Ticket addDistinctTicket(
+		long companyId, String className, long classPK, int type,
+		String extraInfo, Date expirationDate, ServiceContext serviceContext) {
 
-		long classNameId = PortalUtil.getClassNameId(className);
-		Date now = new Date();
+		long classNameId = classNameLocalService.getClassNameId(className);
+
+		ticketPersistence.removeByC_C_T(classNameId, classPK, type);
+
+		return addTicket(
+			companyId, className, classPK, type, extraInfo, expirationDate,
+			serviceContext);
+	}
+
+	@Override
+	public Ticket addTicket(
+		long companyId, String className, long classPK, int type,
+		String extraInfo, Date expirationDate, ServiceContext serviceContext) {
+
+		long classNameId = classNameLocalService.getClassNameId(className);
 
 		long ticketId = counterLocalService.increment();
 
 		Ticket ticket = ticketPersistence.create(ticketId);
 
 		ticket.setCompanyId(companyId);
-		ticket.setCreateDate(now);
+		ticket.setCreateDate(new Date());
 		ticket.setClassNameId(classNameId);
 		ticket.setClassPK(classPK);
 		ticket.setKey(PortalUUIDUtil.generate());
@@ -51,18 +61,18 @@ public class TicketLocalServiceImpl extends TicketLocalServiceBaseImpl {
 		ticket.setExtraInfo(extraInfo);
 		ticket.setExpirationDate(expirationDate);
 
-		ticketPersistence.update(ticket, false);
+		ticketPersistence.update(ticket);
 
 		return ticket;
 	}
 
-	public Ticket fetchTicket(String key) throws SystemException {
+	@Override
+	public Ticket fetchTicket(String key) {
 		return ticketPersistence.fetchByKey(key);
 	}
 
-	public Ticket getTicket(String key)
-		throws PortalException, SystemException {
-
+	@Override
+	public Ticket getTicket(String key) throws PortalException {
 		return ticketPersistence.findByKey(key);
 	}
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,17 +14,18 @@
 
 package com.liferay.portlet.social.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.service.ServiceWrapper;
 
 /**
- * <p>
- * This class is a wrapper for {@link SocialActivityInterpreterLocalService}.
- * </p>
+ * Provides a wrapper for {@link SocialActivityInterpreterLocalService}.
  *
- * @author    Brian Wing Shun Chan
- * @see       SocialActivityInterpreterLocalService
+ * @author Brian Wing Shun Chan
+ * @see SocialActivityInterpreterLocalService
  * @generated
  */
+@ProviderType
 public class SocialActivityInterpreterLocalServiceWrapper
 	implements SocialActivityInterpreterLocalService,
 		ServiceWrapper<SocialActivityInterpreterLocalService> {
@@ -34,28 +35,11 @@ public class SocialActivityInterpreterLocalServiceWrapper
 	}
 
 	/**
-	* Returns the Spring bean ID for this bean.
-	*
-	* @return the Spring bean ID for this bean
-	*/
-	public java.lang.String getBeanIdentifier() {
-		return _socialActivityInterpreterLocalService.getBeanIdentifier();
-	}
-
-	/**
-	* Sets the Spring bean ID for this bean.
-	*
-	* @param beanIdentifier the Spring bean ID for this bean
-	*/
-	public void setBeanIdentifier(java.lang.String beanIdentifier) {
-		_socialActivityInterpreterLocalService.setBeanIdentifier(beanIdentifier);
-	}
-
-	/**
 	* Adds the activity interpreter to the list of available interpreters.
 	*
 	* @param activityInterpreter the activity interpreter
 	*/
+	@Override
 	public void addActivityInterpreter(
 		com.liferay.portlet.social.model.SocialActivityInterpreter activityInterpreter) {
 		_socialActivityInterpreterLocalService.addActivityInterpreter(activityInterpreter);
@@ -66,9 +50,44 @@ public class SocialActivityInterpreterLocalServiceWrapper
 	*
 	* @param activityInterpreter the activity interpreter
 	*/
+	@Override
 	public void deleteActivityInterpreter(
 		com.liferay.portlet.social.model.SocialActivityInterpreter activityInterpreter) {
 		_socialActivityInterpreterLocalService.deleteActivityInterpreter(activityInterpreter);
+	}
+
+	@Override
+	public java.util.Map<java.lang.String, java.util.List<com.liferay.portlet.social.model.SocialActivityInterpreter>> getActivityInterpreters() {
+		return _socialActivityInterpreterLocalService.getActivityInterpreters();
+	}
+
+	@Override
+	public java.util.List<com.liferay.portlet.social.model.SocialActivityInterpreter> getActivityInterpreters(
+		java.lang.String selector) {
+		return _socialActivityInterpreterLocalService.getActivityInterpreters(selector);
+	}
+
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	@Override
+	public java.lang.String getBeanIdentifier() {
+		return _socialActivityInterpreterLocalService.getBeanIdentifier();
+	}
+
+	/**
+	* @deprecated As of 6.2.0, replaced by {@link #interpret(String,
+	SocialActivity, ServiceContext)}
+	*/
+	@Deprecated
+	@Override
+	public com.liferay.portlet.social.model.SocialActivityFeedEntry interpret(
+		com.liferay.portlet.social.model.SocialActivity activity,
+		com.liferay.portal.theme.ThemeDisplay themeDisplay) {
+		return _socialActivityInterpreterLocalService.interpret(activity,
+			themeDisplay);
 	}
 
 	/**
@@ -81,39 +100,70 @@ public class SocialActivityInterpreterLocalServiceWrapper
 	* asset type of the activity.
 	* </p>
 	*
+	* @param selector the context in which the activity interpreter is used
 	* @param activity the activity to be translated to human readable form
-	* @param themeDisplay the theme display needed by interpreters to create
-	links and get localized text fragments
+	* @param serviceContext the service context to be applied
 	* @return the activity feed that is a human readable form of the activity
 	record or <code>null</code> if a compatible interpreter is not
 	found
 	*/
+	@Override
 	public com.liferay.portlet.social.model.SocialActivityFeedEntry interpret(
+		java.lang.String selector,
 		com.liferay.portlet.social.model.SocialActivity activity,
-		com.liferay.portal.theme.ThemeDisplay themeDisplay) {
-		return _socialActivityInterpreterLocalService.interpret(activity,
-			themeDisplay);
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		return _socialActivityInterpreterLocalService.interpret(selector,
+			activity, serviceContext);
+	}
+
+	@Override
+	public com.liferay.portlet.social.model.SocialActivityFeedEntry interpret(
+		java.lang.String selector,
+		com.liferay.portlet.social.model.SocialActivitySet activitySet,
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		return _socialActivityInterpreterLocalService.interpret(selector,
+			activitySet, serviceContext);
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedService}
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	@Override
+	public void setBeanIdentifier(java.lang.String beanIdentifier) {
+		_socialActivityInterpreterLocalService.setBeanIdentifier(beanIdentifier);
+	}
+
+	@Override
+	public void updateActivitySet(long activityId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		_socialActivityInterpreterLocalService.updateActivitySet(activityId);
+	}
+
+	/**
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedService}
 	 */
+	@Deprecated
 	public SocialActivityInterpreterLocalService getWrappedSocialActivityInterpreterLocalService() {
 		return _socialActivityInterpreterLocalService;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #setWrappedService}
+	 * @deprecated As of 6.1.0, replaced by {@link #setWrappedService}
 	 */
+	@Deprecated
 	public void setWrappedSocialActivityInterpreterLocalService(
 		SocialActivityInterpreterLocalService socialActivityInterpreterLocalService) {
 		_socialActivityInterpreterLocalService = socialActivityInterpreterLocalService;
 	}
 
+	@Override
 	public SocialActivityInterpreterLocalService getWrappedService() {
 		return _socialActivityInterpreterLocalService;
 	}
 
+	@Override
 	public void setWrappedService(
 		SocialActivityInterpreterLocalService socialActivityInterpreterLocalService) {
 		_socialActivityInterpreterLocalService = socialActivityInterpreterLocalService;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,9 @@
 
 package com.liferay.portlet.social.model;
 
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
@@ -29,6 +31,14 @@ public class SocialActivityCounterDefinition implements Serializable {
 	public static final int LIMIT_PERIOD_LIFETIME = 2;
 
 	public static final int LIMIT_PERIOD_PERIOD = 3;
+
+	public SocialActivityCounterDefinition() {
+	}
+
+	public SocialActivityCounterDefinition(String name, int ownerType) {
+		_name = name;
+		_ownerType = ownerType;
+	}
 
 	@Override
 	public SocialActivityCounterDefinition clone() {
@@ -114,6 +124,21 @@ public class SocialActivityCounterDefinition implements Serializable {
 		return _periodLength;
 	}
 
+	@Override
+	public int hashCode() {
+		int hash = HashUtil.hash(0, _enabled);
+
+		hash = HashUtil.hash(hash, _increment);
+		hash = HashUtil.hash(hash, _limitEnabled);
+		hash = HashUtil.hash(hash, _limitPeriod);
+		hash = HashUtil.hash(hash, _limitValue);
+		hash = HashUtil.hash(hash, _name);
+		hash = HashUtil.hash(hash, _ownerType);
+		hash = HashUtil.hash(hash, _periodLength);
+
+		return HashUtil.hash(hash, _transient);
+	}
+
 	public boolean isEnabled() {
 		return _enabled;
 	}
@@ -143,10 +168,10 @@ public class SocialActivityCounterDefinition implements Serializable {
 	}
 
 	public void setLimitPeriod(String limitPeriod) {
-		if (limitPeriod.equalsIgnoreCase("day")) {
+		if (StringUtil.equalsIgnoreCase(limitPeriod, "day")) {
 			setLimitPeriod(LIMIT_PERIOD_DAY);
 		}
-		else if (limitPeriod.equalsIgnoreCase("lifetime")) {
+		else if (StringUtil.equalsIgnoreCase(limitPeriod, "lifetime")) {
 			setLimitPeriod(LIMIT_PERIOD_LIFETIME);
 		}
 		else {
@@ -167,13 +192,13 @@ public class SocialActivityCounterDefinition implements Serializable {
 	}
 
 	public void setOwnerType(String ownerType) {
-		if (ownerType.equalsIgnoreCase("actor")) {
+		if (StringUtil.equalsIgnoreCase(ownerType, "actor")) {
 			setOwnerType(SocialActivityCounterConstants.TYPE_ACTOR);
 		}
-		else if (ownerType.equalsIgnoreCase("asset")) {
+		else if (StringUtil.equalsIgnoreCase(ownerType, "asset")) {
 			setOwnerType(SocialActivityCounterConstants.TYPE_ASSET);
 		}
-		else if (ownerType.equalsIgnoreCase("creator")) {
+		else if (StringUtil.equalsIgnoreCase(ownerType, "creator")) {
 			setOwnerType(SocialActivityCounterConstants.TYPE_CREATOR);
 		}
 	}

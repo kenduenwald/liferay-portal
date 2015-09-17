@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,21 @@
 
 package com.liferay.portal.notifications;
 
+import com.liferay.portal.kernel.cluster.ClusterExecutorUtil;
+import com.liferay.portal.kernel.cluster.ClusterInvokeThreadLocal;
+import com.liferay.portal.kernel.cluster.ClusterRequest;
 import com.liferay.portal.kernel.notifications.Channel;
 import com.liferay.portal.kernel.notifications.ChannelException;
 import com.liferay.portal.kernel.notifications.ChannelHub;
 import com.liferay.portal.kernel.notifications.ChannelHubManager;
+import com.liferay.portal.kernel.notifications.ChannelHubManagerUtil;
 import com.liferay.portal.kernel.notifications.ChannelListener;
 import com.liferay.portal.kernel.notifications.DuplicateChannelHubException;
 import com.liferay.portal.kernel.notifications.NotificationEvent;
 import com.liferay.portal.kernel.notifications.UnknownChannelHubException;
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.util.MethodHandler;
+import com.liferay.portal.kernel.util.MethodKey;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,8 +41,10 @@ import java.util.concurrent.ConcurrentMap;
  * @author Brian Wing Shun
  * @author Shuyang Zhou
  */
+@DoPrivileged
 public class ChannelHubManagerImpl implements ChannelHubManager {
 
+	@Override
 	public void confirmDelivery(
 			long companyId, long userId,
 			Collection<String> notificationEventUuids)
@@ -44,6 +53,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		confirmDelivery(companyId, userId, notificationEventUuids, false);
 	}
 
+	@Override
 	public void confirmDelivery(
 			long companyId, long userId,
 			Collection<String> notificationEventUuids, boolean archive)
@@ -54,6 +64,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		channelHub.confirmDelivery(userId, notificationEventUuids, archive);
 	}
 
+	@Override
 	public void confirmDelivery(
 			long companyId, long userId, String notificationEventUuid)
 		throws ChannelException {
@@ -61,6 +72,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		confirmDelivery(companyId, userId, notificationEventUuid, false);
 	}
 
+	@Override
 	public void confirmDelivery(
 			long companyId, long userId, String notificationEventUuid,
 			boolean archive)
@@ -71,6 +83,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		channelHub.confirmDelivery(userId, notificationEventUuid, archive);
 	}
 
+	@Override
 	public Channel createChannel(long companyId, long userId)
 		throws ChannelException {
 
@@ -79,6 +92,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub.createChannel(userId);
 	}
 
+	@Override
 	public ChannelHub createChannelHub(long companyId) throws ChannelException {
 		ChannelHub channelHub = _channelHub.clone(companyId);
 
@@ -90,6 +104,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub;
 	}
 
+	@Override
 	public void deleteUserNotificiationEvent(
 			long companyId, long userId, String notificationEventUuid)
 		throws ChannelException {
@@ -99,6 +114,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		channelHub.deleteUserNotificiationEvent(userId, notificationEventUuid);
 	}
 
+	@Override
 	public void deleteUserNotificiationEvents(
 			long companyId, long userId,
 			Collection<String> notificationEventUuids)
@@ -110,14 +126,34 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 			userId, notificationEventUuids);
 	}
 
+	@Override
 	public void destroyChannel(long companyId, long userId)
 		throws ChannelException {
 
 		ChannelHub channelHub = getChannelHub(companyId);
 
 		channelHub.destroyChannel(userId);
+
+		if (!ClusterInvokeThreadLocal.isEnabled()) {
+			return;
+		}
+
+		MethodHandler methodHandler = new MethodHandler(
+			_destroyChannelMethodKey, companyId, userId);
+
+		ClusterRequest clusterRequest = ClusterRequest.createMulticastRequest(
+			methodHandler, true);
+
+		try {
+			ClusterExecutorUtil.execute(clusterRequest);
+		}
+		catch (Exception e) {
+			throw new ChannelException(
+				"Unable to destroy channel across cluster", e);
+		}
 	}
 
+	@Override
 	public void destroyChannelHub(long companyId) throws ChannelException {
 		ChannelHub channelHub = _channelHubs.remove(companyId);
 
@@ -126,10 +162,12 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		}
 	}
 
+	@Override
 	public ChannelHub fetchChannelHub(long companyId) throws ChannelException {
 		return fetchChannelHub(companyId, false);
 	}
 
+	@Override
 	public ChannelHub fetchChannelHub(long companyId, boolean createIfAbsent)
 		throws ChannelException {
 
@@ -150,6 +188,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub;
 	}
 
+	@Override
 	public List<NotificationEvent> fetchNotificationEvents(
 			long companyId, long userId, boolean flush)
 		throws ChannelException {
@@ -161,15 +200,16 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		}
 
 		return channelHub.fetchNotificationEvents(userId, flush);
-
 	}
 
+	@Override
 	public void flush() throws ChannelException {
 		for (ChannelHub channelHub : _channelHubs.values()) {
 			channelHub.flush();
 		}
 	}
 
+	@Override
 	public void flush(long companyId) throws ChannelException {
 		ChannelHub channelHub = fetchChannelHub(companyId);
 
@@ -178,6 +218,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		}
 	}
 
+	@Override
 	public void flush(long companyId, long userId, long timestamp)
 		throws ChannelException {
 
@@ -188,12 +229,14 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		}
 	}
 
+	@Override
 	public Channel getChannel(long companyId, long userId)
 		throws ChannelException {
 
 		return getChannel(companyId, userId, false);
 	}
 
+	@Override
 	public Channel getChannel(
 			long companyId, long userId, boolean createIfAbsent)
 		throws ChannelException {
@@ -203,10 +246,12 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub.getChannel(userId, createIfAbsent);
 	}
 
+	@Override
 	public ChannelHub getChannelHub(long companyId) throws ChannelException {
 		return getChannelHub(companyId, false);
 	}
 
+	@Override
 	public ChannelHub getChannelHub(long companyId, boolean createIfAbsent)
 		throws ChannelException {
 
@@ -220,6 +265,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub;
 	}
 
+	@Override
 	public List<NotificationEvent> getNotificationEvents(
 			long companyId, long userId)
 		throws ChannelException {
@@ -229,6 +275,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub.getNotificationEvents(userId);
 	}
 
+	@Override
 	public List<NotificationEvent> getNotificationEvents(
 			long companyId, long userId, boolean flush)
 		throws ChannelException {
@@ -238,12 +285,14 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		return channelHub.getNotificationEvents(userId, flush);
 	}
 
+	@Override
 	public Collection<Long> getUserIds(long companyId) throws ChannelException {
 		ChannelHub channelHub = getChannelHub(companyId);
 
 		return channelHub.getUserIds();
 	}
 
+	@Override
 	public void registerChannelListener(
 			long companyId, long userId, ChannelListener channelListener)
 		throws ChannelException {
@@ -253,6 +302,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		channelHub.registerChannelListener(userId, channelListener);
 	}
 
+	@Override
 	public void removeTransientNotificationEvents(
 			long companyId, long userId,
 			Collection<NotificationEvent> notificationEvents)
@@ -264,6 +314,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 			userId, notificationEvents);
 	}
 
+	@Override
 	public void removeTransientNotificationEventsByUuid(
 			long companyId, long userId,
 			Collection<String> notificationEventUuids)
@@ -275,6 +326,7 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 			userId, notificationEventUuids);
 	}
 
+	@Override
 	public void sendNotificationEvent(
 			long companyId, long userId, NotificationEvent notificationEvent)
 		throws ChannelException {
@@ -282,8 +334,27 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		ChannelHub channelHub = getChannelHub(companyId);
 
 		channelHub.sendNotificationEvent(userId, notificationEvent);
+
+		if (!ClusterInvokeThreadLocal.isEnabled()) {
+			return;
+		}
+
+		MethodHandler methodHandler = new MethodHandler(
+			_storeNotificationEventMethodKey, companyId, userId,
+			notificationEvent);
+
+		ClusterRequest clusterRequest = ClusterRequest.createMulticastRequest(
+			methodHandler, true);
+
+		try {
+			ClusterExecutorUtil.execute(clusterRequest);
+		}
+		catch (Exception e) {
+			throw new ChannelException("Unable to notify cluster of event", e);
+		}
 	}
 
+	@Override
 	public void sendNotificationEvents(
 			long companyId, long userId,
 			Collection<NotificationEvent> notificationEvents)
@@ -298,6 +369,17 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		_channelHub = channelHub;
 	}
 
+	@Override
+	public void storeNotificationEvent(
+			long companyId, long userId, NotificationEvent notificationEvent)
+		throws ChannelException {
+
+		ChannelHub channelHub = getChannelHub(companyId);
+
+		channelHub.storeNotificationEvent(userId, notificationEvent);
+	}
+
+	@Override
 	public void unregisterChannelListener(
 			long companyId, long userId, ChannelListener channelListener)
 		throws ChannelException {
@@ -307,8 +389,15 @@ public class ChannelHubManagerImpl implements ChannelHubManager {
 		channelHub.unregisterChannelListener(userId, channelListener);
 	}
 
+	private static final MethodKey _destroyChannelMethodKey = new MethodKey(
+		ChannelHubManagerUtil.class, "destroyChannel", long.class, long.class);
+	private static final MethodKey _storeNotificationEventMethodKey =
+		new MethodKey(
+			ChannelHubManagerUtil.class, "storeNotificationEvent", long.class,
+			long.class, NotificationEvent.class);
+
 	private ChannelHub _channelHub;
-	private ConcurrentMap<Long, ChannelHub> _channelHubs =
-		new ConcurrentHashMap<Long, ChannelHub>();
+	private final ConcurrentMap<Long, ChannelHub> _channelHubs =
+		new ConcurrentHashMap<>();
 
 }

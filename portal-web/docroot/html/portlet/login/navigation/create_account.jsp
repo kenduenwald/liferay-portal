@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,18 +17,18 @@
 <%@ include file="/html/portlet/login/init.jsp" %>
 
 <%
-String strutsAction = ParamUtil.getString(request, "struts_action");
+String mvcRenderCommandName = ParamUtil.getString(request, "mvcRenderCommandName");
 
 boolean showCreateAccountIcon = false;
 
-if (!strutsAction.equals("/login/create_account") && company.isStrangers() && !portletName.equals(PortletKeys.FAST_LOGIN)) {
+if (!mvcRenderCommandName.equals("/login/create_account") && company.isStrangers() && !portletName.equals(PortletKeys.FAST_LOGIN)) {
 	showCreateAccountIcon = true;
 }
 %>
 
 <c:if test="<%= showCreateAccountIcon %>">
 	<liferay-ui:icon
-		image="add_user"
+		iconCssClass="icon-plus"
 		message="create-account"
 		url="<%= PortalUtil.getCreateAccountURL(request, themeDisplay) %>"
 	/>

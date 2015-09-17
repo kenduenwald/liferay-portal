@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,41 +14,34 @@
 
 package com.liferay.portal.kernel.cluster;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 /**
  * @author Tina Tian
  */
-public class ClusterNode implements Comparable<ClusterNode>, Serializable {
+@ProviderType
+public class ClusterNode implements Serializable {
 
-	public ClusterNode(String clusterNodeId) {
-		_clusterNodeId = clusterNodeId;
-	}
-
-	public int compareTo(ClusterNode clusterNode) {
-		InetAddress inetAddress = clusterNode._inetAddress;
-
-		String ipAddress = inetAddress.getHostAddress();
-
-		String curIpAddress = _inetAddress.getHostAddress();
-
-		int value = curIpAddress.compareTo(ipAddress);
-
-		if (value == 0) {
-			if (_port > clusterNode._port) {
-				value = 1;
-			}
-			else if (_port < clusterNode._port) {
-				value = -1;
-			}
+	public ClusterNode(String clusterNodeId, InetAddress bindInetAddress) {
+		if (clusterNodeId == null) {
+			throw new IllegalArgumentException("Cluster node ID is null");
 		}
 
-		return value;
+		if (bindInetAddress == null) {
+			throw new IllegalArgumentException("Bind inet address is null");
+		}
+
+		_clusterNodeId = clusterNodeId;
+		_bindInetAddress = bindInetAddress;
 	}
 
 	@Override
@@ -63,66 +56,92 @@ public class ClusterNode implements Comparable<ClusterNode>, Serializable {
 
 		ClusterNode clusterNode = (ClusterNode)obj;
 
-		if (Validator.equals(_clusterNodeId, clusterNode._clusterNodeId)) {
+		if (Validator.equals(_clusterNodeId, clusterNode._clusterNodeId) &&
+			Validator.equals(_bindInetAddress, clusterNode._bindInetAddress) &&
+			Validator.equals(
+				_portalInetSocketAddress,
+				clusterNode._portalInetSocketAddress) &&
+			Validator.equals(_portalProtocol, clusterNode._portalProtocol)) {
+
 			return true;
 		}
 
 		return false;
 	}
 
+	public InetAddress getBindInetAddress() {
+		return _bindInetAddress;
+	}
+
 	public String getClusterNodeId() {
 		return _clusterNodeId;
 	}
 
-	public String getHostName() {
-		return _hostName;
+	public InetAddress getPortalInetAddress() {
+		if (_portalInetSocketAddress == null) {
+			return null;
+		}
+
+		return _portalInetSocketAddress.getAddress();
 	}
 
-	public InetAddress getInetAddress() {
-		return _inetAddress;
+	public InetSocketAddress getPortalInetSocketAddress() {
+		return _portalInetSocketAddress;
 	}
 
-	public int getPort() {
-		return _port;
+	public int getPortalPort() {
+		if (_portalInetSocketAddress == null) {
+			return -1;
+		}
+
+		return _portalInetSocketAddress.getPort();
+	}
+
+	public String getPortalProtocol() {
+		return _portalProtocol;
 	}
 
 	@Override
 	public int hashCode() {
-		return _clusterNodeId.hashCode();
+		int hash = HashUtil.hash(0, _clusterNodeId);
+
+		hash = HashUtil.hash(hash, _bindInetAddress);
+		hash = HashUtil.hash(hash, _portalInetSocketAddress);
+		hash = HashUtil.hash(hash, _portalProtocol);
+
+		return hash;
 	}
 
-	public void setHostName(String hostName) {
-		_hostName = hostName;
+	public void setPortalInetSocketAddress(
+		InetSocketAddress portalInetSocketAddress) {
+
+		_portalInetSocketAddress = portalInetSocketAddress;
 	}
 
-	public void setInetAddress(InetAddress inetAddress) {
-		_inetAddress = inetAddress;
-	}
-
-	public void setPort(int port) {
-		_port = port;
+	public void setPortalProtocol(String portalProtocol) {
+		_portalProtocol = portalProtocol;
 	}
 
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(9);
 
-		sb.append("{clusterNodeId=");
+		sb.append("{bindInetAddress=");
+		sb.append(_bindInetAddress);
+		sb.append(", clusterNodeId=");
 		sb.append(_clusterNodeId);
-		sb.append(", hostName=");
-		sb.append(_hostName);
-		sb.append(", inetAddress=");
-		sb.append(_inetAddress);
-		sb.append(", port=");
-		sb.append(_port);
+		sb.append(", portalInetSocketAddress=");
+		sb.append(_portalInetSocketAddress);
+		sb.append(", portalProtocol=");
+		sb.append(_portalProtocol);
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	private String _clusterNodeId;
-	private String _hostName;
-	private InetAddress _inetAddress;
-	private int _port;
+	private final InetAddress _bindInetAddress;
+	private final String _clusterNodeId;
+	private InetSocketAddress _portalInetSocketAddress;
+	private String _portalProtocol;
 
 }

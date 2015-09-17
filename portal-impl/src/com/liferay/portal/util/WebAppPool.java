@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -40,7 +40,7 @@ public class WebAppPool {
 	}
 
 	private WebAppPool() {
-		_webAppPool = new ConcurrentHashMap<Long, Map<String, Object>>();
+		_webAppPool = new ConcurrentHashMap<>();
 	}
 
 	private Object _get(Long webAppId, String key) {
@@ -58,7 +58,7 @@ public class WebAppPool {
 		Map<String, Object> map = _webAppPool.get(webAppId);
 
 		if (map == null) {
-			map = new ConcurrentHashMap<String, Object>();
+			map = new ConcurrentHashMap<>();
 
 			Map<String, Object> previousMap = _webAppPool.putIfAbsent(
 				webAppId, map);
@@ -82,8 +82,8 @@ public class WebAppPool {
 		}
 	}
 
-	private static WebAppPool _instance = new WebAppPool();
+	private static final WebAppPool _instance = new WebAppPool();
 
-	private ConcurrentMap<Long, Map<String, Object>> _webAppPool;
+	private final ConcurrentMap<Long, Map<String, Object>> _webAppPool;
 
 }

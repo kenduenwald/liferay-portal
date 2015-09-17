@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -40,6 +40,10 @@ public class MathUtil {
 		}
 	}
 
+	public static int difference(Integer value1, Integer value2) {
+		return value1 - value2;
+	}
+
 	public static int factorial(int x) {
 		if (x < 0) {
 			return 0;
@@ -77,43 +81,42 @@ public class MathUtil {
 		if (max < 2) {
 			return new int[0];
 		}
-		else {
-			boolean[] crossedOut = new boolean[max + 1];
 
-			for (int i = 2; i < crossedOut.length; i++) {
-				crossedOut[i] = false;
-			}
+		boolean[] crossedOut = new boolean[max + 1];
 
-			int limit = (int)Math.sqrt(crossedOut.length);
-
-			for (int i = 2; i <= limit; i++) {
-				if (!crossedOut[i]) {
-					for (int multiple = 2 * i; multiple < crossedOut.length;
-							multiple += i) {
-
-						crossedOut[multiple] = true;
-					}
-				}
-			}
-
-			int uncrossedCount = 0;
-
-			for (int i = 2; i < crossedOut.length; i++) {
-				if (!crossedOut[i]) {
-					uncrossedCount++;
-				}
-			}
-
-			int[] result = new int[uncrossedCount];
-
-			for (int i = 2, j = 0; i < crossedOut.length; i++) {
-				if (!crossedOut[i]) {
-					result[j++] = i;
-				}
-			}
-
-			return result;
+		for (int i = 2; i < crossedOut.length; i++) {
+			crossedOut[i] = false;
 		}
+
+		int limit = (int)Math.sqrt(crossedOut.length);
+
+		for (int i = 2; i <= limit; i++) {
+			if (!crossedOut[i]) {
+				for (int multiple = 2 * i; multiple < crossedOut.length;
+						multiple += i) {
+
+					crossedOut[multiple] = true;
+				}
+			}
+		}
+
+		int uncrossedCount = 0;
+
+		for (int i = 2; i < crossedOut.length; i++) {
+			if (!crossedOut[i]) {
+				uncrossedCount++;
+			}
+		}
+
+		int[] result = new int[uncrossedCount];
+
+		for (int i = 2, j = 0; i < crossedOut.length; i++) {
+			if (!crossedOut[i]) {
+				result[j++] = i;
+			}
+		}
+
+		return result;
 	}
 
 	public static boolean isEven(int x) {
@@ -128,10 +131,73 @@ public class MathUtil {
 		return !isEven(x);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(MathUtil.class);
+	public static double product(Double... values) {
+		double product = 1.0;
 
-	private static Map<Long, Integer> _base2LogValues =
-		new HashMap<Long, Integer>();
+		for (double value : values) {
+			product *= value;
+		}
+
+		return product;
+	}
+
+	public static int product(Integer... values) {
+		int product = 1;
+
+		for (int value : values) {
+			product *= value;
+		}
+
+		return product;
+	}
+
+	public static long product(Long... values) {
+		long product = 1;
+
+		for (long value : values) {
+			product *= value;
+		}
+
+		return product;
+	}
+
+	public static int quotient(Integer value1, Integer value2) {
+		return value1 / value2;
+	}
+
+	public static double sum(Double... values) {
+		double sum = 0.0;
+
+		for (double value : values) {
+			sum += value;
+		}
+
+		return sum;
+	}
+
+	public static int sum(Integer... values) {
+		int sum = 0;
+
+		for (int value : values) {
+			sum += value;
+		}
+
+		return sum;
+	}
+
+	public static long sum(Long... values) {
+		long sum = 0;
+
+		for (long value : values) {
+			sum += value;
+		}
+
+		return sum;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(MathUtil.class);
+
+	private static final Map<Long, Integer> _base2LogValues = new HashMap<>();
 
 	static {
 		_base2LogValues.put(0L, Integer.MIN_VALUE);

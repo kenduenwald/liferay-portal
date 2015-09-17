@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -21,14 +21,16 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.Company;
 import com.liferay.portal.model.Contact;
 import com.liferay.portal.model.ContactConstants;
+import com.liferay.portal.model.GroupConstants;
 import com.liferay.portal.model.User;
 import com.liferay.portal.service.CompanyLocalServiceUtil;
 import com.liferay.portal.service.ContactLocalServiceUtil;
 import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.UserLocalServiceUtil;
 
-import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * @author Brian Wing Shun Chan
@@ -43,8 +45,6 @@ public class VerifyUser extends VerifyProcess {
 			_log.debug(
 				"Processing " + users.size() + " users with no contacts");
 		}
-
-		Date now = new Date();
 
 		for (User user : users) {
 			if (_log.isDebugEnabled()) {
@@ -61,8 +61,6 @@ public class VerifyUser extends VerifyProcess {
 			contact.setCompanyId(user.getCompanyId());
 			contact.setUserId(user.getUserId());
 			contact.setUserName(StringPool.BLANK);
-			contact.setCreateDate(now);
-			contact.setModifiedDate(now);
 			contact.setAccountId(company.getAccountId());
 			contact.setParentContactId(
 				ContactConstants.DEFAULT_PARENT_CONTACT_ID);
@@ -96,9 +94,11 @@ public class VerifyUser extends VerifyProcess {
 			}
 
 			GroupLocalServiceUtil.addGroup(
-				user.getUserId(), User.class.getName(), user.getUserId(), null,
-				null, 0, StringPool.SLASH + user.getScreenName(), false, true,
-				null);
+				user.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,
+				User.class.getName(), user.getUserId(),
+				GroupConstants.DEFAULT_LIVE_GROUP_ID, (Map<Locale, String>)null,
+				null, 0, true, GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
+				StringPool.SLASH + user.getScreenName(), false, true, null);
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -106,6 +106,6 @@ public class VerifyUser extends VerifyProcess {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(VerifyUser.class);
+	private static final Log _log = LogFactoryUtil.getLog(VerifyUser.class);
 
 }

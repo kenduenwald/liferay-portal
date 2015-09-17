@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,45 +14,70 @@
 
 package com.liferay.portal.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 /**
- * <p>
- * This class is a wrapper for {@link ImageService}.
- * </p>
+ * Provides a wrapper for {@link ImageService}.
  *
- * @author    Brian Wing Shun Chan
- * @see       ImageService
+ * @author Brian Wing Shun Chan
+ * @see ImageService
  * @generated
  */
+@ProviderType
 public class ImageServiceWrapper implements ImageService,
 	ServiceWrapper<ImageService> {
 	public ImageServiceWrapper(ImageService imageService) {
 		_imageService = imageService;
 	}
 
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	@Override
+	public java.lang.String getBeanIdentifier() {
+		return _imageService.getBeanIdentifier();
+	}
+
+	@Override
 	public com.liferay.portal.model.Image getImage(long imageId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return _imageService.getImage(imageId);
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedService}
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	@Override
+	public void setBeanIdentifier(java.lang.String beanIdentifier) {
+		_imageService.setBeanIdentifier(beanIdentifier);
+	}
+
+	/**
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedService}
 	 */
+	@Deprecated
 	public ImageService getWrappedImageService() {
 		return _imageService;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #setWrappedService}
+	 * @deprecated As of 6.1.0, replaced by {@link #setWrappedService}
 	 */
+	@Deprecated
 	public void setWrappedImageService(ImageService imageService) {
 		_imageService = imageService;
 	}
 
+	@Override
 	public ImageService getWrappedService() {
 		return _imageService;
 	}
 
+	@Override
 	public void setWrappedService(ImageService imageService) {
 		_imageService = imageService;
 	}

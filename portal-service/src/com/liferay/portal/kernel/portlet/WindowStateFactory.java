@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +13,8 @@
  */
 
 package com.liferay.portal.kernel.portlet;
+
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +31,7 @@ public class WindowStateFactory {
 	}
 
 	private WindowStateFactory() {
-		_windowStates = new HashMap<String, WindowState>();
+		_windowStates = new HashMap<>();
 
 		_windowStates.put(_NORMAL, LiferayWindowState.NORMAL);
 		_windowStates.put(_MAXIMIZED, LiferayWindowState.MAXIMIZED);
@@ -39,6 +41,10 @@ public class WindowStateFactory {
 	}
 
 	private WindowState _getWindowState(String name) {
+		if (Validator.isNull(name)) {
+			return WindowState.NORMAL;
+		}
+
 		WindowState windowState = _windowStates.get(name);
 
 		if (windowState == null) {
@@ -59,8 +65,9 @@ public class WindowStateFactory {
 
 	private static final String _POP_UP = LiferayWindowState.POP_UP.toString();
 
-	private static WindowStateFactory _instance = new WindowStateFactory();
+	private static final WindowStateFactory _instance =
+		new WindowStateFactory();
 
-	private Map<String, WindowState> _windowStates;
+	private final Map<String, WindowState> _windowStates;
 
 }

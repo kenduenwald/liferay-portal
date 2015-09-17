@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,16 @@
 
 package com.liferay.taglib.aui;
 
+import com.liferay.portal.kernel.servlet.taglib.aui.ToolTag;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.util.PortalUtil;
 import com.liferay.taglib.aui.base.BasePanelTag;
-import com.liferay.util.PwdGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
 
 /**
  * @author Julio Camarero
@@ -32,17 +33,10 @@ public class PanelTag extends BasePanelTag {
 
 	public void addToolTag(ToolTag toolTag) {
 		if (_toolTags == null) {
-			_toolTags = new ArrayList<ToolTag>();
+			_toolTags = new ArrayList<>();
 		}
 
 		_toolTags.add(toolTag);
-	}
-
-	@Override
-	public int doEndTag() throws JspException {
-		setCalledSetAttributes(false);
-
-		return super.doEndTag();
 	}
 
 	public List<ToolTag> getToolTags() {
@@ -74,7 +68,8 @@ public class PanelTag extends BasePanelTag {
 		String id = getId();
 
 		if (Validator.isNull(id)) {
-			id = PwdGenerator.getPassword(PwdGenerator.KEY3, 4);
+			id = PortalUtil.getUniqueElementId(
+				request, StringPool.BLANK, AUIUtil.normalizeId("panel"));
 		}
 
 		setNamespacedAttribute(request, "id", id);

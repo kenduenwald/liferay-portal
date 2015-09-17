@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,7 @@
 
 package com.liferay.portlet.documentlibrary.util.comparator;
 
-import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.repository.model.RepositoryEntry;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
@@ -27,7 +26,8 @@ import java.util.Date;
 /**
  * @author Alexander Chow
  */
-public class RepositoryModelCreateDateComparator extends OrderByComparator {
+public class RepositoryModelCreateDateComparator<T>
+	extends OrderByComparator<T> {
 
 	public static final String ORDER_BY_ASC = "createDate ASC";
 
@@ -44,9 +44,9 @@ public class RepositoryModelCreateDateComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Date createDate1 = getCreateDate(obj1);
-		Date createDate2 = getCreateDate(obj2);
+	public int compare(T t1, T t2 ) {
+		Date createDate1 = getCreateDate(t1);
+		Date createDate2 = getCreateDate(t2);
 
 		int value = DateUtil.compareTo(createDate1, createDate2);
 
@@ -94,18 +94,13 @@ public class RepositoryModelCreateDateComparator extends OrderByComparator {
 
 			return dlFolder.getCreateDate();
 		}
-		else if (obj instanceof FileEntry) {
-			FileEntry fileEntry = (FileEntry)obj;
-
-			return fileEntry.getCreateDate();
-		}
 		else {
-			Folder folder = (Folder)obj;
+			RepositoryEntry repositoryEntry = (RepositoryEntry)obj;
 
-			return folder.getCreateDate();
+			return repositoryEntry.getCreateDate();
 		}
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,8 +15,9 @@
 package com.liferay.portlet.softwarecatalog.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.security.auth.PrincipalException;
+import com.liferay.portal.security.permission.BaseModelPermissionChecker;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portlet.softwarecatalog.model.SCProductEntry;
 import com.liferay.portlet.softwarecatalog.service.SCProductEntryLocalServiceUtil;
@@ -25,15 +26,23 @@ import com.liferay.portlet.softwarecatalog.service.SCProductEntryLocalServiceUti
  * @author Jorge Ferrer
  * @author Brian Wing Shun Chan
  */
-public class SCProductEntryPermission {
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=" +
+			"com.liferay.portlet.softwarecatalog.model.SCProductEntry"
+	}
+)
+public class SCProductEntryPermission implements BaseModelPermissionChecker {
 
 	public static void check(
 			PermissionChecker permissionChecker, long productEntryId,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (!contains(permissionChecker, productEntryId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, SCProductEntry.class.getName(),
+				productEntryId, actionId);
 		}
 	}
 
@@ -43,14 +52,16 @@ public class SCProductEntryPermission {
 		throws PortalException {
 
 		if (!contains(permissionChecker, productEntry, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, SCProductEntry.class.getName(),
+				productEntry.getProductEntryId(), actionId);
 		}
 	}
 
 	public static boolean contains(
 			PermissionChecker permissionChecker, long productEntryId,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		SCProductEntry productEntry =
 			SCProductEntryLocalServiceUtil.getProductEntry(productEntryId);
@@ -73,6 +84,15 @@ public class SCProductEntryPermission {
 		return permissionChecker.hasPermission(
 			productEntry.getGroupId(), SCProductEntry.class.getName(),
 			productEntry.getProductEntryId(), actionId);
+	}
+
+	@Override
+	public void checkBaseModel(
+			PermissionChecker permissionChecker, long groupId, long primaryKey,
+			String actionId)
+		throws PortalException {
+
+		check(permissionChecker, primaryKey, actionId);
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,45 +14,56 @@
 
 package com.liferay.portal.convert;
 
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.model.CompanyConstants;
+import com.liferay.portal.model.Image;
+import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
+import com.liferay.portal.service.ImageLocalServiceUtil;
 import com.liferay.portal.util.MaintenanceUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.documentlibrary.DuplicateDirectoryException;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileVersion;
+import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
 import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.store.AdvancedFileSystemStore;
-import com.liferay.portlet.documentlibrary.store.CMISStore;
-import com.liferay.portlet.documentlibrary.store.FileSystemStore;
-import com.liferay.portlet.documentlibrary.store.JCRStore;
-import com.liferay.portlet.documentlibrary.store.S3Store;
 import com.liferay.portlet.documentlibrary.store.Store;
 import com.liferay.portlet.documentlibrary.store.StoreFactory;
+import com.liferay.portlet.documentlibrary.util.DLPreviewableProcessor;
 import com.liferay.portlet.documentlibrary.util.comparator.FileVersionVersionComparator;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.service.MBMessageLocalServiceUtil;
-import com.liferay.portlet.wiki.model.WikiPage;
-import com.liferay.portlet.wiki.service.WikiPageLocalServiceUtil;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
 
 import java.io.InputStream;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
  * @author Minhchau Dang
  * @author Alexander Chow
+ * @author László Csontos
  */
-public class ConvertDocumentLibrary extends ConvertProcess {
+public class ConvertDocumentLibrary
+	extends BaseConvertProcess implements DLStoreConverter {
+
+	@Override
+	public String getConfigurationErrorMessage() {
+		return "there-are-no-stores-configured";
+	}
 
 	@Override
 	public String getDescription() {
@@ -66,19 +77,33 @@ public class ConvertDocumentLibrary extends ConvertProcess {
 
 	@Override
 	public String[] getParameterNames() {
-		StringBundler sb = new StringBundler(_HOOKS.length * 2 + 2);
+		StoreFactory storeFactory = StoreFactory.getInstance();
+
+		Store store = storeFactory.getStore();
+
+		if (store == null) {
+			return null;
+		}
+
+		String[] storeTypes = storeFactory.getStoreTypes();
+
+		StringBundler sb = new StringBundler(storeTypes.length * 2 + 2);
 
 		sb.append(PropsKeys.DL_STORE_IMPL);
 		sb.append(StringPool.EQUAL);
 
-		for (String hook : _HOOKS) {
-			if (!hook.equals(PropsValues.DL_STORE_IMPL)) {
-				sb.append(hook);
+		for (String storeType : storeTypes) {
+			Class<?> clazz = store.getClass();
+
+			if (!storeType.equals(clazz.getName())) {
+				sb.append(storeType);
 				sb.append(StringPool.SEMICOLON);
 			}
 		}
 
-		return new String[] {sb.toString()};
+		return new String[] {
+			sb.toString(), "delete-files-from-previous-repository=checkbox"
+		};
 	}
 
 	@Override
@@ -87,21 +112,63 @@ public class ConvertDocumentLibrary extends ConvertProcess {
 	}
 
 	@Override
+	public void migrateDLFileEntry(
+		long companyId, long repositoryId, FileEntry fileEntry) {
+
+		Object model = fileEntry.getModel();
+
+		if (!(model instanceof DLFileEntry)) {
+			throw new IllegalArgumentException(
+				"Unsupported file entry model " + model.getClass());
+		}
+
+		String fileName = ((DLFileEntry)model).getName();
+
+		List<FileVersion> fileVersions = getFileVersions(fileEntry);
+
+		if (fileVersions.isEmpty()) {
+			String versionNumber = Store.VERSION_DEFAULT;
+
+			migrateFile(companyId, repositoryId, fileName, versionNumber);
+
+			return;
+		}
+
+		for (FileVersion fileVersion : fileVersions) {
+			String versionNumber = fileVersion.getVersion();
+
+			migrateFile(companyId, repositoryId, fileName, versionNumber);
+		}
+	}
+
+	@Override
+	public void validate() {
+		String sourceStoreClassName = getSourceStoreClassName();
+
+		if (!sourceStoreClassName.endsWith(_FILE_SYSTEM_STORE_SUFFIX)) {
+			return;
+		}
+
+		String targetStoreClassName = getTargetStoreClassName();
+
+		if (!targetStoreClassName.endsWith(_FILE_SYSTEM_STORE_SUFFIX)) {
+			return;
+		}
+	}
+
+	@Override
 	protected void doConvert() throws Exception {
-		_sourceStore = StoreFactory.getInstance();
+		StoreFactory storeFactory = StoreFactory.getInstance();
 
-		String[] values = getParameterValues();
+		_sourceStore = storeFactory.getStore();
 
-		String targetStoreClassName = values[0];
+		String targetStoreClassName = getTargetStoreClassName();
 
-		ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
-
-		_targetStore = (Store)classLoader.loadClass(
-			targetStoreClassName).newInstance();
+		_targetStore = storeFactory.getStore(targetStoreClassName);
 
 		migratePortlets();
 
-		StoreFactory.setInstance(_targetStore);
+		storeFactory.setStore(targetStoreClassName);
 
 		MaintenanceUtil.appendStatus(
 			"Please set " + PropsKeys.DL_STORE_IMPL +
@@ -111,60 +178,74 @@ public class ConvertDocumentLibrary extends ConvertProcess {
 		PropsValues.DL_STORE_IMPL = targetStoreClassName;
 	}
 
-	protected List<DLFileVersion> getDLFileVersions(DLFileEntry dlFileEntry)
-		throws SystemException {
-
-		List<DLFileVersion> dlFileVersions = dlFileEntry.getFileVersions(
+	protected List<FileVersion> getFileVersions(FileEntry fileEntry) {
+		List<FileVersion> fileVersions = fileEntry.getFileVersions(
 			WorkflowConstants.STATUS_ANY);
 
 		return ListUtil.sort(
-			dlFileVersions, new FileVersionVersionComparator(true));
+			fileVersions, new FileVersionVersionComparator(true));
 	}
 
-	protected void migrateDL() throws Exception {
+	protected String getSourceStoreClassName() {
+		StoreFactory storeFactory = StoreFactory.getInstance();
+
+		Store sourceStore = storeFactory.getStore();
+
+		return sourceStore.getClass().getName();
+	}
+
+	protected String getTargetStoreClassName() {
+		String[] values = getParameterValues();
+
+		return values[0];
+	}
+
+	protected boolean isDeleteFilesFromSourceStore() {
+		String[] values = getParameterValues();
+
+		return GetterUtil.getBoolean(values[1]);
+	}
+
+	protected void migrateDL() throws PortalException {
 		int count = DLFileEntryLocalServiceUtil.getFileEntriesCount();
 
 		MaintenanceUtil.appendStatus(
 			"Migrating " + count + " documents and media files");
 
-		int pages = count / Indexer.DEFAULT_INTERVAL;
+		ActionableDynamicQuery actionableDynamicQuery =
+			DLFileEntryLocalServiceUtil.getActionableDynamicQuery();
 
-		for (int i = 0; i <= pages; i++) {
-			int start = (i * Indexer.DEFAULT_INTERVAL);
-			int end = start + Indexer.DEFAULT_INTERVAL;
+		actionableDynamicQuery.setAddCriteriaMethod(
+			new ActionableDynamicQuery.AddCriteriaMethod() {
 
-			List<DLFileEntry> dlFileEntries =
-				DLFileEntryLocalServiceUtil.getFileEntries(start, end);
+				@Override
+				public void addCriteria(DynamicQuery dynamicQuery) {
+					Property classNameIdProperty = PropertyFactoryUtil.forName(
+						"classNameId");
 
-			for (DLFileEntry dlFileEntry : dlFileEntries) {
-				long companyId = dlFileEntry.getCompanyId();
-				long repositoryId = dlFileEntry.getDataRepositoryId();
+					dynamicQuery.add(classNameIdProperty.eq(0L));
+				}
 
-				migrateDLFileEntry(companyId, repositoryId, dlFileEntry);
-			}
-		}
-	}
+			});
+		actionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod() {
 
-	protected void migrateDLFileEntry(
-			long companyId, long repositoryId, DLFileEntry fileEntry)
-		throws Exception {
+				@Override
+				public void performAction(Object object) {
+					DLFileEntry dlFileEntry = (DLFileEntry)object;
 
-		String fileName = fileEntry.getName();
+					migrateDLFileEntry(
+						dlFileEntry.getCompanyId(),
+						dlFileEntry.getDataRepositoryId(),
+						new LiferayFileEntry(dlFileEntry));
+				}
 
-		List<DLFileVersion> dlFileVersions = getDLFileVersions(fileEntry);
+			});
 
-		if (dlFileVersions.isEmpty()) {
-			String versionNumber = Store.VERSION_DEFAULT;
+		actionableDynamicQuery.performActions();
 
-			migrateFile(companyId, repositoryId, fileName, versionNumber);
-
-			return;
-		}
-
-		for (DLFileVersion dlFileVersion : dlFileVersions) {
-			String versionNumber = dlFileVersion.getVersion();
-
-			migrateFile(companyId, repositoryId, fileName, versionNumber);
+		if (isDeleteFilesFromSourceStore()) {
+			DLPreviewableProcessor.deleteFiles();
 		}
 	}
 
@@ -183,97 +264,111 @@ public class ConvertDocumentLibrary extends ConvertProcess {
 				_targetStore.updateFile(
 					companyId, repositoryId, fileName, versionNumber, is);
 			}
+
+			if (isDeleteFilesFromSourceStore()) {
+				_sourceStore.deleteFile(
+					companyId, repositoryId, fileName, versionNumber);
+			}
 		}
 		catch (Exception e) {
 			_log.error("Migration failed for " + fileName, e);
 		}
 	}
 
-	protected void migrateFiles(
-			long companyId, String dirName, String[] fileNames)
-		throws Exception {
+	protected void migrateImages() throws PortalException {
+		int count = ImageLocalServiceUtil.getImagesCount();
 
-		long repositoryId = CompanyConstants.SYSTEM;
-		String versionNumber = Store.VERSION_DEFAULT;
+		MaintenanceUtil.appendStatus("Migrating " + count + " images");
 
-		try {
-			_targetStore.addDirectory(companyId, repositoryId, dirName);
-		}
-		catch (DuplicateDirectoryException dde) {
-		}
+		ActionableDynamicQuery actionableDynamicQuery =
+			ImageLocalServiceUtil.getActionableDynamicQuery();
 
-		for (String fileName : fileNames) {
-			if (fileName.startsWith(StringPool.SLASH)) {
-				fileName = fileName.substring(1);
-			}
+		actionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod() {
 
-			migrateFile(companyId, repositoryId, fileName, versionNumber);
-		}
+				@Override
+				public void performAction(Object object) {
+					Image image = (Image)object;
+
+					String fileName =
+						image.getImageId() + StringPool.PERIOD +
+							image.getType();
+
+					migrateFile(0, 0, fileName, Store.VERSION_DEFAULT);
+				}
+
+			});
+
+		actionableDynamicQuery.performActions();
 	}
 
-	protected void migrateMB() throws Exception {
+	protected void migrateMB() throws PortalException {
 		int count = MBMessageLocalServiceUtil.getMBMessagesCount();
 
 		MaintenanceUtil.appendStatus(
 			"Migrating message boards attachments in " + count + " messages");
 
-		int pages = count / Indexer.DEFAULT_INTERVAL;
+		ActionableDynamicQuery actionableDynamicQuery =
+			MBMessageLocalServiceUtil.getActionableDynamicQuery();
 
-		for (int i = 0; i <= pages; i++) {
-			int start = (i * Indexer.DEFAULT_INTERVAL);
-			int end = start + Indexer.DEFAULT_INTERVAL;
+		actionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod() {
 
-			List<MBMessage> messages = MBMessageLocalServiceUtil.getMBMessages(
-				start, end);
+				@Override
+				public void performAction(Object object)
+					throws PortalException {
 
-			for (MBMessage message : messages) {
-				migrateFiles(
-					message.getCompanyId(), message.getAttachmentsDir(),
-					message.getAttachmentsFiles());
-			}
-		}
+					MBMessage mbMessage = (MBMessage)object;
+
+					for (FileEntry fileEntry :
+							mbMessage.getAttachmentsFileEntries()) {
+
+						DLFileEntry dlFileEntry =
+							(DLFileEntry)fileEntry.getModel();
+
+						migrateDLFileEntry(
+							mbMessage.getCompanyId(),
+							DLFolderConstants.getDataRepositoryId(
+								dlFileEntry.getRepositoryId(),
+								dlFileEntry.getFolderId()),
+							new LiferayFileEntry(dlFileEntry));
+					}
+				}
+
+			});
+
+		actionableDynamicQuery.performActions();
 	}
 
 	protected void migratePortlets() throws Exception {
+		migrateImages();
 		migrateDL();
 		migrateMB();
-		migrateWiki();
-	}
 
-	protected void migrateWiki() throws Exception {
-		int count = WikiPageLocalServiceUtil.getWikiPagesCount();
+		Collection<DLStoreConvertProcess> dlStoreConvertProcesses =
+			_getDLStoreConvertProcesses();
 
-		MaintenanceUtil.appendStatus(
-			"Migrating wiki page attachments in " + count + " pages");
+		for (DLStoreConvertProcess dlStoreConvertProcess :
+				dlStoreConvertProcesses) {
 
-		int pages = count / Indexer.DEFAULT_INTERVAL;
-
-		for (int i = 0; i <= pages; i++) {
-			int start = (i * Indexer.DEFAULT_INTERVAL);
-			int end = start + Indexer.DEFAULT_INTERVAL;
-
-			List<WikiPage> wikiPages = WikiPageLocalServiceUtil.getWikiPages(
-				start, end);
-
-			for (WikiPage wikiPage : wikiPages) {
-				if (!wikiPage.isHead()) {
-					continue;
-				}
-
-				migrateFiles(
-					wikiPage.getCompanyId(), wikiPage.getAttachmentsDir(),
-					wikiPage.getAttachmentsFiles());
-			}
+			dlStoreConvertProcess.migrate(this);
 		}
 	}
 
-	private static final String[] _HOOKS = new String[] {
-		AdvancedFileSystemStore.class.getName(), CMISStore.class.getName(),
-		FileSystemStore.class.getName(), JCRStore.class.getName(),
-		S3Store.class.getName()
-	};
+	private Collection<DLStoreConvertProcess> _getDLStoreConvertProcesses() {
+		try {
+			Registry registry = RegistryUtil.getRegistry();
 
-	private static Log _log = LogFactoryUtil.getLog(
+			return registry.getServices(DLStoreConvertProcess.class, null);
+		}
+		catch (Exception e) {
+			throw new SystemException(e);
+		}
+	}
+
+	private static final String _FILE_SYSTEM_STORE_SUFFIX = "FileSystemStore";
+
+	private static final Log _log = LogFactoryUtil.getLog(
 		ConvertDocumentLibrary.class);
 
 	private Store _sourceStore;

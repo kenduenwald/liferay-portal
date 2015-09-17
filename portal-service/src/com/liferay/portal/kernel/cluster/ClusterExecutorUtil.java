@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,183 +14,97 @@
 
 package com.liferay.portal.kernel.cluster;
 
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Tina Tian
+ * @author Raymond Augé
  */
 public class ClusterExecutorUtil {
 
 	public static void addClusterEventListener(
 		ClusterEventListener clusterEventListener) {
 
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+		ClusterExecutor clusterExecutor = getClusterExecutor();
 
+		if (clusterExecutor == null) {
 			return;
 		}
 
-		_clusterExecutor.addClusterEventListener(clusterEventListener);
+		clusterExecutor.addClusterEventListener(clusterEventListener);
 	}
 
-	public static void destroy() {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+	public static FutureClusterResponses execute(
+		ClusterRequest clusterRequest) {
 
-			return;
+		ClusterExecutor clusterExecutor = getClusterExecutor();
+
+		if (clusterExecutor == null) {
+			return null;
 		}
 
-		_clusterExecutor.destroy();
+		return clusterExecutor.execute(clusterRequest);
 	}
 
-	public static FutureClusterResponses execute(ClusterRequest clusterRequest)
-		throws SystemException {
+	public static ClusterExecutor getClusterExecutor() {
+		PortalRuntimePermission.checkGetBeanProperty(ClusterExecutorUtil.class);
 
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
+		ClusterExecutor clusterExecutor =
+			_instance._serviceTracker.getService();
+
+		if ((clusterExecutor == null) || !clusterExecutor.isEnabled()) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
+				_log.warn("ClusterExecutorUtil was not initialized");
 			}
 
 			return null;
 		}
 
-		return _clusterExecutor.execute(clusterRequest);
-	}
-
-	public static void execute(
-			ClusterRequest clusterRequest,
-			ClusterResponseCallback clusterResponseCallback)
-		throws SystemException {
-
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
-
-			return;
-		}
-
-		_clusterExecutor.execute(clusterRequest, clusterResponseCallback);
-	}
-
-	public static void execute(
-			ClusterRequest clusterRequest,
-			ClusterResponseCallback clusterResponseCallback, long timeout,
-			TimeUnit timeUnit)
-		throws SystemException {
-
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
-
-			return;
-		}
-
-		_clusterExecutor.execute(
-			clusterRequest, clusterResponseCallback, timeout, timeUnit);
-	}
-
-	public static List<Address> getClusterNodeAddresses() {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
-
-			return Collections.emptyList();
-		}
-
-		return _clusterExecutor.getClusterNodeAddresses();
+		return clusterExecutor;
 	}
 
 	public static List<ClusterNode> getClusterNodes() {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+		ClusterExecutor clusterExecutor = getClusterExecutor();
 
+		if (clusterExecutor == null) {
 			return Collections.emptyList();
 		}
 
-		return _clusterExecutor.getClusterNodes();
+		return clusterExecutor.getClusterNodes();
 	}
 
-	public static ClusterNode getLocalClusterNode() throws SystemException {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+	public static ClusterNode getLocalClusterNode() {
+		ClusterExecutor clusterExecutor = getClusterExecutor();
 
+		if (clusterExecutor == null) {
 			return null;
 		}
 
-		return _clusterExecutor.getLocalClusterNode();
-	}
-
-	public static Address getLocalClusterNodeAddress() {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
-
-			return null;
-		}
-
-		return _clusterExecutor.getLocalClusterNodeAddress();
-	}
-
-	public static void initialize() {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
-
-			return;
-		}
-
-		_clusterExecutor.initialize();
-	}
-
-	public static boolean isClusterNodeAlive(Address address) {
-		if ((_clusterExecutor == null) || !_clusterExecutor .isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
-
-			return false;
-		}
-
-		return _clusterExecutor.isClusterNodeAlive(address);
+		return clusterExecutor.getLocalClusterNode();
 	}
 
 	public static boolean isClusterNodeAlive(String clusterNodeId) {
-		if ((_clusterExecutor == null) || !_clusterExecutor .isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+		ClusterExecutor clusterExecutor = getClusterExecutor();
 
+		if (clusterExecutor == null) {
 			return false;
 		}
 
-		return _clusterExecutor.isClusterNodeAlive(clusterNodeId);
+		return clusterExecutor.isClusterNodeAlive(clusterNodeId);
 	}
 
 	public static boolean isEnabled() {
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+		ClusterExecutor clusterExecutor = getClusterExecutor();
 
+		if (clusterExecutor == null) {
 			return false;
 		}
 
@@ -200,23 +114,30 @@ public class ClusterExecutorUtil {
 	public static void removeClusterEventListener(
 		ClusterEventListener clusterEventListener) {
 
-		if ((_clusterExecutor == null) || !_clusterExecutor.isEnabled()) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("ClusterExecutorUtil has not been initialized");
-			}
+		ClusterExecutor clusterExecutor = getClusterExecutor();
 
+		if (clusterExecutor == null) {
 			return;
 		}
 
-		_clusterExecutor.removeClusterEventListener(clusterEventListener);
+		clusterExecutor.removeClusterEventListener(clusterEventListener);
 	}
 
-	public void setClusterExecutor(ClusterExecutor clusterExecutor) {
-		_clusterExecutor = clusterExecutor;
+	private ClusterExecutorUtil() {
+		Registry registry = RegistryUtil.getRegistry();
+
+		_serviceTracker = registry.trackServices(ClusterExecutor.class);
+
+		_serviceTracker.open();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ClusterExecutorUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		ClusterExecutorUtil.class);
 
-	private static ClusterExecutor _clusterExecutor;
+	private static final ClusterExecutorUtil _instance =
+		new ClusterExecutorUtil();
+
+	private final ServiceTracker<ClusterExecutor, ClusterExecutor>
+		_serviceTracker;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,11 +23,11 @@ import java.util.Set;
 public class PrimitiveLongSet {
 
 	public PrimitiveLongSet() {
-		_elements = new HashSet<Long>();
+		_elements = new HashSet<>();
 	}
 
 	public PrimitiveLongSet(int capacity) {
-		_elements = new HashSet<Long>(capacity);
+		_elements = new HashSet<>(capacity);
 	}
 
 	public void add(long value) {
@@ -58,6 +58,6 @@ public class PrimitiveLongSet {
 		return _elements.size();
 	}
 
-	private Set<Long> _elements;
+	private final Set<Long> _elements;
 
 }

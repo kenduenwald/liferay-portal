@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,9 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.portal.service.ServiceContext;
+
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -123,6 +126,26 @@ public class PropertiesParamUtil {
 	}
 
 	public static double getDouble(
+		Properties properties, HttpServletRequest request, String param,
+		double defaultValue, Locale locale) {
+
+		String propertiesValue = properties.getProperty(param, null);
+
+		double getterUtilValue = GetterUtil.getDouble(
+			propertiesValue, defaultValue);
+
+		return ParamUtil.getDouble(request, param, getterUtilValue, locale);
+	}
+
+	public static double getDouble(
+		Properties properties, HttpServletRequest request, String param,
+		Locale locale) {
+
+		return getDouble(
+			properties, request, param, GetterUtil.DEFAULT_DOUBLE, locale);
+	}
+
+	public static double getDouble(
 		Properties properties, PortletRequest portletRequest, String param) {
 
 		return getDouble(
@@ -139,6 +162,28 @@ public class PropertiesParamUtil {
 			propertiesValue, defaultValue);
 
 		return ParamUtil.get(portletRequest, param, getterUtilValue);
+	}
+
+	public static double getDouble(
+		Properties properties, PortletRequest portletRequest, String param,
+		double defaultValue, Locale locale) {
+
+		String propertiesValue = properties.getProperty(param, null);
+
+		double getterUtilValue = GetterUtil.getDouble(
+			propertiesValue, defaultValue);
+
+		return ParamUtil.getDouble(
+			portletRequest, param, getterUtilValue, locale);
+	}
+
+	public static double getDouble(
+		Properties properties, PortletRequest portletRequest, String param,
+		Locale locale) {
+
+		return getDouble(
+			properties, portletRequest, param, GetterUtil.DEFAULT_DOUBLE,
+			locale);
 	}
 
 	public static double getDouble(
@@ -161,6 +206,26 @@ public class PropertiesParamUtil {
 	}
 
 	public static double getDouble(
+		UnicodeProperties properties, HttpServletRequest request, String param,
+		double defaultValue, Locale locale) {
+
+		String propertiesValue = properties.getProperty(param, null);
+
+		double getterUtilValue = GetterUtil.getDouble(
+			propertiesValue, defaultValue);
+
+		return ParamUtil.getDouble(request, param, getterUtilValue, locale);
+	}
+
+	public static double getDouble(
+		UnicodeProperties properties, HttpServletRequest request, String param,
+		Locale locale) {
+
+		return getDouble(
+			properties, request, param, GetterUtil.DEFAULT_DOUBLE, locale);
+	}
+
+	public static double getDouble(
 		UnicodeProperties properties, PortletRequest portletRequest,
 		String param) {
 
@@ -178,6 +243,28 @@ public class PropertiesParamUtil {
 			propertiesValue, defaultValue);
 
 		return ParamUtil.get(portletRequest, param, getterUtilValue);
+	}
+
+	public static double getDouble(
+		UnicodeProperties properties, PortletRequest portletRequest,
+		String param, double defaultValue, Locale locale) {
+
+		String propertiesValue = properties.getProperty(param, null);
+
+		double getterUtilValue = GetterUtil.getDouble(
+			propertiesValue, defaultValue);
+
+		return ParamUtil.getDouble(
+			portletRequest, param, getterUtilValue, locale);
+	}
+
+	public static double getDouble(
+		UnicodeProperties properties, PortletRequest portletRequest,
+		String param, Locale locale) {
+
+		return getDouble(
+			properties, portletRequest, param, GetterUtil.DEFAULT_DOUBLE,
+			locale);
 	}
 
 	public static int getInteger(
@@ -339,10 +426,10 @@ public class PropertiesParamUtil {
 
 		UnicodeProperties properties = new UnicodeProperties(true);
 
-		Map<String, String> parameterMap = request.getParameterMap();
+		Map<String, String[]> parameterMap = request.getParameterMap();
 
 		for (String param : parameterMap.keySet()) {
-			if (param.startsWith(prefix) && !param.endsWith("--Checkbox")) {
+			if (param.startsWith(prefix)) {
 				String key = param.substring(
 					prefix.length(), param.length() - 2);
 
@@ -361,13 +448,32 @@ public class PropertiesParamUtil {
 		UnicodeProperties properties = new UnicodeProperties(true);
 
 		for (String param : portletRequest.getParameterMap().keySet()) {
-			if (param.startsWith(prefix) && !param.endsWith("--Checkbox")) {
+			if (param.startsWith(prefix)) {
 				String key = param.substring(
 					prefix.length(), param.length() - 2);
 
 				String[] values = portletRequest.getParameterValues(param);
 
 				String value = StringUtil.merge(values);
+
+				properties.setProperty(key, value);
+			}
+		}
+
+		return properties;
+	}
+
+	public static UnicodeProperties getProperties(
+		ServiceContext serviceContext, String prefix) {
+
+		UnicodeProperties properties = new UnicodeProperties(true);
+
+		for (String param : serviceContext.getAttributes().keySet()) {
+			if (param.startsWith(prefix)) {
+				String key = param.substring(
+					prefix.length(), param.length() - 2);
+
+				String value = ParamUtil.getString(serviceContext, param);
 
 				properties.setProperty(key, value);
 			}

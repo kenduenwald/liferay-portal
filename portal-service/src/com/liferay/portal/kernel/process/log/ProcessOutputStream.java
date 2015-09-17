@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.process.ProcessCallable;
 
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 
 /**
@@ -43,27 +44,52 @@ public class ProcessOutputStream extends UnsyncByteArrayOutputStream {
 
 	@Override
 	public void flush() throws IOException {
-		if (index > 0) {
-			byte[] bytes = toByteArray();
+		synchronized (System.out) {
+			if (index > 0) {
+				byte[] bytes = toByteArray();
 
-			LoggingProcessCallable loggingProcessCallable =
-				new LoggingProcessCallable(bytes, _error);
+				reset();
 
-			writeProcessCallable(loggingProcessCallable);
+				byte[] logData = new byte[_logPrefix.length + bytes.length];
 
-			reset();
+				System.arraycopy(_logPrefix, 0, logData, 0, _logPrefix.length);
+				System.arraycopy(
+					bytes, 0, logData, _logPrefix.length, bytes.length);
+
+				_objectOutputStream.writeObject(
+					new LoggingProcessCallable(logData, _error));
+			}
+
+			_objectOutputStream.flush();
+
+			_objectOutputStream.reset();
 		}
+	}
+
+	public void setLogPrefix(byte[] logPrefix) {
+		_logPrefix = logPrefix;
 	}
 
 	public void writeProcessCallable(ProcessCallable<?> processCallable)
 		throws IOException {
 
-		_objectOutputStream.writeObject(processCallable);
+		synchronized (System.out) {
+			try {
+				_objectOutputStream.writeObject(processCallable);
+			}
+			catch (NotSerializableException nse) {
+				_objectOutputStream.reset();
 
-		_objectOutputStream.flush();
+				throw nse;
+			}
+			finally {
+				_objectOutputStream.flush();
+			}
+		}
 	}
 
 	private final boolean _error;
+	private byte[] _logPrefix;
 	private final ObjectOutputStream _objectOutputStream;
 
 }

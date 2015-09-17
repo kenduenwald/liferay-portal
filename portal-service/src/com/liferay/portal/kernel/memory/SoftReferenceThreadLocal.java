@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,18 @@
 
 package com.liferay.portal.kernel.memory;
 
+import com.liferay.portal.kernel.util.CentralizedThreadLocal;
+
 import java.lang.ref.SoftReference;
 
 /**
  * @author Shuyang Zhou
  */
-public class SoftReferenceThreadLocal<T> extends ThreadLocal<T> {
+public class SoftReferenceThreadLocal<T> extends CentralizedThreadLocal<T> {
+
+	public SoftReferenceThreadLocal() {
+		super(false);
+	}
 
 	@Override
 	public T get() {
@@ -59,10 +65,10 @@ public class SoftReferenceThreadLocal<T> extends ThreadLocal<T> {
 		}
 	}
 
-	private static SoftReference<Object> _nullSoftReference =
-		new SoftReference<Object>(null);
+	private static final SoftReference<Object> _nullSoftReference =
+		new SoftReference<>(null);
 
-	private ThreadLocal<SoftReference<T>> _softReferenceThreadLocal =
-		new ThreadLocal<SoftReference<T>>();
+	private final ThreadLocal<SoftReference<T>> _softReferenceThreadLocal =
+		new CentralizedThreadLocal<>(false);
 
 }

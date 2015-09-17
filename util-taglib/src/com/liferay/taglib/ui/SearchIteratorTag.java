@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -22,6 +22,20 @@ import javax.servlet.http.HttpServletRequest;
  * @author Brian Wing Shun Chan
  */
 public class SearchIteratorTag<R> extends SearchPaginatorTag<R> {
+
+	public static final String DEFAULT_DISPLAY_STYPE = "list";
+
+	public String getDisplayStyle() {
+		return _displayStyle;
+	}
+
+	public void setDisplayStyle(String displayStyle) {
+		_displayStyle = displayStyle;
+	}
+
+	public void setMarkupView(String markupView) {
+		_markupView = markupView;
+	}
 
 	public void setPaginate(boolean paginate) {
 		_paginate = paginate;
@@ -36,24 +50,18 @@ public class SearchIteratorTag<R> extends SearchPaginatorTag<R> {
 
 	@Override
 	protected String getPage() {
-		return _PAGE;
-	}
+		String displayStyle = _displayStyle;
 
-	@Override
-	protected void include(String page) throws Exception {
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			currentThread.setContextClassLoader(
-				PortalClassLoaderUtil.getClassLoader());
-
-			super.include(page);
+		if (Validator.isNull(displayStyle)) {
+			displayStyle = DEFAULT_DISPLAY_STYPE;
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
+
+		if (Validator.isNotNull(_markupView)) {
+			return "/html/taglib/ui/search_iterator/" + _markupView + "/" +
+				displayStyle + ".jsp";
 		}
+
+		return "/html/taglib/ui/search_iterator/" + displayStyle + ".jsp";
 	}
 
 	@Override
@@ -64,9 +72,8 @@ public class SearchIteratorTag<R> extends SearchPaginatorTag<R> {
 			"liferay-ui:search-iterator:paginate", String.valueOf(_paginate));
 	}
 
-	private static final String _PAGE =
-		"/html/taglib/ui/search_iterator/page.jsp";
-
+	private String _displayStyle = DEFAULT_DISPLAY_STYPE;
+	private String _markupView;
 	private boolean _paginate = true;
 
 }

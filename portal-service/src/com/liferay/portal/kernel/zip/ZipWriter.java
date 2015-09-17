@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -26,13 +26,12 @@ public interface ZipWriter {
 
 	public void addEntry(String name, byte[] bytes) throws IOException;
 
-	public void addEntry(String name, InputStream inpuStream)
+	public void addEntry(String name, InputStream inputStream)
 		throws IOException;
 
 	public void addEntry(String name, String s) throws IOException;
 
-	public void addEntry(String name, StringBuilder sb)
-		throws IOException;
+	public void addEntry(String name, StringBuilder sb) throws IOException;
 
 	public byte[] finish() throws IOException;
 

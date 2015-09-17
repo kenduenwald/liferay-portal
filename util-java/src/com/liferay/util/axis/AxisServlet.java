@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,10 +14,11 @@
 
 package com.liferay.util.axis;
 
+import com.liferay.portal.kernel.exception.LoggedExceptionInInitializerError;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
-import com.liferay.portal.kernel.servlet.StringServletResponse;
 import com.liferay.portal.kernel.servlet.UncommittedServletResponse;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -27,7 +28,7 @@ import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 
 import java.io.IOException;
 
@@ -172,16 +173,16 @@ public class AxisServlet extends org.apache.axis.transport.http.AxisServlet {
 				return;
 			}
 
-			StringServletResponse stringResponse = new StringServletResponse(
-				response);
+			BufferCacheServletResponse bufferCacheServletResponse =
+				new BufferCacheServletResponse(response);
 
-			super.service(request, stringResponse);
+			super.service(request, bufferCacheServletResponse);
 
-			String contentType = stringResponse.getContentType();
+			String contentType = bufferCacheServletResponse.getContentType();
 
 			response.setContentType(contentType);
 
-			String content = stringResponse.getString();
+			String content = bufferCacheServletResponse.getString();
 
 			if (_fixContent) {
 				if (contentType.contains(ContentTypes.TEXT_HTML)) {
@@ -208,7 +209,7 @@ public class AxisServlet extends org.apache.axis.transport.http.AxisServlet {
 		}
 		finally {
 			try {
-				ThreadLocal<?> cache = (ThreadLocal<?>)_cacheField.get(null);
+				ThreadLocal<?> cache = (ThreadLocal<?>)_CACHE_FIELD.get(null);
 
 				if (cache != null) {
 					cache.remove();
@@ -236,7 +237,7 @@ public class AxisServlet extends org.apache.axis.transport.http.AxisServlet {
 	}
 
 	protected String fixXml(String xml) throws Exception {
-		if (xml.indexOf("<wsdl:definitions") == -1) {
+		if (!xml.contains("<wsdl:definitions")) {
 			return xml;
 		}
 
@@ -252,18 +253,28 @@ public class AxisServlet extends org.apache.axis.transport.http.AxisServlet {
 				_correctStringArray
 			});
 
-		Document document = SAXReaderUtil.read(xml);
+		Document document = UnsecureSAXReaderUtil.read(xml);
 
 		return document.formattedString();
 	}
+
+	private static final Field _CACHE_FIELD;
 
 	private static final String _HTML_BOTTOM_WRAPPER = "</body></html>";
 
 	private static final String _HTML_TOP_WRAPPER = "<html><body>";
 
-	private static Log _log = LogFactoryUtil.getLog(AxisServlet.class);
+	private static final Log _log = LogFactoryUtil.getLog(AxisServlet.class);
 
-	private static Field _cacheField;
+	static {
+		try {
+			_CACHE_FIELD = ReflectionUtil.getDeclaredField(
+				MethodCache.class, "cache");
+		}
+		catch (Exception e) {
+			throw new LoggedExceptionInInitializerError(e);
+		}
+	}
 
 	private String _correctLongArray;
 	private String _correctOrderByComparator;
@@ -321,16 +332,6 @@ public class AxisServlet extends org.apache.axis.transport.http.AxisServlet {
 
 		private Exception _exception;
 
-	}
-
-	static {
-		try {
-			_cacheField = ReflectionUtil.getDeclaredField(
-				MethodCache.class, "cache");
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -48,7 +48,7 @@ public class ContentUtil {
 	}
 
 	private ContentUtil() {
-		_contentPool = new HashMap<String, String>();
+		_contentPool = new HashMap<>();
 	}
 
 	private String _get(ClassLoader classLoader, String location, boolean all) {
@@ -76,10 +76,10 @@ public class ContentUtil {
 		_contentPool.put(location, content);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ContentUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(ContentUtil.class);
 
-	private static ContentUtil _instance = new ContentUtil();
+	private static final ContentUtil _instance = new ContentUtil();
 
-	private Map<String, String> _contentPool;
+	private final Map<String, String> _contentPool;
 
 }

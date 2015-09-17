@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,10 @@
 
 package com.liferay.portal.kernel.util;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-
-import java.io.Closeable;
-import java.io.IOException;
-
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -82,6 +78,15 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
 	public T get() {
 		ThreadLocalMap threadLocalMap = _getThreadLocalMap();
 
@@ -118,15 +123,35 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 		threadLocalMap.putEntry(this, value);
 	}
 
+	protected T copy(T value) {
+		if (value != null) {
+			Class<?> clazz = value.getClass();
+
+			if (_immutableTypes.contains(clazz)) {
+				return value;
+			}
+		}
+
+		return null;
+	}
+
 	private static Map<CentralizedThreadLocal<?>, Object> _toMap(
 		ThreadLocalMap threadLocalMap) {
 
-		Map<CentralizedThreadLocal<?>, Object> map =
-			new HashMap<CentralizedThreadLocal<?>, Object>(
-				threadLocalMap._table.length);
+		Map<CentralizedThreadLocal<?>, Object> map = new HashMap<>(
+			threadLocalMap._table.length);
 
 		for (Entry entry : threadLocalMap._table) {
-			map.put(entry._key, entry._value);
+			if (entry != null) {
+				CentralizedThreadLocal<Object> centralizedThreadLocal =
+					(CentralizedThreadLocal<Object>)entry._key;
+
+				Object value = centralizedThreadLocal.copy(entry._value);
+
+				if (value != null) {
+					map.put(centralizedThreadLocal, value);
+				}
+			}
 		}
 
 		return map;
@@ -143,9 +168,7 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 
 	private static final int _HASH_INCREMENT = 0x61c88647;
 
-	private static Log _log = LogFactoryUtil.getLog(
-		CentralizedThreadLocal.class);
-
+	private static final Set<Class<?>> _immutableTypes = new HashSet<>();
 	private static final AtomicInteger _longLivedNextHasCode =
 		new AtomicInteger();
 	private static final ThreadLocal<ThreadLocalMap> _longLivedThreadLocals =
@@ -154,6 +177,18 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 		new AtomicInteger();
 	private static final ThreadLocal<ThreadLocalMap> _shortLivedThreadLocals =
 		new ThreadLocalMapThreadLocal();
+
+	static {
+		_immutableTypes.add(Boolean.class);
+		_immutableTypes.add(Byte.class);
+		_immutableTypes.add(Character.class);
+		_immutableTypes.add(Short.class);
+		_immutableTypes.add(Integer.class);
+		_immutableTypes.add(Long.class);
+		_immutableTypes.add(Float.class);
+		_immutableTypes.add(Double.class);
+		_immutableTypes.add(String.class);
+	}
 
 	private final int _hashCode;
 	private final boolean _shortLived;
@@ -219,18 +254,18 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 			if (entry == null) {
 				return null;
 			}
-			else if (entry._key == key) {
+
+			if (entry._key == key) {
 				return entry;
 			}
-			else {
-				while ((entry = entry._next) != null) {
-					if (entry._key == key) {
-						return entry;
-					}
-				}
 
-				return null;
+			while ((entry = entry._next) != null) {
+				if (entry._key == key) {
+					return entry;
+				}
 			}
+
+			return null;
 		}
 
 		public void putEntry(CentralizedThreadLocal<?> key, Object value) {
@@ -240,8 +275,6 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 				entry = entry._next) {
 
 				if (entry._key == key) {
-					_closeEntry(entry._value);
-
 					entry._value = value;
 
 					return;
@@ -252,16 +285,6 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 
 			if (_size++ >= _threshold) {
 				expand(2 * _table.length);
-			}
-		}
-
-		public void closeEntries() {
-			for (Entry entry : _table) {
-				if (entry == null) {
-					continue;
-				}
-
-				_closeEntry(entry._value);
 			}
 		}
 
@@ -278,8 +301,6 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 				if (entry._key == key) {
 					_size--;
 
-					_closeEntry(entry._value);
-
 					if (previousEntry == null) {
 						_table[index] = nextEntry;
 					}
@@ -292,23 +313,6 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 
 				previousEntry = entry;
 				entry = nextEntry;
-			}
-		}
-
-		protected void _closeEntry(Object value) {
-			if (value == null) {
-				return;
-			}
-
-			if (value instanceof Closeable) {
-				Closeable closable = (Closeable)value;
-
-				try {
-					closable.close();
-				}
-				catch (IOException ioe) {
-					_log.error(ioe, ioe);
-				}
 			}
 		}
 
@@ -328,15 +332,6 @@ public class CentralizedThreadLocal<T> extends ThreadLocal<T> {
 		@Override
 		protected ThreadLocalMap initialValue() {
 			return new ThreadLocalMap();
-		}
-
-		@Override
-		public void remove() {
-			ThreadLocalMap threadLocalMap = get();
-
-			threadLocalMap.closeEntries();
-
-			super.remove();
 		}
 
 	}

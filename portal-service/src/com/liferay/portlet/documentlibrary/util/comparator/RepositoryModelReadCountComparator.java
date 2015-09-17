@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.portlet.documentlibrary.util.comparator;
 
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
@@ -26,7 +27,8 @@ import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
  * @author Brian Wing Shun Chan
  * @author Alexander Chow
  */
-public class RepositoryModelReadCountComparator extends OrderByComparator {
+public class RepositoryModelReadCountComparator<T>
+	extends OrderByComparator<T> {
 
 	public static final String ORDER_BY_ASC = "readCount ASC";
 
@@ -43,9 +45,9 @@ public class RepositoryModelReadCountComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Long readCount1 = getReadCount(obj1);
-		Long readCount2 = getReadCount(obj2);
+	public int compare(T t1, T t2) {
+		Long readCount1 = getReadCount(t1);
+		Long readCount2 = getReadCount(t2);
 
 		int value = readCount1.compareTo(readCount2);
 
@@ -77,26 +79,41 @@ public class RepositoryModelReadCountComparator extends OrderByComparator {
 		return _ascending;
 	}
 
+	protected long getFileShortcutReadCount(Object obj) {
+		long toFileEntryId = 0;
+
+		if (obj instanceof FileShortcut) {
+			FileShortcut fileShortcut = (FileShortcut)obj;
+
+			toFileEntryId = fileShortcut.getToFileEntryId();
+		}
+		else {
+			DLFileShortcut fileShortcut = (DLFileShortcut)obj;
+
+			toFileEntryId = fileShortcut.getToFileEntryId();
+		}
+
+		try {
+			DLFileEntry dlFileEntry = DLFileEntryLocalServiceUtil.getFileEntry(
+				toFileEntryId);
+
+			return dlFileEntry.getReadCount();
+		}
+		catch (Exception e) {
+			return 0;
+		}
+	}
+
 	protected long getReadCount(Object obj) {
 		if (obj instanceof DLFileEntry) {
 			DLFileEntry dlFileEntry = (DLFileEntry)obj;
 
 			return dlFileEntry.getReadCount();
 		}
-		else if (obj instanceof DLFileShortcut) {
-			DLFileShortcut dlFileShortcut = (DLFileShortcut)obj;
+		else if ((obj instanceof DLFileShortcut) ||
+				 (obj instanceof FileShortcut)) {
 
-			long toFileEntryId = dlFileShortcut.getToFileEntryId();
-
-			try {
-				DLFileEntry dlFileEntry =
-					DLFileEntryLocalServiceUtil.getFileEntry(toFileEntryId);
-
-				return dlFileEntry.getReadCount();
-			}
-			catch (Exception e) {
-				return 0;
-			}
+			return getFileShortcutReadCount(obj);
 		}
 		else if ((obj instanceof DLFolder) || (obj instanceof Folder)) {
 			return 0;
@@ -108,6 +125,6 @@ public class RepositoryModelReadCountComparator extends OrderByComparator {
 		}
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

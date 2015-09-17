@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,6 @@ package com.liferay.portal.spring.aop;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.spring.aop.Skip;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 
@@ -27,14 +26,10 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.aop.SpringProxy;
 import org.springframework.aop.TargetSource;
@@ -47,60 +42,28 @@ import org.springframework.util.ClassUtils;
 /**
  * @author Shuyang Zhou
  */
-public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
+public class ServiceBeanAopProxy
+	implements AdvisedSupportProxy, AopProxy, InvocationHandler {
 
-	public static void clearMethodInterceptorCache() {
-		_methodInterceptorBags.clear();
-	}
+	public static AdvisedSupport getAdvisedSupport(Object proxy)
+		throws Exception {
 
-	public static void removeMethodInterceptor(
-		MethodInvocation methodInvocation,
-		MethodInterceptor methodInterceptor) {
+		InvocationHandler invocationHandler = ProxyUtil.getInvocationHandler(
+			proxy);
 
-		if (!(methodInvocation instanceof ServiceBeanMethodInvocation)) {
-			return;
+		if (invocationHandler instanceof AdvisedSupportProxy) {
+			AdvisedSupportProxy advisableSupportProxy =
+				(AdvisedSupportProxy)invocationHandler;
+
+			return advisableSupportProxy.getAdvisedSupport();
 		}
 
-		ServiceBeanMethodInvocation serviceBeanMethodInvocation =
-			(ServiceBeanMethodInvocation)methodInvocation;
-
-		MethodInterceptorsBag methodInterceptorsBag =
-			_methodInterceptorBags.get(serviceBeanMethodInvocation);
-
-		if (methodInterceptorsBag == null) {
-			return;
-		}
-
-		ArrayList<MethodInterceptor> methodInterceptors =
-			new ArrayList<MethodInterceptor>(
-				methodInterceptorsBag._mergedMethodInterceptors);
-
-		methodInterceptors.remove(methodInterceptor);
-
-		MethodInterceptorsBag newMethodInterceptorsBag = null;
-
-		if (methodInterceptors.equals(
-				methodInterceptorsBag._classLevelMethodInterceptors)) {
-
-			newMethodInterceptorsBag = new MethodInterceptorsBag(
-				methodInterceptorsBag._classLevelMethodInterceptors,
-				methodInterceptorsBag._classLevelMethodInterceptors);
-		}
-		else {
-			methodInterceptors.trimToSize();
-
-			newMethodInterceptorsBag = new MethodInterceptorsBag(
-				methodInterceptorsBag._classLevelMethodInterceptors,
-				methodInterceptors);
-		}
-
-		_methodInterceptorBags.put(
-			serviceBeanMethodInvocation.toCacheKeyModel(),
-			newMethodInterceptorsBag);
+		return null;
 	}
 
 	public ServiceBeanAopProxy(
-		AdvisedSupport advisedSupport, MethodInterceptor methodInterceptor) {
+		AdvisedSupport advisedSupport, MethodInterceptor methodInterceptor,
+		ServiceBeanAopCacheManager serviceBeanAopCacheManager) {
 
 		_advisedSupport = advisedSupport;
 		_advisorChainFactory = _advisedSupport.getAdvisorChainFactory();
@@ -111,9 +74,8 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 			proxyInterfaces, SpringProxy.class);
 
 		ArrayList<MethodInterceptor> classLevelMethodInterceptors =
-			new ArrayList<MethodInterceptor>();
-		ArrayList<MethodInterceptor> fullMethodInterceptors =
-			new ArrayList<MethodInterceptor>();
+			new ArrayList<>();
+		ArrayList<MethodInterceptor> fullMethodInterceptors = new ArrayList<>();
 
 		while (true) {
 			if (!(methodInterceptor instanceof ChainableMethodAdvice)) {
@@ -125,6 +87,9 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 
 			ChainableMethodAdvice chainableMethodAdvice =
 				(ChainableMethodAdvice)methodInterceptor;
+
+			chainableMethodAdvice.setServiceBeanAopCacheManager(
+				serviceBeanAopCacheManager);
 
 			if (methodInterceptor instanceof AnnotationChainableMethodAdvice) {
 				AnnotationChainableMethodAdvice<?>
@@ -163,20 +128,32 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 		_classLevelMethodInterceptors = classLevelMethodInterceptors;
 		_fullMethodInterceptors = fullMethodInterceptors;
 
-		AnnotationChainableMethodAdvice.registerAnnotationClass(Skip.class);
+		_serviceBeanAopCacheManager = serviceBeanAopCacheManager;
 	}
 
+	@Override
+	public AdvisedSupport getAdvisedSupport() {
+		return _advisedSupport;
+	}
+
+	@Override
 	public Object getProxy() {
 		return getProxy(ClassUtils.getDefaultClassLoader());
 	}
 
+	@Override
 	public Object getProxy(ClassLoader classLoader) {
 		Class<?>[] proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(
 			_advisedSupport);
 
-		return ProxyUtil.newProxyInstance(classLoader, proxiedInterfaces, this);
+		InvocationHandler invocationHandler = _pacl.getInvocationHandler(
+			this, _advisedSupport);
+
+		return ProxyUtil.newProxyInstance(
+			classLoader, proxiedInterfaces, invocationHandler);
 	}
 
+	@Override
 	public Object invoke(Object proxy, Method method, Object[] arguments)
 		throws Throwable {
 
@@ -185,28 +162,13 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 		Object target = null;
 
 		try {
-			Class<?> targetClass = null;
-
 			target = targetSource.getTarget();
-
-			if (target != null) {
-				targetClass = target.getClass();
-			}
 
 			ServiceBeanMethodInvocation serviceBeanMethodInvocation =
 				new ServiceBeanMethodInvocation(
-					target, targetClass, method, arguments);
+					target, targetSource.getTargetClass(), method, arguments);
 
-			Skip skip = ServiceMethodAnnotationCache.get(
-				serviceBeanMethodInvocation, Skip.class, null);
-
-			if (skip != null) {
-				serviceBeanMethodInvocation.setMethodInterceptors(
-					Collections.<MethodInterceptor>emptyList());
-			}
-			else {
-				_setMethodInterceptors(serviceBeanMethodInvocation);
-			}
+			_setMethodInterceptors(serviceBeanMethodInvocation);
 
 			return serviceBeanMethodInvocation.proceed();
 		}
@@ -217,11 +179,18 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 		}
 	}
 
+	public interface PACL {
+
+		public InvocationHandler getInvocationHandler(
+			InvocationHandler invocationHandler, AdvisedSupport advisedSupport);
+
+	}
+
 	private List<MethodInterceptor> _getMethodInterceptors(
 		ServiceBeanMethodInvocation serviceBeanMethodInvocation) {
 
-		List<MethodInterceptor> methodInterceptors =
-			new ArrayList<MethodInterceptor>(_fullMethodInterceptors);
+		List<MethodInterceptor> methodInterceptors = new ArrayList<>(
+			_fullMethodInterceptors);
 
 		if (!_mergeSpringMethodInterceptors) {
 			return methodInterceptors;
@@ -264,7 +233,8 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 		ServiceBeanMethodInvocation serviceBeanMethodInvocation) {
 
 		MethodInterceptorsBag methodInterceptorsBag =
-			_methodInterceptorBags.get(serviceBeanMethodInvocation);
+			_serviceBeanAopCacheManager.getMethodInterceptorsBag(
+				serviceBeanMethodInvocation);
 
 		if (methodInterceptorsBag == null) {
 			List<MethodInterceptor> methodInterceptors = _getMethodInterceptors(
@@ -273,39 +243,36 @@ public class ServiceBeanAopProxy implements AopProxy, InvocationHandler {
 			methodInterceptorsBag = new MethodInterceptorsBag(
 				_classLevelMethodInterceptors, methodInterceptors);
 
-			_methodInterceptorBags.put(
+			_serviceBeanAopCacheManager.putMethodInterceptorsBag(
 				serviceBeanMethodInvocation.toCacheKeyModel(),
 				methodInterceptorsBag);
 		}
 
 		serviceBeanMethodInvocation.setMethodInterceptors(
-			methodInterceptorsBag._mergedMethodInterceptors);
+			methodInterceptorsBag.getMergedMethodInterceptors());
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ServiceBeanAopProxy.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		ServiceBeanAopProxy.class);
 
-	private static Map <ServiceBeanMethodInvocation, MethodInterceptorsBag>
-		_methodInterceptorBags = new ConcurrentHashMap
-			<ServiceBeanMethodInvocation, MethodInterceptorsBag>();
+	private static final PACL _pacl = new NoPACL();
 
-	private AdvisedSupport _advisedSupport;
-	private AdvisorChainFactory _advisorChainFactory;
+	private final AdvisedSupport _advisedSupport;
+	private final AdvisorChainFactory _advisorChainFactory;
 	private final List<MethodInterceptor> _classLevelMethodInterceptors;
 	private final List<MethodInterceptor> _fullMethodInterceptors;
-	private boolean _mergeSpringMethodInterceptors;
+	private final boolean _mergeSpringMethodInterceptors;
+	private final ServiceBeanAopCacheManager _serviceBeanAopCacheManager;
 
-	private static class MethodInterceptorsBag {
+	private static class NoPACL implements PACL {
 
-		public MethodInterceptorsBag(
-			List<MethodInterceptor> classLevelMethodInterceptors,
-			List<MethodInterceptor> mergedMethodInterceptors) {
+		@Override
+		public InvocationHandler getInvocationHandler(
+			InvocationHandler invocationHandler,
+			AdvisedSupport advisedSupport) {
 
-			_classLevelMethodInterceptors = classLevelMethodInterceptors;
-			_mergedMethodInterceptors = mergedMethodInterceptors;
+			return invocationHandler;
 		}
-
-		private List<MethodInterceptor> _classLevelMethodInterceptors;
-		private List<MethodInterceptor> _mergedMethodInterceptors;
 
 	}
 

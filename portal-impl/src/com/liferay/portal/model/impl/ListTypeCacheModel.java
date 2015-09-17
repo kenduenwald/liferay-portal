@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,19 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 import com.liferay.portal.model.ListType;
+import com.liferay.portal.model.MVCCModel;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing ListType in entity cache.
@@ -28,12 +35,53 @@ import java.io.Serializable;
  * @see ListType
  * @generated
  */
-public class ListTypeCacheModel implements CacheModel<ListType>, Serializable {
+@ProviderType
+public class ListTypeCacheModel implements CacheModel<ListType>, Externalizable,
+	MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof ListTypeCacheModel)) {
+			return false;
+		}
+
+		ListTypeCacheModel listTypeCacheModel = (ListTypeCacheModel)obj;
+
+		if ((listTypeId == listTypeCacheModel.listTypeId) &&
+				(mvccVersion == listTypeCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, listTypeId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(7);
+		StringBundler sb = new StringBundler(9);
 
-		sb.append("{listTypeId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", listTypeId=");
 		sb.append(listTypeId);
 		sb.append(", name=");
 		sb.append(name);
@@ -44,9 +92,11 @@ public class ListTypeCacheModel implements CacheModel<ListType>, Serializable {
 		return sb.toString();
 	}
 
+	@Override
 	public ListType toEntityModel() {
 		ListTypeImpl listTypeImpl = new ListTypeImpl();
 
+		listTypeImpl.setMvccVersion(mvccVersion);
 		listTypeImpl.setListTypeId(listTypeId);
 
 		if (name == null) {
@@ -68,7 +118,37 @@ public class ListTypeCacheModel implements CacheModel<ListType>, Serializable {
 		return listTypeImpl;
 	}
 
-	public int listTypeId;
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		listTypeId = objectInput.readLong();
+		name = objectInput.readUTF();
+		type = objectInput.readUTF();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(listTypeId);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (type == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(type);
+		}
+	}
+
+	public long mvccVersion;
+	public long listTypeId;
 	public String name;
 	public String type;
 }

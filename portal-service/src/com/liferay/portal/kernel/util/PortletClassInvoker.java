@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,6 @@ package com.liferay.portal.kernel.util;
 
 import com.liferay.portal.kernel.portlet.PortletBag;
 import com.liferay.portal.kernel.portlet.PortletBagPool;
-import com.liferay.portal.kernel.servlet.PortletServlet;
 
 import javax.servlet.ServletContext;
 
@@ -26,9 +25,21 @@ import javax.servlet.ServletContext;
  */
 public class PortletClassInvoker {
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #invoke(String, MethodKey,
+	 *             Object...)}
+	 */
+	@Deprecated
 	public static Object invoke(
 			boolean newInstance, String portletId, MethodKey methodKey,
 			Object... arguments)
+		throws Exception {
+
+		return invoke(portletId, methodKey, arguments);
+	}
+
+	public static Object invoke(
+			String portletId, MethodKey methodKey, Object... arguments)
 		throws Exception {
 
 		portletId = _getRootPortletId(portletId);
@@ -40,8 +51,7 @@ public class PortletClassInvoker {
 		if (portletBag != null) {
 			ServletContext servletContext = portletBag.getServletContext();
 
-			portletClassLoader = (ClassLoader)servletContext.getAttribute(
-				PortletServlet.PORTLET_CLASS_LOADER);
+			portletClassLoader = servletContext.getClassLoader();
 		}
 
 		Thread currentThread = Thread.currentThread();
@@ -54,7 +64,7 @@ public class PortletClassInvoker {
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, arguments);
 
-			return methodHandler.invoke(newInstance);
+			return methodHandler.invoke();
 		}
 		finally {
 			currentThread.setContextClassLoader(contextClassLoader);

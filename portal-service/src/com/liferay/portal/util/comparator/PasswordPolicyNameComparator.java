@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,8 @@ import com.liferay.portal.model.PasswordPolicy;
 /**
  * @author Brian Wing Shun Chan
  */
-public class PasswordPolicyNameComparator extends OrderByComparator {
+public class PasswordPolicyNameComparator
+	extends OrderByComparator<PasswordPolicy> {
 
 	public static final String ORDER_BY_ASC = "PasswordPolicy.name ASC";
 
@@ -37,12 +38,13 @@ public class PasswordPolicyNameComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		PasswordPolicy passwordPolicy1 = (PasswordPolicy)obj1;
-		PasswordPolicy passwordPolicy2 = (PasswordPolicy)obj2;
+	public int compare(
+		PasswordPolicy passwordPolicy1, PasswordPolicy passwordPolicy2) {
 
-		int value = passwordPolicy1.getName().compareTo(
-			passwordPolicy2.getName());
+		String name1 = passwordPolicy1.getName();
+		String name2 = passwordPolicy2.getName();
+
+		int value = name1.compareTo(name2);
 
 		if (_ascending) {
 			return value;
@@ -72,6 +74,6 @@ public class PasswordPolicyNameComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

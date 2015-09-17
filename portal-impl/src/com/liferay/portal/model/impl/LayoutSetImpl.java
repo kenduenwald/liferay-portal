@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,48 +15,117 @@
 package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.model.CacheField;
 import com.liferay.portal.model.ColorScheme;
+import com.liferay.portal.model.Company;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.LayoutSet;
 import com.liferay.portal.model.LayoutSetPrototype;
 import com.liferay.portal.model.Theme;
 import com.liferay.portal.model.VirtualHost;
+import com.liferay.portal.service.CompanyLocalServiceUtil;
 import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.LayoutSetPrototypeLocalServiceUtil;
 import com.liferay.portal.service.ThemeLocalServiceUtil;
 import com.liferay.portal.service.VirtualHostLocalServiceUtil;
 import com.liferay.portal.util.PrefsPropsUtil;
+import com.liferay.portal.util.PropsValues;
 
 import java.io.IOException;
 
 /**
+ * Represents a portal layout set, providing access to the layout set's color
+ * schemes, groups, prototypes, themes, and more.
+ *
+ * <p>
+ * Each {@link Group} in Liferay can have a public and a private layout set.
+ * This keeps information common to all layouts (pages) in the layout set.
+ * </p>
+ *
  * @author Brian Wing Shun Chan
  * @author Jorge Ferrer
  */
 public class LayoutSetImpl extends LayoutSetBaseImpl {
 
-	public LayoutSetImpl() {
-	}
-
-	public ColorScheme getColorScheme() throws SystemException {
+	/**
+	 * Returns the layout set's color scheme.
+	 *
+	 * <p>
+	 * Just like themes, color schemes can be configured on the layout set
+	 * level. The layout set's color scheme can be overridden on the layout
+	 * level.
+	 * </p>
+	 *
+	 * @return the layout set's color scheme
+	 */
+	@Override
+	public ColorScheme getColorScheme() {
 		return ThemeLocalServiceUtil.getColorScheme(
 			getCompanyId(), getTheme().getThemeId(), getColorSchemeId(), false);
 	}
 
-	public Group getGroup() throws PortalException, SystemException {
+	@Override
+	public String getCompanyFallbackVirtualHostname() {
+		if (_companyFallbackVirtualHostname != null) {
+			return _companyFallbackVirtualHostname;
+		}
+
+		_companyFallbackVirtualHostname = StringPool.BLANK;
+
+		if (Validator.isNotNull(
+				PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME) &&
+			!isPrivateLayout()) {
+
+			Group group = GroupLocalServiceUtil.fetchGroup(
+				getCompanyId(), PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME);
+
+			if ((group != null) && (getGroupId() == group.getGroupId())) {
+				Company company = CompanyLocalServiceUtil.fetchCompany(
+					getCompanyId());
+
+				if (company != null) {
+					_companyFallbackVirtualHostname =
+						company.getVirtualHostname();
+				}
+			}
+		}
+
+		return _companyFallbackVirtualHostname;
+	}
+
+	/**
+	 * Returns the layout set's group.
+	 *
+	 * @return the layout set's group
+	 * @throws PortalException if a group with the primary key could not be
+	 *         found
+	 */
+	@Override
+	public Group getGroup() throws PortalException {
 		return GroupLocalServiceUtil.getGroup(getGroupId());
 	}
 
-	public long getLayoutSetPrototypeId()
-		throws PortalException, SystemException {
-
+	/**
+	 * Returns the layout set prototype's ID, or <code>0</code> if it has no
+	 * layout set prototype.
+	 *
+	 * <p>
+	 * Prototype is Liferay's technical name for a site template.
+	 * </p>
+	 *
+	 * @return the layout set prototype's ID, or <code>0</code> if it has no
+	 *         layout set prototype
+	 * @throws PortalException if a matching layout set prototype could not be
+	 *         found
+	 */
+	@Override
+	public long getLayoutSetPrototypeId() throws PortalException {
 		String layoutSetPrototypeUuid = getLayoutSetPrototypeUuid();
 
 		if (Validator.isNull(layoutSetPrototypeUuid)) {
@@ -71,6 +140,7 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 		return layoutSetPrototype.getLayoutSetPrototypeId();
 	}
 
+	@Override
 	public long getLiveLogoId() {
 		long logoId = 0;
 
@@ -102,6 +172,15 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	}
 
 	@Override
+	public boolean getLogo() {
+		if (getLogoId() > 0) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
 	public String getSettings() {
 		if (_settingsProperties == null) {
 			return super.getSettings();
@@ -111,6 +190,7 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 		}
 	}
 
+	@Override
 	public UnicodeProperties getSettingsProperties() {
 		if (_settingsProperties == null) {
 			_settingsProperties = new UnicodeProperties(true);
@@ -126,20 +206,21 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 		return _settingsProperties;
 	}
 
+	@Override
 	public String getSettingsProperty(String key) {
 		UnicodeProperties settingsProperties = getSettingsProperties();
 
 		return settingsProperties.getProperty(key);
 	}
 
-	public Theme getTheme() throws SystemException {
+	@Override
+	public Theme getTheme() {
 		return ThemeLocalServiceUtil.getTheme(
 			getCompanyId(), getThemeId(), false);
 	}
 
-	public String getThemeSetting(String key, String device)
-		throws SystemException {
-
+	@Override
+	public String getThemeSetting(String key, String device) {
 		UnicodeProperties settingsProperties = getSettingsProperties();
 
 		String value = settingsProperties.getProperty(
@@ -149,8 +230,110 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 			return value;
 		}
 
-		Theme theme = null;
+		Theme theme = getTheme(device);
 
+		value = theme.getSetting(key);
+
+		return value;
+	}
+
+	/**
+	 * Returns the name of the layout set's virtual host.
+	 *
+	 * <p>
+	 * When accessing a layout set that has a the virtual host, the URL elements
+	 * "/web/sitename" or "/group/sitename" can be omitted.
+	 * </p>
+	 *
+	 * @return the layout set's virtual host name, or an empty string if the
+	 *         layout set has no virtual host configured
+	 */
+	@Override
+	public String getVirtualHostname() {
+		if (_virtualHostname != null) {
+			return _virtualHostname;
+		}
+
+		VirtualHost virtualHost = VirtualHostLocalServiceUtil.fetchVirtualHost(
+			getCompanyId(), getLayoutSetId());
+
+		if (virtualHost == null) {
+			_virtualHostname = StringPool.BLANK;
+		}
+		else {
+			_virtualHostname = virtualHost.getHostname();
+		}
+
+		return _virtualHostname;
+	}
+
+	@Override
+	public ColorScheme getWapColorScheme() {
+		return ThemeLocalServiceUtil.getColorScheme(
+			getCompanyId(), getWapTheme().getThemeId(), getWapColorSchemeId(),
+			true);
+	}
+
+	@Override
+	public Theme getWapTheme() {
+		return ThemeLocalServiceUtil.getTheme(
+			getCompanyId(), getWapThemeId(), true);
+	}
+
+	@Override
+	public boolean hasSetModifiedDate() {
+		return true;
+	}
+
+	@Override
+	public boolean isLayoutSetPrototypeLinkActive() {
+		if (isLayoutSetPrototypeLinkEnabled() &&
+			Validator.isNotNull(getLayoutSetPrototypeUuid())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean isLogo() {
+		return getLogo();
+	}
+
+	@Override
+	public void setCompanyFallbackVirtualHostname(
+		String companyFallbackVirtualHostname) {
+
+		_companyFallbackVirtualHostname = companyFallbackVirtualHostname;
+	}
+
+	@Override
+	public void setSettings(String settings) {
+		_settingsProperties = null;
+
+		super.setSettings(settings);
+	}
+
+	@Override
+	public void setSettingsProperties(UnicodeProperties settingsProperties) {
+		_settingsProperties = settingsProperties;
+
+		super.setSettings(_settingsProperties.toString());
+	}
+
+	/**
+	 * Sets the name of the layout set's virtual host.
+	 *
+	 * @param virtualHostname the name of the layout set's virtual host
+	 * @see   #getVirtualHostname()
+	 */
+	@Override
+	public void setVirtualHostname(String virtualHostname) {
+		_virtualHostname = virtualHostname;
+	}
+
+	protected Theme getTheme(String device) {
 		boolean controlPanel = false;
 
 		try {
@@ -166,75 +349,25 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 				getCompanyId(),
 				PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID);
 
-			theme = ThemeLocalServiceUtil.getTheme(
+			return ThemeLocalServiceUtil.getTheme(
 				getCompanyId(), themeId, !device.equals("regular"));
 		}
 		else if (device.equals("regular")) {
-			theme = getTheme();
+			return getTheme();
 		}
 		else {
-			theme = getWapTheme();
-		}
-
-		value = theme.getSetting(key);
-
-		return value;
-	}
-
-	public String getVirtualHostname() {
-		try {
-			VirtualHost virtualHost =
-				VirtualHostLocalServiceUtil.fetchVirtualHost(
-					getCompanyId(), getLayoutSetId());
-
-			if (virtualHost == null) {
-				return StringPool.BLANK;
-			}
-			else {
-				return virtualHost.getHostname();
-			}
-		}
-		catch (Exception e) {
-			return StringPool.BLANK;
+			return getWapTheme();
 		}
 	}
 
-	public ColorScheme getWapColorScheme() throws SystemException {
-		return ThemeLocalServiceUtil.getColorScheme(
-			getCompanyId(), getWapTheme().getThemeId(), getWapColorSchemeId(),
-			true);
-	}
+	private static final Log _log = LogFactoryUtil.getLog(LayoutSetImpl.class);
 
-	public Theme getWapTheme() throws SystemException {
-		return ThemeLocalServiceUtil.getTheme(
-			getCompanyId(), getWapThemeId(), true);
-	}
-
-	public boolean isLayoutSetPrototypeLinkActive() {
-		if (isLayoutSetPrototypeLinkEnabled() &&
-			Validator.isNotNull(getLayoutSetPrototypeUuid())) {
-
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public void setSettings(String settings) {
-		_settingsProperties = null;
-
-		super.setSettings(settings);
-	}
-
-	public void setSettingsProperties(UnicodeProperties settingsProperties) {
-		_settingsProperties = settingsProperties;
-
-		super.setSettings(_settingsProperties.toString());
-	}
-
-	private static Log _log = LogFactoryUtil.getLog(LayoutSetImpl.class);
+	@CacheField
+	private String _companyFallbackVirtualHostname;
 
 	private UnicodeProperties _settingsProperties;
+
+	@CacheField
+	private String _virtualHostname;
 
 }

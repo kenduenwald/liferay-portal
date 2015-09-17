@@ -1,0 +1,9 @@
+<definition default="name">
+	<command name="name">
+		<execute function="function" />
+	</command>
+
+	<command name="name">
+		<execute function="function" />
+	</command>
+</definition>

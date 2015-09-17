@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,21 +14,18 @@
 
 package com.liferay.portal.metadata;
 
-import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.lar.PortletDataContext;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.util.PrefsPropsUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.xuggler.XugglerUtil;
 import com.liferay.portlet.documentlibrary.util.AudioProcessorUtil;
 import com.liferay.portlet.documentlibrary.util.VideoProcessorUtil;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
 
 import com.xuggle.xuggler.IContainer;
 
@@ -38,6 +35,7 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.XMPDM;
 
 /**
  * @author Juan González
@@ -45,71 +43,16 @@ import org.apache.tika.metadata.Metadata;
  */
 public class XugglerRawMetadataProcessor extends BaseRawMetadataProcessor {
 
+	@Override
 	public void exportGeneratedFiles(
-			PortletDataContext portletDataContext, FileEntry fileEntry,
-			Element fileEntryElement)
-		throws Exception {
-
-		return;
+		PortletDataContext portletDataContext, FileEntry fileEntry,
+		Element fileEntryElement) {
 	}
 
 	@Override
-	public Metadata extractMetadata(
-			String extension, String mimeType, File file)
-		throws SystemException {
-
-		Metadata metadata = null;
-
-		if (!isSupported(mimeType)) {
-			return metadata;
-		}
-
-		try {
-			metadata = extractMetadata(file);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-
-		return metadata;
-	}
-
-	@Override
-	public Metadata extractMetadata(
-			String extension, String mimeType, InputStream inputStream)
-		throws SystemException {
-
-		Metadata metadata = null;
-
-		File file = null;
-
-		if (!isSupported(mimeType)) {
-			return metadata;
-		}
-
-		try {
-			file = FileUtil.createTempFile(extension);
-
-			FileUtil.write(file, inputStream);
-
-			metadata = extractMetadata(file);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-		finally {
-			FileUtil.delete(file);
-		}
-
-		return metadata;
-	}
-
 	public void importGeneratedFiles(
-			PortletDataContext portletDataContext, FileEntry fileEntry,
-			FileEntry importedFileEntry, Element fileEntryElement)
-		throws Exception {
-
-		return;
+		PortletDataContext portletDataContext, FileEntry fileEntry,
+		FileEntry importedFileEntry, Element fileEntryElement) {
 	}
 
 	protected String convertTime(long microseconds) {
@@ -160,10 +103,57 @@ public class XugglerRawMetadataProcessor extends BaseRawMetadataProcessor {
 		}
 	}
 
-	protected boolean isSupported(String mimeType) throws SystemException {
-		if (PrefsPropsUtil.getBoolean(
-				PropsKeys.XUGGLER_ENABLED, PropsValues.XUGGLER_ENABLED)) {
+	@Override
+	protected Metadata extractMetadata(
+		String extension, String mimeType, File file) {
 
+		Metadata metadata = null;
+
+		if (!isSupported(mimeType)) {
+			return metadata;
+		}
+
+		try {
+			metadata = extractMetadata(file);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+		}
+
+		return metadata;
+	}
+
+	@Override
+	protected Metadata extractMetadata(
+		String extension, String mimeType, InputStream inputStream) {
+
+		Metadata metadata = null;
+
+		File file = null;
+
+		if (!isSupported(mimeType)) {
+			return metadata;
+		}
+
+		try {
+			file = FileUtil.createTempFile(extension);
+
+			FileUtil.write(file, inputStream);
+
+			metadata = extractMetadata(file);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+		}
+		finally {
+			FileUtil.delete(file);
+		}
+
+		return metadata;
+	}
+
+	protected boolean isSupported(String mimeType) {
+		if (XugglerUtil.isEnabled()) {
 			if (AudioProcessorUtil.isAudioSupported(mimeType)) {
 				return true;
 			}
@@ -176,9 +166,10 @@ public class XugglerRawMetadataProcessor extends BaseRawMetadataProcessor {
 		return false;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		XugglerRawMetadataProcessor.class);
 
-	private static DecimalFormat _decimalFormatter = new DecimalFormat("00");
+	private static final DecimalFormat _decimalFormatter = new DecimalFormat(
+		"00");
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,74 +15,91 @@
 package com.liferay.portlet.documentlibrary.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.staging.permission.StagingPermissionUtil;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.workflow.permission.WorkflowPermissionUtil;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.permission.ActionKeys;
+import com.liferay.portal.security.permission.BaseModelPermissionChecker;
 import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.portlet.documentlibrary.NoSuchFolderException;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
 import com.liferay.portlet.documentlibrary.model.DLFileVersion;
 import com.liferay.portlet.documentlibrary.model.DLFolder;
 import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
 import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
 import com.liferay.portlet.documentlibrary.service.DLFolderLocalServiceUtil;
+import com.liferay.portlet.exportimport.staging.permission.StagingPermissionUtil;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Charles May
  */
-public class DLFileEntryPermission {
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.portlet.documentlibrary.model.DLFileEntry"
+	}
+)
+public class DLFileEntryPermission implements BaseModelPermissionChecker {
 
 	public static void check(
 			PermissionChecker permissionChecker, DLFileEntry dlFileEntry,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (!contains(permissionChecker, dlFileEntry, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, DLFileEntry.class.getName(),
+				dlFileEntry.getFileEntryId(), actionId);
 		}
 	}
 
 	public static void check(
 			PermissionChecker permissionChecker, FileEntry fileEntry,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (!fileEntry.containsPermission(permissionChecker, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, FileEntry.class.getName(),
+				fileEntry.getFileEntryId(), actionId);
 		}
 	}
 
 	public static void check(
 			PermissionChecker permissionChecker, long fileEntryId,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (!contains(permissionChecker, fileEntryId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, FileEntry.class.getName(), fileEntryId,
+				actionId);
 		}
 	}
 
 	public static boolean contains(
 			PermissionChecker permissionChecker, DLFileEntry dlFileEntry,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
+
+		String portletId = PortletProviderUtil.getPortletId(
+			FileEntry.class.getName(), PortletProvider.Action.EDIT);
 
 		Boolean hasPermission = StagingPermissionUtil.hasPermission(
 			permissionChecker, dlFileEntry.getGroupId(),
 			DLFileEntry.class.getName(), dlFileEntry.getFileEntryId(),
-			PortletKeys.DOCUMENT_LIBRARY, actionId);
+			portletId, actionId);
 
 		if (hasPermission != null) {
 			return hasPermission.booleanValue();
 		}
 
 		DLFileVersion latestDLFileVersion = dlFileEntry.getLatestFileVersion(
-			false);
+			true);
 
 		if (latestDLFileVersion.isPending()) {
 			hasPermission = WorkflowPermissionUtil.hasPermission(
@@ -95,19 +112,36 @@ public class DLFileEntryPermission {
 			}
 		}
 
-		if (PropsValues.PERMISSIONS_VIEW_DYNAMIC_INHERITANCE) {
-			if (dlFileEntry.getFolderId() !=
-					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+		if (actionId.equals(ActionKeys.VIEW) &&
+			PropsValues.PERMISSIONS_VIEW_DYNAMIC_INHERITANCE) {
 
-				DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(
-					dlFileEntry.getFolderId());
+			long dlFolderId = dlFileEntry.getFolderId();
 
-				if (!DLFolderPermission.contains(
-						permissionChecker, dlFolder, ActionKeys.ACCESS) &&
-					!DLFolderPermission.contains(
-						permissionChecker, dlFolder, ActionKeys.VIEW)) {
+			if (dlFolderId == DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+				if (!DLPermission.contains(
+						permissionChecker, dlFileEntry.getGroupId(),
+						actionId)) {
 
 					return false;
+				}
+			}
+			else {
+				try {
+					DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(
+						dlFolderId);
+
+					if (!DLFolderPermission.contains(
+							permissionChecker, dlFolder, ActionKeys.ACCESS) &&
+						!DLFolderPermission.contains(
+							permissionChecker, dlFolder, ActionKeys.VIEW)) {
+
+						return false;
+					}
+				}
+				catch (NoSuchFolderException nsfe) {
+					if (!dlFileEntry.isInTrash()) {
+						throw nsfe;
+					}
 				}
 			}
 		}
@@ -128,7 +162,7 @@ public class DLFileEntryPermission {
 	public static boolean contains(
 			PermissionChecker permissionChecker, FileEntry fileEntry,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		return fileEntry.containsPermission(permissionChecker, actionId);
 	}
@@ -136,11 +170,20 @@ public class DLFileEntryPermission {
 	public static boolean contains(
 			PermissionChecker permissionChecker, long fileEntryId,
 			String actionId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(fileEntryId);
 
 		return fileEntry.containsPermission(permissionChecker, actionId);
+	}
+
+	@Override
+	public void checkBaseModel(
+			PermissionChecker permissionChecker, long groupId, long primaryKey,
+			String actionId)
+		throws PortalException {
+
+		check(permissionChecker, primaryKey, actionId);
 	}
 
 }

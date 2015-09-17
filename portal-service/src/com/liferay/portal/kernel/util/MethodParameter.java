@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,16 +15,28 @@
 package com.liferay.portal.kernel.util;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Igor Spasic
  */
 public class MethodParameter {
 
-	public MethodParameter(String name, String signatures, Class<?> type) {
+	public MethodParameter(
+		String name, String signatures, Class<?> type, boolean initialize) {
+
 		_name = name;
 		_signatures = signatures;
 		_type = type;
+
+		if (initialize) {
+			try {
+				getGenericTypes();
+			}
+			catch (ClassNotFoundException cnfe) {
+				throw new IllegalArgumentException(cnfe);
+			}
+		}
 	}
 
 	public Class<?>[] getGenericTypes() throws ClassNotFoundException {
@@ -32,15 +44,7 @@ public class MethodParameter {
 			return _genericTypes;
 		}
 
-		String[] genericSignatures = _extractTopLevelGenericSignatures(
-			_signatures);
-
-		if (genericSignatures == null) {
-			_genericTypes = null;
-		}
-		else {
-			_genericTypes = _loadGenericTypes(genericSignatures);
-		}
+		_genericTypes = _getGenericTypes(_signatures);
 
 		_initialized = true;
 
@@ -59,121 +63,190 @@ public class MethodParameter {
 		return _type;
 	}
 
-	private static String[] _extractTopLevelGenericSignatures(
-		String signature) {
+	private String _getClassName(String signature) {
+		String className = signature;
 
-		if (signature == null) {
+		char c = signature.charAt(0);
+
+		if (_isPrimitive(c)) {
+			if (signature.length() != 1) {
+				throw new IllegalArgumentException(
+					"Invalid signature " + signature);
+			}
+		}
+		else if (c == 'L') {
+			className = className.substring(1, className.length() - 1);
+			className = className.replace(CharPool.SLASH, CharPool.PERIOD);
+		}
+		else if (c == '[') {
+			className = className.replace(CharPool.SLASH, CharPool.PERIOD);
+		}
+		else {
+			throw new IllegalArgumentException(
+				"Invalid signature " + signature);
+		}
+
+		return className;
+	}
+
+	private ClassLoader _getContextClassLoader() {
+		if (_contextClassLoader != null) {
+			return _contextClassLoader;
+		}
+
+		Thread currentThread = Thread.currentThread();
+
+		_contextClassLoader = currentThread.getContextClassLoader();
+
+		return _contextClassLoader;
+	}
+
+	private String _getGenericName(String typeName) {
+		if (typeName.equals(StringPool.STAR)) {
 			return null;
 		}
 
-		int leftBracketIndex = signature.indexOf(CharPool.LESS_THAN);
+		if (typeName.startsWith(StringPool.MINUS) ||
+			typeName.startsWith(StringPool.PLUS)) {
+
+			typeName = typeName.substring(1);
+		}
+
+		return typeName;
+	}
+
+	private Class<?> _getGenericType(String signature)
+		throws ClassNotFoundException {
+
+		ClassLoader contextClassLoader = _getContextClassLoader();
+
+		String className = _getClassName(signature);
+
+		if (className.startsWith(StringPool.OPEN_BRACKET)) {
+			try {
+				return Class.forName(className, true, contextClassLoader);
+			}
+			catch (ClassNotFoundException cnfe) {
+			}
+		}
+
+		return contextClassLoader.loadClass(className);
+	}
+
+	private Class<?>[] _getGenericTypes(String signatures)
+		throws ClassNotFoundException {
+
+		if (signatures == null) {
+			return null;
+		}
+
+		int leftBracketIndex = signatures.indexOf(CharPool.LESS_THAN);
 
 		if (leftBracketIndex == -1) {
 			return null;
 		}
 
-		int rightBracketIndex = signature.lastIndexOf(CharPool.GREATER_THAN);
+		int rightBracketIndex = signatures.lastIndexOf(CharPool.GREATER_THAN);
 
 		if (rightBracketIndex == -1) {
 			return null;
 		}
 
-		String generics = signature.substring(
+		String generics = signatures.substring(
 			leftBracketIndex + 1, rightBracketIndex);
 
-		StringBuilder sb = new StringBuilder(generics.length());
-
-		ArrayList<String> list = new ArrayList<String>();
+		List<Class<?>> genericTypeslist = new ArrayList<>();
 
 		int level = 0;
+		int index = 0;
 
-		for (int i = 0; i < generics.length(); i++) {
-			char c = generics.charAt(i);
+		while (index < generics.length()) {
+			char c = generics.charAt(index);
 
-			if (c == '<') {
+			index++;
+
+			if (c == CharPool.LESS_THAN) {
 				level++;
 			}
-			else if (c == '>') {
+			else if (c == CharPool.GREATER_THAN) {
 				level--;
 			}
 			else if (level == 0) {
-				sb.append(c);
+				String extractedTopLevelGenericName = null;
 
-				if (c == ';') {
-					list.add(sb.toString());
+				if (c == 'L') {
+					int bracketIndex = generics.indexOf(
+						StringPool.LESS_THAN, index);
+					int endIndex =
+						generics.indexOf(StringPool.SEMICOLON, index) + 1;
 
-					sb.setLength(0);
+					if ((bracketIndex != -1) && (bracketIndex < endIndex)) {
+						endIndex = bracketIndex;
+
+						extractedTopLevelGenericName = _getGenericName(
+							generics.substring(index - 1, endIndex));
+						extractedTopLevelGenericName =
+							extractedTopLevelGenericName.concat(
+								StringPool.SEMICOLON);
+					}
+					else {
+						extractedTopLevelGenericName = _getGenericName(
+							generics.substring(index - 1, endIndex));
+					}
+
+					index = endIndex;
+				}
+				else if (c == '[') {
+					char nextChar = generics.charAt(index);
+
+					if (_isPrimitive(nextChar)) {
+						extractedTopLevelGenericName = _getGenericName(
+							generics.substring(index - 1, index + 1));
+
+						index++;
+					}
+					else if (nextChar == 'L') {
+						int endIndex =
+							generics.indexOf(StringPool.SEMICOLON, index) + 1;
+
+						extractedTopLevelGenericName = _getGenericName(
+							generics.substring(index - 1, endIndex));
+
+						index = endIndex;
+					}
+				}
+
+				if (Validator.isNotNull(extractedTopLevelGenericName)) {
+					genericTypeslist.add(
+						_getGenericType(extractedTopLevelGenericName));
 				}
 			}
 		}
 
-		return list.toArray(new String[list.size()]);
-	}
-
-	private static Class<?>[] _loadGenericTypes(String[] signatures)
-		throws ClassNotFoundException {
-
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		Class<?>[] types = new Class<?>[signatures.length];
-
-		for (int i = 0; i < signatures.length; i++) {
-			String className = signatures[i];
-
-			char c = className.charAt(0);
-
-			if (c == 'B') {
-				types[i] = byte.class;
-			}
-			else if (c == 'C') {
-				types[i] = char.class;
-			}
-			else if (c == 'D') {
-				types[i] = double.class;
-			}
-			else if (c == 'F') {
-				types[i] = float.class;
-			}
-			else if (c == 'I') {
-				types[i] = int.class;
-			}
-			else if (c == 'J') {
-				types[i] = long.class;
-			}
-			else if (c == 'L') {
-				className = className.substring(1, className.length() - 1);
-				className = className.replace(CharPool.SLASH, CharPool.PERIOD);
-
-				types[i] = contextClassLoader.loadClass(className);
-			}
-			else if (c == 'S') {
-				types[i] = short.class;
-			}
-			else if (c == 'Z') {
-				types[i] = boolean.class;
-			}
-			else if (c == 'V') {
-				types[i] = void.class;
-			}
-			else if (c == CharPool.OPEN_BRACKET) {
-				className = className.replace(CharPool.SLASH, CharPool.PERIOD);
-
-				types[i] = contextClassLoader.loadClass(className);
-			}
-			else {
-				throw new ClassNotFoundException(className);
-			}
+		if (genericTypeslist.isEmpty()) {
+			return null;
 		}
 
-		return types;
+		return genericTypeslist.toArray(new Class<?>[genericTypeslist.size()]);
 	}
 
+	private boolean _isPrimitive(char c) {
+		if ((c == 'B') || (c == 'C') || (c == 'D') || (c == 'F') ||
+			(c == 'I') || (c == 'J') || (c == 'S') || (c == 'V') ||
+			(c == 'Z')) {
+
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	private ClassLoader _contextClassLoader;
 	private Class<?>[] _genericTypes;
 	private boolean _initialized;
-	private String _name;
-	private String _signatures;
-	private Class<?> _type;
+	private final String _name;
+	private final String _signatures;
+	private final Class<?> _type;
 
 }

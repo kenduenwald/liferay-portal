@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -27,27 +27,29 @@ import java.util.Set;
  */
 public abstract class BaseDestination implements Destination {
 
-	public void addDestinationEventListener(
+	@Override
+	public boolean addDestinationEventListener(
 		DestinationEventListener destinationEventListener) {
 
-		_destinationEventListeners.add(destinationEventListener);
+		return _destinationEventListeners.add(destinationEventListener);
 	}
 
 	public void afterPropertiesSet() {
 		if (Validator.isNull(name)) {
 			throw new IllegalArgumentException("Name is null");
 		}
-
-		open();
 	}
 
+	@Override
 	public void close() {
 		close(false);
 	}
 
+	@Override
 	public void close(boolean force) {
 	}
 
+	@Override
 	public void copyDestinationEventListeners(Destination destination) {
 		for (DestinationEventListener destinationEventListener :
 				_destinationEventListeners) {
@@ -56,6 +58,7 @@ public abstract class BaseDestination implements Destination {
 		}
 	}
 
+	@Override
 	public void copyMessageListeners(Destination destination) {
 		for (MessageListener messageListener : messageListeners) {
 			InvokerMessageListener invokerMessageListener =
@@ -67,18 +70,36 @@ public abstract class BaseDestination implements Destination {
 		}
 	}
 
+	@Override
+	public void destroy() {
+		close(true);
+
+		removeDestinationEventListeners();
+
+		unregisterMessageListeners();
+	}
+
+	@Override
+	public DestinationStatistics getDestinationStatistics() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public int getMessageListenerCount() {
 		return messageListeners.size();
 	}
 
+	@Override
 	public Set<MessageListener> getMessageListeners() {
 		return Collections.unmodifiableSet(messageListeners);
 	}
 
+	@Override
 	public String getName() {
 		return name;
 	}
 
+	@Override
 	public boolean isRegistered() {
 		if (getMessageListenerCount() > 0) {
 			return true;
@@ -88,9 +109,11 @@ public abstract class BaseDestination implements Destination {
 		}
 	}
 
+	@Override
 	public void open() {
 	}
 
+	@Override
 	public boolean register(MessageListener messageListener) {
 		InvokerMessageListener invokerMessageListener =
 			new InvokerMessageListener(messageListener);
@@ -98,6 +121,7 @@ public abstract class BaseDestination implements Destination {
 		return registerMessageListener(invokerMessageListener);
 	}
 
+	@Override
 	public boolean register(
 		MessageListener messageListener, ClassLoader classloader) {
 
@@ -107,20 +131,28 @@ public abstract class BaseDestination implements Destination {
 		return registerMessageListener(invokerMessageListener);
 	}
 
-	public void removeDestinationEventListener(
+	@Override
+	public boolean removeDestinationEventListener(
 		DestinationEventListener destinationEventListener) {
 
-		_destinationEventListeners.remove(destinationEventListener);
+		return _destinationEventListeners.remove(destinationEventListener);
 	}
 
+	@Override
 	public void removeDestinationEventListeners() {
 		_destinationEventListeners.clear();
+	}
+
+	@Override
+	public void send(Message message) {
+		throw new UnsupportedOperationException();
 	}
 
 	public void setName(String name) {
 		this.name = name;
 	}
 
+	@Override
 	public boolean unregister(MessageListener messageListener) {
 		InvokerMessageListener invokerMessageListener =
 			new InvokerMessageListener(messageListener);
@@ -137,6 +169,7 @@ public abstract class BaseDestination implements Destination {
 		return unregisterMessageListener(invokerMessageListener);
 	}
 
+	@Override
 	public void unregisterMessageListeners() {
 		for (MessageListener messageListener : messageListeners) {
 			unregisterMessageListener((InvokerMessageListener)messageListener);
@@ -188,11 +221,10 @@ public abstract class BaseDestination implements Destination {
 		return unregistered;
 	}
 
-	protected Set<MessageListener> messageListeners =
-		new ConcurrentHashSet<MessageListener>();
+	protected Set<MessageListener> messageListeners = new ConcurrentHashSet<>();
 	protected String name = StringPool.BLANK;
 
-	private Set<DestinationEventListener> _destinationEventListeners =
-		new ConcurrentHashSet<DestinationEventListener>();
+	private final Set<DestinationEventListener> _destinationEventListeners =
+		new ConcurrentHashSet<>();
 
 }

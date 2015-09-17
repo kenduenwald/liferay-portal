@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,10 +14,7 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.NoSuchListTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.model.ClassName;
 import com.liferay.portal.model.ListType;
 import com.liferay.portal.service.base.ListTypeServiceBaseImpl;
 
@@ -28,36 +25,26 @@ import java.util.List;
  */
 public class ListTypeServiceImpl extends ListTypeServiceBaseImpl {
 
-	public ListType getListType(int listTypeId)
-		throws PortalException, SystemException {
-
-		return listTypePersistence.findByPrimaryKey(listTypeId);
+	@Override
+	public ListType getListType(long listTypeId) throws PortalException {
+		return listTypeLocalService.getListType(listTypeId);
 	}
 
-	public List<ListType> getListTypes(String type) throws SystemException {
-		return listTypePersistence.findByType(type);
+	@Override
+	public List<ListType> getListTypes(String type) {
+		return listTypeLocalService.getListTypes(type);
 	}
 
-	public void validate(int listTypeId, long classNameId, String type)
-		throws PortalException, SystemException {
+	@Override
+	public void validate(long listTypeId, long classNameId, String type)
+		throws PortalException {
 
-		ClassName className = classNameLocalService.getClassName(classNameId);
-
-		validate(listTypeId, className.getValue() + type);
+		listTypeLocalService.validate(listTypeId, classNameId, type);
 	}
 
-	public void validate(int listTypeId, String type)
-		throws PortalException, SystemException {
-
-		ListType listType = listTypePersistence.fetchByPrimaryKey(listTypeId);
-
-		if ((listType == null) || !listType.getType().equals(type)) {
-			NoSuchListTypeException nslte = new NoSuchListTypeException();
-
-			nslte.setType(type);
-
-			throw nslte;
-		}
+	@Override
+	public void validate(long listTypeId, String type) throws PortalException {
+		listTypeLocalService.validate(listTypeId, type);
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,9 +16,9 @@ package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
 import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
 import com.liferay.portlet.documentlibrary.store.DLStoreUtil;
@@ -30,9 +30,7 @@ import java.io.InputStream;
  */
 public class ImageImpl extends ImageBaseImpl {
 
-	public ImageImpl() {
-	}
-
+	@Override
 	public byte[] getTextObj() {
 		if (_textObj != null) {
 			return _textObj;
@@ -41,8 +39,13 @@ public class ImageImpl extends ImageBaseImpl {
 		long imageId = getImageId();
 
 		try {
-			DLFileEntry dlFileEntry =
-				DLFileEntryLocalServiceUtil.fetchFileEntryByAnyImageId(imageId);
+			DLFileEntry dlFileEntry = null;
+
+			if (PropsValues.WEB_SERVER_SERVLET_CHECK_IMAGE_GALLERY) {
+				dlFileEntry =
+					DLFileEntryLocalServiceUtil.fetchFileEntryByAnyImageId(
+						imageId);
+			}
 
 			InputStream is = null;
 
@@ -69,10 +72,9 @@ public class ImageImpl extends ImageBaseImpl {
 		return _textObj;
 	}
 
+	@Override
 	public void setTextObj(byte[] textObj) {
 		_textObj = textObj;
-
-		super.setText(Base64.objectToString(textObj));
 	}
 
 	protected String getFileName() {
@@ -83,7 +85,7 @@ public class ImageImpl extends ImageBaseImpl {
 
 	private static final long _DEFAULT_REPOSITORY_ID = 0;
 
-	private static Log _log = LogFactoryUtil.getLog(ImageImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(ImageImpl.class);
 
 	private byte[] _textObj;
 

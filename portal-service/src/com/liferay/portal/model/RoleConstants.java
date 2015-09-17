@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,12 @@
 
 package com.liferay.portal.model;
 
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
+
+import java.util.Locale;
+
 /**
  * Contains constants used by roles, including the names of the default roles
  * and the role types.
@@ -26,6 +32,13 @@ public class RoleConstants {
 
 	public static final String GUEST = "Guest";
 
+	public static final String NAME_INVALID_CHARACTERS =
+		StringPool.COMMA + StringPool.SPACE + StringPool.STAR;
+
+	public static final String NAME_LABEL = "role-name";
+
+	public static final String NAME_RESERVED_WORDS = StringPool.NULL;
+
 	public static final String ORGANIZATION_ADMINISTRATOR =
 		"Organization Administrator";
 
@@ -35,9 +48,17 @@ public class RoleConstants {
 
 	public static final String OWNER = "Owner";
 
+	public static final String PLACEHOLDER_DEFAULT_GROUP_ROLE =
+		"PLACEHOLDER_DEFAULT_GROUP_ROLE";
+
+	public static final String PORTAL_CONTENT_REVIEWER =
+		"Portal Content Reviewer";
+
 	public static final String POWER_USER = "Power User";
 
 	public static final String SITE_ADMINISTRATOR = "Site Administrator";
+
+	public static final String SITE_CONTENT_REVIEWER = "Site Content Reviewer";
 
 	public static final String SITE_MEMBER = "Site Member";
 
@@ -69,7 +90,34 @@ public class RoleConstants {
 
 	public static final String TYPE_SITE_LABEL = "site";
 
+	public static final int[] TYPES_ORGANIZATION_AND_REGULAR =
+		{TYPE_REGULAR, TYPE_ORGANIZATION};
+
+	public static final int[] TYPES_ORGANIZATION_AND_REGULAR_AND_SITE = {
+		TYPE_REGULAR, TYPE_ORGANIZATION, TYPE_SITE
+	};
+
+	public static final int[] TYPES_REGULAR = {TYPE_REGULAR};
+
+	public static final int[] TYPES_REGULAR_AND_SITE =
+		{TYPE_REGULAR, TYPE_SITE};
+
 	public static final String USER = "User";
+
+	public static String getNameGeneralRestrictions(
+		Locale locale, boolean allowNumeric) {
+
+		String nameGeneralRestrictions = StringUtil.toLowerCase(
+			LanguageUtil.get(locale, "blank"));
+
+		if (!allowNumeric) {
+			nameGeneralRestrictions +=
+				StringPool.COMMA_AND_SPACE +
+					StringUtil.toLowerCase(LanguageUtil.get(locale, "numeric"));
+		}
+
+		return nameGeneralRestrictions;
+	}
 
 	public static String getTypeLabel(int type) {
 		if (type == TYPE_ORGANIZATION) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,6 @@ import com.liferay.portal.kernel.deploy.hot.HotDeployException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.WebDirDetector;
-import com.liferay.portal.kernel.servlet.taglib.FileAvailabilityUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.StreamUtil;
@@ -31,6 +30,7 @@ import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.tools.WebXMLBuilder;
 import com.liferay.portal.util.ExtRegistry;
 import com.liferay.portal.util.PortalUtil;
+import com.liferay.taglib.FileAvailabilityUtil;
 import com.liferay.util.ant.CopyTask;
 
 import java.io.File;
@@ -47,6 +47,7 @@ import javax.servlet.ServletContext;
  */
 public class ExtHotDeployListener extends BaseHotDeployListener {
 
+	@Override
 	public void invokeDeploy(HotDeployEvent hotDeployEvent)
 		throws HotDeployException {
 
@@ -60,6 +61,7 @@ public class ExtHotDeployListener extends BaseHotDeployListener {
 		}
 	}
 
+	@Override
 	public void invokeUndeploy(HotDeployEvent hotDeployEvent)
 		throws HotDeployException {
 
@@ -112,7 +114,10 @@ public class ExtHotDeployListener extends BaseHotDeployListener {
 			return;
 		}
 
-		logRegistration(servletContextName);
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				"Registering extension environment for " + servletContextName);
+		}
 
 		if (ExtRegistry.isRegistered(servletContextName)) {
 			if (_log.isInfoEnabled()) {
@@ -155,7 +160,7 @@ public class ExtHotDeployListener extends BaseHotDeployListener {
 
 		installExt(servletContext, hotDeployEvent.getContextClassLoader());
 
-		FileAvailabilityUtil.reset();
+		FileAvailabilityUtil.clearAvailabilities();
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
@@ -221,13 +226,6 @@ public class ExtHotDeployListener extends BaseHotDeployListener {
 		ExtRegistry.registerExt(servletContext);
 	}
 
-	protected void logRegistration(String servletContextName) {
-		if (_log.isInfoEnabled()) {
-			_log.info(
-				"Registering extension environment for " + servletContextName);
-		}
-	}
-
 	protected void mergeWebXml(String portalWebDir, String pluginWebDir) {
 		if (!FileUtil.exists(
 				pluginWebDir + "WEB-INF/ext-web/docroot/WEB-INF/web.xml")) {
@@ -257,6 +255,7 @@ public class ExtHotDeployListener extends BaseHotDeployListener {
 		FileUtil.deltree(tmpDir);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ExtHotDeployListener.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		ExtHotDeployListener.class);
 
 }

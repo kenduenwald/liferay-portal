@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +13,8 @@
  */
 
 package com.liferay.portal.kernel.portlet;
+
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +31,7 @@ public class PortletModeFactory {
 	}
 
 	private PortletModeFactory() {
-		_portletModes = new HashMap<String, PortletMode>();
+		_portletModes = new HashMap<>();
 
 		_portletModes.put(_EDIT, LiferayPortletMode.EDIT);
 		_portletModes.put(_HELP, LiferayPortletMode.HELP);
@@ -43,6 +45,10 @@ public class PortletModeFactory {
 	}
 
 	private PortletMode _getPortletMode(String name) {
+		if (Validator.isNull(name)) {
+			return PortletMode.VIEW;
+		}
+
 		PortletMode portletMode = _portletModes.get(name);
 
 		if (portletMode == null) {
@@ -73,8 +79,9 @@ public class PortletModeFactory {
 
 	private static final String _VIEW = PortletMode.VIEW.toString();
 
-	private static PortletModeFactory _instance = new PortletModeFactory();
+	private static final PortletModeFactory _instance =
+		new PortletModeFactory();
 
-	private Map<String, PortletMode> _portletModes;
+	private final Map<String, PortletMode> _portletModes;
 
 }

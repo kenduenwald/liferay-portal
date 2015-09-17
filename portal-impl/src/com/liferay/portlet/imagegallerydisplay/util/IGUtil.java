@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,16 +16,19 @@ package com.liferay.portlet.imagegallerydisplay.util;
 
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.WebKeys;
+import com.liferay.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
 import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
 
 import java.util.Collections;
 import java.util.List;
 
+import javax.portlet.PortletPreferences;
 import javax.portlet.PortletURL;
 import javax.portlet.RenderResponse;
 
@@ -41,27 +44,48 @@ public class IGUtil {
 			RenderResponse renderResponse)
 		throws Exception {
 
-		String strutsAction = ParamUtil.getString(request, "struts_action");
+		String mvcRenderCommandName = ParamUtil.getString(
+			request, "mvcRenderCommandName");
 
 		PortletURL portletURL = renderResponse.createRenderURL();
 
-		if (strutsAction.equals("/image_gallery_display/select_folder")) {
+		if (mvcRenderCommandName.equals("/document_library/select_folder")) {
 			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+			portletURL.setParameter(
+				"mvcRenderCommandName", mvcRenderCommandName);
 			portletURL.setWindowState(LiferayWindowState.POP_UP);
-
-			portletURL.setParameter("struts_action", strutsAction);
 
 			PortalUtil.addPortletBreadcrumbEntry(
 				request, themeDisplay.translate("home"), portletURL.toString());
 		}
 		else {
 			portletURL.setParameter(
-				"struts_action", "/image_gallery_display/view");
+				"mvcRenderCommandName", "/image_gallery_display/view");
 		}
 
-		List<Folder> ancestorFolders = folder.getAncestors();
+		long defaultFolderId = getDefaultFolderId(request);
+
+		List<Folder> ancestorFolders = Collections.emptyList();
+
+		if ((folder != null) && (folder.getFolderId() != defaultFolderId)) {
+			ancestorFolders = folder.getAncestors();
+
+			int indexOfRootFolder = -1;
+
+			for (int i = 0; i < ancestorFolders.size(); i++) {
+				Folder ancestorFolder = ancestorFolders.get(i);
+
+				if (defaultFolderId == ancestorFolder.getFolderId()) {
+					indexOfRootFolder = i;
+				}
+			}
+
+			if (indexOfRootFolder > -1) {
+				ancestorFolders = ancestorFolders.subList(0, indexOfRootFolder);
+			}
+		}
 
 		Collections.reverse(ancestorFolders);
 
@@ -75,11 +99,6 @@ public class IGUtil {
 
 		portletURL.setParameter(
 			"folderId", String.valueOf(folder.getFolderId()));
-
-		if (strutsAction.equals("/journal/select_image_gallery")) {
-			portletURL.setParameter(
-				"groupId", String.valueOf(folder.getGroupId()));
-		}
 
 		PortalUtil.addPortletBreadcrumbEntry(
 			request, folder.getName(), portletURL.toString());
@@ -97,6 +116,19 @@ public class IGUtil {
 		Folder folder = DLAppLocalServiceUtil.getFolder(folderId);
 
 		addPortletBreadcrumbEntries(folder, request, renderResponse);
+	}
+
+	protected static long getDefaultFolderId(HttpServletRequest request)
+		throws Exception {
+
+		PortletPreferences portletPreferences =
+			PortletPreferencesFactoryUtil.getPortletPreferences(
+				request, PortalUtil.getPortletId(request));
+
+		return GetterUtil.getLong(
+			portletPreferences.getValue(
+				"rootFolderId",
+				String.valueOf(DLFolderConstants.DEFAULT_PARENT_FOLDER_ID)));
 	}
 
 }

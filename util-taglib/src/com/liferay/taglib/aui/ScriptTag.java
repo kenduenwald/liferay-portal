@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,22 +14,18 @@
 
 package com.liferay.taglib.aui;
 
-import com.liferay.portal.kernel.servlet.BodyContentWrapper;
-import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
-import com.liferay.portal.kernel.servlet.PortalIncludeUtil;
-import com.liferay.portal.kernel.servlet.taglib.FileAvailabilityUtil;
+import com.liferay.portal.kernel.servlet.taglib.BodyContentWrapper;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.model.Portlet;
+import com.liferay.taglib.FileAvailabilityUtil;
 import com.liferay.taglib.aui.base.BaseScriptTag;
-
-import java.util.Set;
+import com.liferay.taglib.util.PortalIncludeUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 import javax.servlet.jsp.PageContext;
 import javax.servlet.jsp.tagext.BodyContent;
 
@@ -40,8 +36,9 @@ import javax.servlet.jsp.tagext.BodyContent;
 public class ScriptTag extends BaseScriptTag {
 
 	public static void doTag(
-			String position, String use, String bodyContentString,
-			BodyContent previousBodyContent, PageContext pageContext)
+			String position, String require, String use,
+			String bodyContentString, BodyContent previousBodyContent,
+			PageContext pageContext)
 		throws Exception {
 
 		String previousBodyContentString = null;
@@ -58,6 +55,7 @@ public class ScriptTag extends BaseScriptTag {
 
 		scriptTag.setPageContext(pageContext);
 		scriptTag.setPosition(position);
+		scriptTag.setRequire(require);
 		scriptTag.setUse(use);
 
 		BodyContent bodyContent = pageContext.pushBody();
@@ -89,24 +87,15 @@ public class ScriptTag extends BaseScriptTag {
 			(HttpServletRequest)pageContext.getRequest();
 
 		ScriptData scriptData = (ScriptData)request.getAttribute(
-			ScriptTag.class.getName());
+			WebKeys.AUI_SCRIPT_DATA);
 
 		if (scriptData == null) {
-			scriptData = (ScriptData)request.getAttribute(
-				WebKeys.AUI_SCRIPT_DATA);
-
-			if (scriptData != null) {
-				request.removeAttribute(WebKeys.AUI_SCRIPT_DATA);
-			}
+			return;
 		}
 
-		if (scriptData != null) {
-			ScriptTag scriptTag = new ScriptTag();
+		request.removeAttribute(WebKeys.AUI_SCRIPT_DATA);
 
-			scriptTag.setPageContext(pageContext);
-
-			scriptTag.processEndTag(scriptData);
-		}
+		scriptData.writeTo(request, pageContext.getOut());
 	}
 
 	@Override
@@ -114,19 +103,57 @@ public class ScriptTag extends BaseScriptTag {
 		HttpServletRequest request =
 			(HttpServletRequest)pageContext.getRequest();
 
-		boolean positionInline = isPositionInLine();
-
 		try {
+			String portletId = null;
+
+			Portlet portlet = (Portlet)request.getAttribute(
+				WebKeys.RENDER_PORTLET);
+
+			if (portlet != null) {
+				portletId = portlet.getPortletId();
+			}
+
 			StringBundler bodyContentSB = getBodyContentAsStringBundler();
 
+			String require = getRequire();
 			String use = getUse();
 
-			if (positionInline) {
+			if ((require != null) && (use != null)) {
+				throw new JspException(
+					"Attributes \"require\" and \"use\" are both set");
+			}
+
+			if (getSandbox() || (require != null) || (use != null)) {
+				StringBundler sb = new StringBundler();
+
+				if ((require == null) && (use == null)) {
+					sb.append("(function() {");
+				}
+
+				sb.append("var $ = AUI.$;");
+				sb.append("var _ = AUI._;");
+				sb.append(bodyContentSB);
+
+				if ((require == null) && (use == null)) {
+					sb.append("})();");
+				}
+
+				bodyContentSB = sb;
+			}
+
+			if (isPositionInLine()) {
 				ScriptData scriptData = new ScriptData();
 
-				request.setAttribute(ScriptTag.class.getName(), scriptData);
-
-				scriptData.append(bodyContentSB, use);
+				if (require != null) {
+					scriptData.append(
+						portletId, bodyContentSB, require,
+						ScriptData.ModulesType.ES6);
+				}
+				else {
+					scriptData.append(
+						portletId, bodyContentSB, use,
+						ScriptData.ModulesType.AUI);
+				}
 
 				String page = getPage();
 
@@ -136,7 +163,7 @@ public class ScriptTag extends BaseScriptTag {
 					PortalIncludeUtil.include(pageContext, page);
 				}
 				else {
-					processEndTag(scriptData);
+					scriptData.writeTo(request, pageContext.getOut());
 				}
 			}
 			else {
@@ -149,7 +176,16 @@ public class ScriptTag extends BaseScriptTag {
 					request.setAttribute(WebKeys.AUI_SCRIPT_DATA, scriptData);
 				}
 
-				scriptData.append(bodyContentSB, use);
+				if (require != null) {
+					scriptData.append(
+						portletId, bodyContentSB, require,
+						ScriptData.ModulesType.ES6);
+				}
+				else {
+					scriptData.append(
+						portletId, bodyContentSB, use,
+						ScriptData.ModulesType.AUI);
+				}
 			}
 
 			return EVAL_PAGE;
@@ -158,66 +194,29 @@ public class ScriptTag extends BaseScriptTag {
 			throw new JspException(e);
 		}
 		finally {
-			if (positionInline) {
-				request.removeAttribute(ScriptTag.class.getName());
-			}
-
 			if (!ServerDetector.isResin()) {
 				cleanUp();
 			}
+
+			request.removeAttribute(WebKeys.JAVASCRIPT_CONTEXT);
 		}
+	}
+
+	@Override
+	public int doStartTag() throws JspException {
+		HttpServletRequest request =
+			(HttpServletRequest)pageContext.getRequest();
+
+		request.setAttribute(WebKeys.JAVASCRIPT_CONTEXT, Boolean.TRUE);
+
+		return super.doStartTag();
 	}
 
 	@Override
 	protected void cleanUp() {
 		setPosition(null);
+		setRequire(null);
 		setUse(null);
-	}
-
-	protected void processEndTag(ScriptData scriptData) throws Exception {
-		JspWriter jspWriter = pageContext.getOut();
-
-		jspWriter.write("<script type=\"text/javascript\">\n// <![CDATA[\n");
-
-		StringBundler rawSB = scriptData.getRawSB();
-
-		rawSB.writeTo(jspWriter);
-
-		StringBundler callbackSB = scriptData.getCallbackSB();
-
-		if (callbackSB.index() > 0) {
-			String loadMethod = "use";
-
-			HttpServletRequest request =
-				(HttpServletRequest)pageContext.getRequest();
-
-			if (BrowserSnifferUtil.isIe(request) &&
-				(BrowserSnifferUtil.getMajorVersion(request) < 8)) {
-
-				loadMethod = "ready";
-			}
-
-			jspWriter.write("AUI().");
-			jspWriter.write( loadMethod );
-			jspWriter.write("(");
-
-			Set<String> useSet = scriptData.getUseSet();
-
-			for (String use : useSet) {
-				jspWriter.write(StringPool.APOSTROPHE);
-				jspWriter.write(use);
-				jspWriter.write(StringPool.APOSTROPHE);
-				jspWriter.write(StringPool.COMMA_AND_SPACE);
-			}
-
-			jspWriter.write("function(A) {");
-
-			callbackSB.writeTo(jspWriter);
-
-			jspWriter.write("});");
-		}
-
-		jspWriter.write("\n// ]]>\n</script>");
 	}
 
 }

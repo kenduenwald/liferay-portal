@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.kernel.search;
 
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
+
 /**
  * @author Allen Chiang
  * @author Bruno Farache
@@ -23,9 +25,9 @@ public interface SearchPermissionChecker {
 
 	public void addPermissionFields(long companyId, Document doc);
 
-	public Query getPermissionQuery(
+	public BooleanFilter getPermissionBooleanFilter(
 		long companyId, long[] groupIds, long userId, String className,
-		Query query, SearchContext searchContext);
+		BooleanFilter booleanFilter, SearchContext searchContext);
 
 	public void updatePermissionFields(String name, String primKey);
 

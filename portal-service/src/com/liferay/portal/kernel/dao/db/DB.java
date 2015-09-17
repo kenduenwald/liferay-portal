@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portal.kernel.dao.db;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import java.io.IOException;
 
@@ -29,24 +29,21 @@ import javax.naming.NamingException;
 /**
  * @author Brian Wing Shun Chan
  */
+@ProviderType
 public interface DB {
 
-	public static final int MINIMAL = 1;
+	public static final int BARE = 0;
 
-	public static final int POPULATED = 0;
-
-	public static final int SHARDED = 2;
+	public static final int DEFAULT = 1;
 
 	public static final String[] TYPE_ALL = {
-		DB.TYPE_DB2, DB.TYPE_DERBY, DB.TYPE_FIREBIRD, DB.TYPE_HYPERSONIC,
-		DB.TYPE_INFORMIX, DB.TYPE_INGRES, DB.TYPE_INTERBASE, DB.TYPE_JDATASTORE,
-		DB.TYPE_MYSQL, DB.TYPE_ORACLE, DB.TYPE_POSTGRESQL, DB.TYPE_SAP,
-		DB.TYPE_SQLSERVER, DB.TYPE_SYBASE
+		DB.TYPE_DB2, DB.TYPE_FIREBIRD, DB.TYPE_HYPERSONIC, DB.TYPE_INFORMIX,
+		DB.TYPE_INGRES, DB.TYPE_INTERBASE, DB.TYPE_JDATASTORE, DB.TYPE_MYSQL,
+		DB.TYPE_ORACLE, DB.TYPE_POSTGRESQL, DB.TYPE_SAP, DB.TYPE_SQLSERVER,
+		DB.TYPE_SYBASE
 	};
 
 	public static final String TYPE_DB2 = "db2";
-
-	public static final String TYPE_DERBY = "derby";
 
 	public static final String TYPE_FIREBIRD = "firebird";
 
@@ -72,7 +69,7 @@ public interface DB {
 
 	public static final String TYPE_SYBASE = "sybase";
 
-	void addIndexes(
+	public void addIndexes(
 			Connection con, String indexesSQL, Set<String> validIndexNames)
 		throws IOException;
 
@@ -85,8 +82,7 @@ public interface DB {
 
 	public String buildSQL(String template) throws IOException;
 
-	public void buildSQLFile(String sqlDir, String fileName)
-		throws IOException;
+	public void buildSQLFile(String sqlDir, String fileName) throws IOException;
 
 	public List<Index> getIndexes(Connection con) throws SQLException;
 
@@ -96,9 +92,9 @@ public interface DB {
 
 	public String getType();
 
-	public long increment() throws SystemException;
+	public long increment();
 
-	public long increment(String name) throws SystemException;
+	public long increment(String name);
 
 	public boolean isSupportsAlterColumnName();
 
@@ -107,6 +103,8 @@ public interface DB {
 	public boolean isSupportsDateMilliseconds();
 
 	public boolean isSupportsInlineDistinct();
+
+	public boolean isSupportsQueryingAfterException();
 
 	public boolean isSupportsScrollableResults();
 
@@ -131,6 +129,11 @@ public interface DB {
 		throws IOException, NamingException, SQLException;
 
 	public void runSQLTemplateString(
+			Connection connection, String template, boolean evaluate,
+			boolean failOnError)
+		throws IOException, NamingException, SQLException;
+
+	public void runSQLTemplateString(
 			String template, boolean evaluate, boolean failOnError)
 		throws IOException, NamingException, SQLException;
 
@@ -139,7 +142,7 @@ public interface DB {
 
 	public void updateIndexes(
 			Connection con, String tablesSQL, String indexesSQL,
-			String indexesProperties, boolean dropStaleIndexes)
+			boolean dropStaleIndexes)
 		throws IOException, SQLException;
 
 }

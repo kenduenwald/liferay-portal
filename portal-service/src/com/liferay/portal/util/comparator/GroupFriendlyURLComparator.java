@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@ import com.liferay.portal.model.Group;
 /**
  * @author Brian Wing Shun Chan
  */
-public class GroupFriendlyURLComparator extends OrderByComparator {
+public class GroupFriendlyURLComparator extends OrderByComparator<Group> {
 
 	public static final String ORDER_BY_ASC = "groupFriendlyURL ASC";
 
@@ -37,11 +37,11 @@ public class GroupFriendlyURLComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Group group1 = (Group)obj1;
-		Group group2 = (Group)obj2;
+	public int compare(Group group1, Group group2) {
+		String friendlyURL1 = group1.getFriendlyURL();
+		String friendlyURL2 = group2.getFriendlyURL();
 
-		int value = group1.getFriendlyURL().compareTo(group2.getFriendlyURL());
+		int value = friendlyURL1.compareTo(friendlyURL2);
 
 		if (_ascending) {
 			return value;
@@ -71,6 +71,6 @@ public class GroupFriendlyURLComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

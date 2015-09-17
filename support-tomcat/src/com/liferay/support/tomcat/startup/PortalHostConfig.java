@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -40,7 +40,7 @@ import org.apache.catalina.startup.HostConfig;
  * </p>
  *
  * <p>
- * See http://issues.liferay.com/browse/LEP-2346.
+ * See https://issues.liferay.com/browse/LEP-2346.
  * </p>
  *
  * <p>
@@ -50,10 +50,6 @@ import org.apache.catalina.startup.HostConfig;
  * @author Brian Wing Shun Chan
  */
 public class PortalHostConfig extends HostConfig {
-
-	public PortalHostConfig() {
-		super();
-	}
 
 	@Override
 	protected void deployDescriptors(File configBase, String[] files) {
@@ -84,6 +80,7 @@ public class PortalHostConfig extends HostConfig {
 		return files;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PortalHostConfig.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		PortalHostConfig.class);
 
 }

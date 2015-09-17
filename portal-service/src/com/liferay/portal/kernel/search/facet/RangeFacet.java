@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,10 +20,10 @@ import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.TermRangeQuery;
-import com.liferay.portal.kernel.search.TermRangeQueryFactoryUtil;
 import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
 import com.liferay.portal.kernel.search.facet.util.RangeParserUtil;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.search.filter.RangeTermFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
@@ -38,7 +38,7 @@ public class RangeFacet extends BaseFacet {
 	}
 
 	@Override
-	protected BooleanClause doGetFacetClause() {
+	protected BooleanClause<Filter> doGetFacetFilterBooleanClause() {
 		SearchContext searchContext = getSearchContext();
 
 		FacetConfiguration facetConfiguration = getFacetConfiguration();
@@ -61,10 +61,8 @@ public class RangeFacet extends BaseFacet {
 			end = range[1];
 		}
 
-		String fieldName = getFieldName();
-
 		String rangeParam = GetterUtil.getString(
-			searchContext.getAttribute(fieldName));
+			searchContext.getAttribute(getFieldId()));
 
 		if (!isStatic() && Validator.isNotNull(rangeParam)) {
 			String[] range = RangeParserUtil.parserRange(rangeParam);
@@ -78,7 +76,7 @@ public class RangeFacet extends BaseFacet {
 		}
 
 		if (Validator.isNotNull(start) && Validator.isNotNull(end) &&
-			(start.compareTo(end) >= 0)) {
+			(start.compareTo(end) > 0)) {
 
 			throw new IllegalArgumentException(
 				"End value must be greater than start value");
@@ -96,12 +94,11 @@ public class RangeFacet extends BaseFacet {
 			endString = end;
 		}
 
-		TermRangeQuery facetTermRangeQuery = TermRangeQueryFactoryUtil.create(
-			searchContext, fieldName, startString, endString, true, true);
+		RangeTermFilter rangeTermFilter = new RangeTermFilter(
+			getFieldName(), true, true, startString, endString);
 
-		return BooleanClauseFactoryUtil.create(
-			searchContext, facetTermRangeQuery,
-			BooleanClauseOccur.MUST.getName());
+		return BooleanClauseFactoryUtil.createFilter(
+			searchContext, rangeTermFilter, BooleanClauseOccur.MUST);
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -48,7 +48,7 @@ public class PortalSessionContext {
 	}
 
 	protected PortalSessionContext() {
-		_sessionPool = new ConcurrentHashMap<String, HttpSession>();
+		_sessionPool = new ConcurrentHashMap<>();
 	}
 
 	private int _count() {
@@ -75,8 +75,9 @@ public class PortalSessionContext {
 		return _sessionPool.values();
 	}
 
-	private static PortalSessionContext _instance = new PortalSessionContext();
+	private static final PortalSessionContext _instance =
+		new PortalSessionContext();
 
-	private Map<String, HttpSession> _sessionPool;
+	private final Map<String, HttpSession> _sessionPool;
 
 }

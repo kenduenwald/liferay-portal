@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,12 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.portal.kernel.language.UTF8Control;
+
 import java.text.MessageFormat;
 
 import java.util.Locale;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 /**
@@ -25,7 +28,29 @@ import java.util.ResourceBundle;
  */
 public class ResourceBundleUtil {
 
-	public static final String NULL_VALUE = "NULL_VALUE";
+	public static ResourceBundle getBundle(String baseName, Class<?> clazz) {
+		return getBundle(baseName, clazz.getClassLoader());
+	}
+
+	public static ResourceBundle getBundle(
+		String baseName, ClassLoader classLoader) {
+
+		return ResourceBundle.getBundle(
+			baseName, Locale.getDefault(), classLoader, UTF8Control.INSTANCE);
+	}
+
+	public static ResourceBundle getBundle(
+		String baseName, Locale locale, Class<?> clazz) {
+
+		return getBundle(baseName, locale, clazz.getClassLoader());
+	}
+
+	public static ResourceBundle getBundle(
+		String baseName, Locale locale, ClassLoader classLoader) {
+
+		return ResourceBundle.getBundle(
+			baseName, locale, classLoader, UTF8Control.INSTANCE);
+	}
 
 	public static String getString(
 		ResourceBundle resourceBundle, Locale locale, String key,
@@ -38,10 +63,10 @@ public class ResourceBundleUtil {
 		}
 
 		// Get the value associated with the specified key, and substitute any
-		// arguuments like {0}, {1}, {2}, etc. with the specified argument
+		// arguments like {0}, {1}, {2}, etc. with the specified argument
 		// values.
 
-		if ((arguments != null) && (arguments.length > 0)) {
+		if (ArrayUtil.isNotEmpty(arguments)) {
 			MessageFormat messageFormat = new MessageFormat(value, locale);
 
 			value = messageFormat.format(arguments);
@@ -51,22 +76,16 @@ public class ResourceBundleUtil {
 	}
 
 	public static String getString(ResourceBundle resourceBundle, String key) {
-		ResourceBundleThreadLocal.setReplace(true);
-
-		String value = null;
+		if (!resourceBundle.containsKey(key)) {
+			return null;
+		}
 
 		try {
-			value = resourceBundle.getString(key);
+			return resourceBundle.getString(key);
 		}
-		finally {
-			ResourceBundleThreadLocal.setReplace(false);
+		catch (MissingResourceException mre) {
+			return null;
 		}
-
-		if (NULL_VALUE.equals(value)) {
-			value = null;
-		}
-
-		return value;
 	}
 
 }

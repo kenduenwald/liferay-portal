@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
+import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
@@ -34,7 +35,7 @@ public class SimpleFacet extends BaseFacet {
 	}
 
 	@Override
-	protected BooleanClause doGetFacetClause() {
+	protected BooleanClause<Filter> doGetFacetFilterBooleanClause() {
 		SearchContext searchContext = getSearchContext();
 
 		FacetConfiguration facetConfiguration = getFacetConfiguration();
@@ -48,7 +49,7 @@ public class SimpleFacet extends BaseFacet {
 		}
 
 		String valueParam = GetterUtil.getString(
-			searchContext.getAttribute(getFieldName()));
+			searchContext.getAttribute(getFieldId()));
 
 		if (!isStatic() && Validator.isNotNull(valueParam)) {
 			value = valueParam;
@@ -58,9 +59,8 @@ public class SimpleFacet extends BaseFacet {
 			return null;
 		}
 
-		return BooleanClauseFactoryUtil.create(
-			searchContext, getFieldName(), value,
-			BooleanClauseOccur.MUST.getName());
+		return BooleanClauseFactoryUtil.createFilter(
+			searchContext, getFieldName(), value, BooleanClauseOccur.MUST);
 	}
 
 }

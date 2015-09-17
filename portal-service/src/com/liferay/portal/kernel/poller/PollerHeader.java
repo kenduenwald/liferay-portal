@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,20 +16,23 @@ package com.liferay.portal.kernel.poller;
 
 import com.liferay.portal.kernel.util.StringBundler;
 
+import java.io.Serializable;
+
+import java.util.Map;
+
 /**
  * @author Brian Wing Shun Chan
  */
-public class PollerHeader {
+public class PollerHeader implements Serializable {
 
 	public PollerHeader(
-		long companyId, long userId, long browserKey, String[] portletIds,
-		boolean initialRequest, boolean startPolling) {
+		long companyId, long userId, long browserKey,
+		Map<String, Boolean> portletIdsMap, boolean startPolling) {
 
 		_companyId = companyId;
 		_userId = userId;
 		_browserKey = browserKey;
-		_portletIds = portletIds;
-		_initialRequest = initialRequest;
+		_portletIdsMap = portletIdsMap;
 		_startPolling = startPolling;
 	}
 
@@ -41,20 +44,16 @@ public class PollerHeader {
 		return _companyId;
 	}
 
-	public String[] getPortletIds() {
-		return _portletIds;
+	public Map<String, Boolean> getPortletIdsMap() {
+		return _portletIdsMap;
 	}
 
 	public long getTimestamp() {
-		return _timestamp;
+		return _TIMESTAMP;
 	}
 
 	public long getUserId() {
 		return _userId;
-	}
-
-	public boolean isInitialRequest() {
-		return _initialRequest;
 	}
 
 	public boolean isStartPolling() {
@@ -69,14 +68,12 @@ public class PollerHeader {
 		sb.append(_browserKey);
 		sb.append(", companyId=");
 		sb.append(_companyId);
-		sb.append(", initialRequest=");
-		sb.append(_initialRequest);
-		sb.append(", portletIds=");
-		sb.append(_portletIds);
+		sb.append(", portletIdsMap=");
+		sb.append(_portletIdsMap);
 		sb.append(", startPolling=");
 		sb.append(_startPolling);
 		sb.append(", timestamp=");
-		sb.append(_timestamp);
+		sb.append(_TIMESTAMP);
 		sb.append(", userId=");
 		sb.append(_userId);
 		sb.append("}");
@@ -84,12 +81,14 @@ public class PollerHeader {
 		return sb.toString();
 	}
 
-	private long _browserKey;
-	private long _companyId;
-	private boolean _initialRequest;
-	private String[] _portletIds;
-	private boolean _startPolling;
-	private long _timestamp = System.currentTimeMillis();
-	private long _userId;
+	private static final long _TIMESTAMP = System.currentTimeMillis();
+
+	private static final long serialVersionUID = 1L;
+
+	private final long _browserKey;
+	private final long _companyId;
+	private final Map<String, Boolean> _portletIdsMap;
+	private final boolean _startPolling;
+	private final long _userId;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -49,7 +49,7 @@ public class InvokerFilterChain implements FilterChain {
 
 	public void addFilter(Filter filter) {
 		if (_filters == null) {
-			_filters = new ArrayList<Filter>();
+			_filters = new ArrayList<>();
 		}
 
 		_filters.add(filter);
@@ -64,38 +64,42 @@ public class InvokerFilterChain implements FilterChain {
 		return invokerFilterChain;
 	}
 
+	@Override
 	public void doFilter(
 			ServletRequest servletRequest, ServletResponse servletResponse)
 		throws IOException, ServletException {
 
-		if ((_filters == null) || (_index >= _filters.size())) {
-			_filterChain.doFilter(servletRequest, servletResponse);
-		}
-		else {
+		if (_filters != null) {
 			HttpServletRequest request = (HttpServletRequest)servletRequest;
 			HttpServletResponse response = (HttpServletResponse)servletResponse;
 
-			Filter filter = _filters.get(_index++);
+			while (_index < _filters.size()) {
+				Filter filter = _filters.get(_index++);
 
-			boolean filterEnabled = true;
+				if (filter instanceof LiferayFilter) {
+					LiferayFilter liferayFilter = (LiferayFilter)filter;
 
-			if (filter instanceof LiferayFilter) {
-				LiferayFilter liferayFilter = (LiferayFilter)filter;
+					if (!liferayFilter.isFilterEnabled() ||
+						!liferayFilter.isFilterEnabled(request, response)) {
 
-				if (!liferayFilter.isFilterEnabled() ||
-					!liferayFilter.isFilterEnabled(request, response)) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(
+								"Skip disabled filter " + filter.getClass());
+						}
 
-					filterEnabled = false;
+						continue;
+					}
 				}
-			}
 
-			if (filterEnabled) {
 				if (filter instanceof DirectCallFilter) {
 					try {
 						processDirectCallFilter(filter, request, response);
 					}
 					catch (IOException ioe) {
 						throw ioe;
+					}
+					catch (RuntimeException re) {
+						throw re;
 					}
 					catch (ServletException se) {
 						throw se;
@@ -107,15 +111,12 @@ public class InvokerFilterChain implements FilterChain {
 				else {
 					processDoFilter(filter, request, response);
 				}
-			}
-			else {
-				if (_log.isDebugEnabled()) {
-					_log.debug("Skip disabled filter " + filter.getClass());
-				}
 
-				doFilter(request, response);
+				return;
 			}
 		}
+
+		_filterChain.doFilter(servletRequest, servletResponse);
 	}
 
 	public void setContextClassLoader(ClassLoader contextClassLoader) {
@@ -210,10 +211,11 @@ public class InvokerFilterChain implements FilterChain {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(InvokerFilterChain.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		InvokerFilterChain.class);
 
 	private ClassLoader _contextClassLoader;
-	private FilterChain _filterChain;
+	private final FilterChain _filterChain;
 	private List<Filter> _filters;
 	private int _index;
 

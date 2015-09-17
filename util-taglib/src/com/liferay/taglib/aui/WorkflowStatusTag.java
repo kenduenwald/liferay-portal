@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -26,6 +26,18 @@ import javax.servlet.http.HttpServletRequest;
  * @author Brian Wing Shun Chan
  */
 public class WorkflowStatusTag extends BaseWorkflowStatusTag {
+
+	@Override
+	protected String getPage() {
+		String markupView = getMarkupView();
+
+		if (Validator.isNotNull(markupView)) {
+			return
+				"/html/taglib/aui/workflow_status/" + markupView + "/page.jsp";
+		}
+
+		return "/html/taglib/aui/workflow_status/page.jsp";
+	}
 
 	@Override
 	protected boolean isCleanUpSetAttributes() {
@@ -66,7 +78,7 @@ public class WorkflowStatusTag extends BaseWorkflowStatusTag {
 	private static final boolean _CLEAN_UP_SET_ATTRIBUTES = true;
 
 	private static final String _HELP_MESSAGE_DEFAULT =
-		"a-new-version-will-be-created-automatically-if-this-content-is-" +
+		"a-new-version-is-created-automatically-if-this-content-is-" +
 			"modified";
 
 }

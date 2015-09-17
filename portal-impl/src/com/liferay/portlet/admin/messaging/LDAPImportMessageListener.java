@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,16 +16,24 @@ package com.liferay.portlet.admin.messaging;
 
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.Message;
-import com.liferay.portal.security.ldap.PortalLDAPImporterUtil;
+import com.liferay.portal.security.exportimport.UserImporterUtil;
+import com.liferay.portal.util.PropsValues;
 
 /**
  * @author Shuyang Zhou
  */
-public class LDAPImportMessageListener extends BaseMessageListener{
+public class LDAPImportMessageListener extends BaseMessageListener {
 
 	@Override
 	protected void doReceive(Message message) throws Exception {
-		PortalLDAPImporterUtil.importFromLDAP();
+		long time =
+			System.currentTimeMillis() - UserImporterUtil.getLastImportTime();
+
+		time = Math.round(time / 60000.0);
+
+		if (time >= PropsValues.LDAP_IMPORT_INTERVAL) {
+			UserImporterUtil.importUsers();
+		}
 	}
 
 }

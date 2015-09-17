@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,10 @@ package com.liferay.portal.theme;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.module.configuration.ConfigurationFactoryUtil;
+import com.liferay.portal.kernel.portlet.toolbar.PortletToolbar;
+import com.liferay.portal.kernel.settings.PortletInstanceSettingsLocator;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
@@ -28,6 +32,12 @@ import java.io.Writer;
 import javax.portlet.PortletPreferences;
 
 /**
+ * Provides general configuration methods for the portlet, providing access to
+ * the portlet's content, instance, theme, URLs, and more. This class contains
+ * contextual information about the currently rendered portlet. An object of
+ * this class is only available in the context of a single portlet and is not
+ * available in the context of any page.
+ *
  * @author Brian Wing Shun Chan
  * @author Eduardo Lundgren
  */
@@ -40,10 +50,12 @@ public class PortletDisplay implements Serializable {
 	}
 
 	public void copyFrom(PortletDisplay master) {
-		_access = master.isAccess();
 		_active = master.isActive();
+		_columnCount = master.getColumnCount();
 		_columnId = master.getColumnId();
+		_columnPos = master.getColumnPos();
 		_content = master.getContent();
+		_controlPanelCategory = master.getControlPanelCategory();
 		_customCSSClassName = master.getCustomCSSClassName();
 		_description = master.getDescription();
 		_id = master.getId();
@@ -60,6 +72,7 @@ public class PortletDisplay implements Serializable {
 		_namespace = master.getNamespace();
 		_portletName = master.getPortletName();
 		_portletSetup = master.getPortletSetup();
+		_portletToolbar = master.getPortletToolbar();
 		_resourcePK = master.getResourcePK();
 		_restoreCurrentView = master.isRestoreCurrentView();
 		_rootPortletId = master.getRootPortletId();
@@ -69,6 +82,7 @@ public class PortletDisplay implements Serializable {
 		_showEditDefaultsIcon = master.isShowEditDefaultsIcon();
 		_showEditGuestIcon = master.isShowEditGuestIcon();
 		_showEditIcon = master.isShowEditIcon();
+		_showExportImportIcon = master.isShowExportImportIcon();
 		_showHelpIcon = master.isShowHelpIcon();
 		_showMaxIcon = master.isShowMaxIcon();
 		_showMinIcon = master.isShowMinIcon();
@@ -77,6 +91,7 @@ public class PortletDisplay implements Serializable {
 		_showPortletIcon = master.isShowPortletIcon();
 		_showPrintIcon = master.isShowPrintIcon();
 		_showRefreshIcon = master.isShowRefreshIcon();
+		_showStagingIcon = master.isShowStagingIcon();
 		_stateExclusive = master.isStateExclusive();
 		_stateMax = master.isStateMax();
 		_stateMin = master.isStateMin();
@@ -89,6 +104,7 @@ public class PortletDisplay implements Serializable {
 		_urlConfiguration = master.getURLConfiguration();
 		_urlEdit = master.getURLEdit();
 		_urlEditDefaults = master.getURLEditDefaults();
+		_urlEditGuest = master.getURLEditGuest();
 		_urlExportImport = master.getURLExportImport();
 		_urlHelp = master.getURLHelp();
 		_urlMax = master.getURLMax();
@@ -97,14 +113,17 @@ public class PortletDisplay implements Serializable {
 		_urlPortletCss = master.getURLPortletCss();
 		_urlPrint = master.getURLPrint();
 		_urlRefresh = master.getURLRefresh();
+		_urlStaging = master.getURLStaging();
 		_webDAVEnabled = master.isWebDAVEnabled();
 	}
 
 	public void copyTo(PortletDisplay slave) {
-		slave.setAccess(_access);
 		slave.setActive(_active);
+		slave.setColumnCount(_columnCount);
 		slave.setColumnId(_columnId);
+		slave.setColumnPos(_columnPos);
 		slave.setContent(_content);
+		slave.setControlPanelCategory(_controlPanelCategory);
 		slave.setCustomCSSClassName(_customCSSClassName);
 		slave.setDescription(_description);
 		slave.setId(_id);
@@ -120,7 +139,9 @@ public class PortletDisplay implements Serializable {
 		slave.setModeView(_modeView);
 		slave.setNamespace(_namespace);
 		slave.setPortletName(_portletName);
+		slave.setPortletResource(_portletResource);
 		slave.setPortletSetup(_portletSetup);
+		slave.setPortletToolbar(_portletToolbar);
 		slave.setResourcePK(_resourcePK);
 		slave.setRestoreCurrentView(_restoreCurrentView);
 		slave.setRootPortletId(_rootPortletId);
@@ -130,6 +151,7 @@ public class PortletDisplay implements Serializable {
 		slave.setShowEditDefaultsIcon(_showEditDefaultsIcon);
 		slave.setShowEditGuestIcon(_showEditGuestIcon);
 		slave.setShowEditIcon(_showEditIcon);
+		slave.setShowExportImportIcon(_showExportImportIcon);
 		slave.setShowHelpIcon(_showHelpIcon);
 		slave.setShowMaxIcon(_showMaxIcon);
 		slave.setShowMinIcon(_showMinIcon);
@@ -138,6 +160,7 @@ public class PortletDisplay implements Serializable {
 		slave.setShowPortletIcon(_showPortletIcon);
 		slave.setShowPrintIcon(_showPrintIcon);
 		slave.setShowRefreshIcon(_showRefreshIcon);
+		slave.setShowStagingIcon(_showStagingIcon);
 		slave.setStateExclusive(_stateExclusive);
 		slave.setStateMax(_stateMax);
 		slave.setStateMin(_stateMin);
@@ -158,6 +181,7 @@ public class PortletDisplay implements Serializable {
 		slave.setURLPortletCss(_urlPortletCss);
 		slave.setURLPrint(_urlPrint);
 		slave.setURLRefresh(_urlRefresh);
+		slave.setURLStaging(_urlStaging);
 		slave.setWebDAVEnabled(_webDAVEnabled);
 
 		slave._title = _title;
@@ -177,6 +201,19 @@ public class PortletDisplay implements Serializable {
 
 	public StringBundler getContent() {
 		return _content;
+	}
+
+	/**
+	 * Returns the control panel category where the current portlet resides. A
+	 * portlet's control panel category is configured in its
+	 * <code>liferay-portlet.xml</code> file.
+	 *
+	 * @return the control panel category where the current portlet resides, or
+	 *         an empty string if the portlet is not configured to appear in the
+	 *         control panel.
+	 */
+	public String getControlPanelCategory() {
+		return _controlPanelCategory;
 	}
 
 	public String getCustomCSSClassName() {
@@ -199,12 +236,32 @@ public class PortletDisplay implements Serializable {
 		return _namespace;
 	}
 
+	public <T> T getPortletInstanceConfiguration(Class<T> clazz)
+		throws ConfigurationException {
+
+		String portletId = Validator.isNull(
+			_portletResource) ? _id : _portletResource;
+
+		return ConfigurationFactoryUtil.getConfiguration(
+			clazz,
+			new PortletInstanceSettingsLocator(
+				_themeDisplay.getLayout(), portletId));
+	}
+
 	public String getPortletName() {
 		return _portletName;
 	}
 
+	public String getPortletResource() {
+		return _portletResource;
+	}
+
 	public PortletPreferences getPortletSetup() {
 		return _portletSetup;
+	}
+
+	public PortletToolbar getPortletToolbar() {
+		return _portletToolbar;
 	}
 
 	public String getResourcePK() {
@@ -236,19 +293,7 @@ public class PortletDisplay implements Serializable {
 	}
 
 	public String getURLConfigurationJS() {
-		StringBundler sb = new StringBundler(9);
-
-		sb.append("Liferay.Portlet.openConfiguration(\'#p_p_id_");
-		sb.append(_id);
-		sb.append("_\', \'");
-		sb.append(_id);
-		sb.append("\', \'");
-		sb.append(_urlConfiguration);
-		sb.append(" \', \'");
-		sb.append(_namespace);
-		sb.append("\'); return false;");
-
-		return sb.toString();
+		return _urlConfigurationJS;
 	}
 
 	public String getURLEdit() {
@@ -295,12 +340,24 @@ public class PortletDisplay implements Serializable {
 		return _urlRefresh;
 	}
 
+	public String getURLStaging() {
+		return _urlStaging;
+	}
+
+	/**
+	 * @deprecated As of 6.2.0, with no direct replacement
+	 */
+	@Deprecated
 	public boolean isAccess() {
-		return _access;
+		return true;
 	}
 
 	public boolean isActive() {
 		return _active;
+	}
+
+	public boolean isFocused() {
+		return _id.equals(_themeDisplay.getPpid());
 	}
 
 	public boolean isModeAbout() {
@@ -403,6 +460,10 @@ public class PortletDisplay implements Serializable {
 		return _showRefreshIcon;
 	}
 
+	public boolean isShowStagingIcon() {
+		return _showStagingIcon;
+	}
+
 	public boolean isStateExclusive() {
 		return _stateExclusive;
 	}
@@ -432,10 +493,12 @@ public class PortletDisplay implements Serializable {
 			_log.debug("Recycling instance " + hashCode());
 		}
 
-		_access = false;
 		_active = false;
+		_columnCount = 0;
 		_columnId = StringPool.BLANK;
+		_columnPos = 0;
 		_content.setIndex(0);
+		_controlPanelCategory = StringPool.BLANK;
 		_customCSSClassName = StringPool.BLANK;
 		_description = StringPool.BLANK;
 		_id = StringPool.BLANK;
@@ -448,6 +511,7 @@ public class PortletDisplay implements Serializable {
 		_modeHelp = false;
 		_modePreview = false;
 		_modePrint = false;
+		_modeView = false;
 		_namespace = StringPool.BLANK;
 		_portletName = StringPool.BLANK;
 		_portletSetup = null;
@@ -460,6 +524,7 @@ public class PortletDisplay implements Serializable {
 		_showEditDefaultsIcon = false;
 		_showEditGuestIcon = false;
 		_showEditIcon = false;
+		_showExportImportIcon = false;
 		_showHelpIcon = false;
 		_showMaxIcon = false;
 		_showMinIcon = false;
@@ -468,6 +533,7 @@ public class PortletDisplay implements Serializable {
 		_showPortletIcon = false;
 		_showPrintIcon = false;
 		_showRefreshIcon = false;
+		_showStagingIcon = false;
 		_stateExclusive = false;
 		_stateMax = false;
 		_stateMin = false;
@@ -491,8 +557,11 @@ public class PortletDisplay implements Serializable {
 		_webDAVEnabled = false;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0, with no direct replacement
+	 */
+	@Deprecated
 	public void setAccess(boolean access) {
-		_access = access;
 	}
 
 	public void setActive(boolean active) {
@@ -518,6 +587,10 @@ public class PortletDisplay implements Serializable {
 		else {
 			_content = content;
 		}
+	}
+
+	public void setControlPanelCategory(String controlPanelCategory) {
+		_controlPanelCategory = controlPanelCategory;
 	}
 
 	public void setCustomCSSClassName(String customCSSClassName) {
@@ -582,8 +655,16 @@ public class PortletDisplay implements Serializable {
 		_portletName = portletName;
 	}
 
+	public void setPortletResource(String portletResource) {
+		_portletResource = portletResource;
+	}
+
 	public void setPortletSetup(PortletPreferences portletSetup) {
 		_portletSetup = portletSetup;
+	}
+
+	public void setPortletToolbar(PortletToolbar portletToolbar) {
+		_portletToolbar = portletToolbar;
 	}
 
 	public void setResourcePK(String resourcePK) {
@@ -658,6 +739,10 @@ public class PortletDisplay implements Serializable {
 		_showRefreshIcon = showRefreshIcon;
 	}
 
+	public void setShowStagingIcon(boolean showStagingIcon) {
+		_showStagingIcon = showStagingIcon;
+	}
+
 	public void setStateExclusive(boolean stateExclusive) {
 		_stateExclusive = stateExclusive;
 	}
@@ -683,8 +768,6 @@ public class PortletDisplay implements Serializable {
 	}
 
 	public void setTitle(String title) {
-		title = HtmlUtil.escape(title);
-
 		_title = title;
 
 		// LEP-5317
@@ -704,6 +787,10 @@ public class PortletDisplay implements Serializable {
 
 	public void setURLConfiguration(String urlConfiguration) {
 		_urlConfiguration = urlConfiguration;
+	}
+
+	public void setURLConfigurationJS(String urlConfigurationJS) {
+		_urlConfigurationJS = urlConfigurationJS;
 	}
 
 	public void setURLEdit(String urlEdit) {
@@ -750,6 +837,10 @@ public class PortletDisplay implements Serializable {
 		_urlRefresh = urlRefresh;
 	}
 
+	public void setURLStaging(String urlStaging) {
+		_urlStaging = urlStaging;
+	}
+
 	public void setWebDAVEnabled(boolean webDAVEnabled) {
 		_webDAVEnabled = webDAVEnabled;
 	}
@@ -758,17 +849,17 @@ public class PortletDisplay implements Serializable {
 		_content.writeTo(writer);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PortletDisplay.class);
+	private static final Log _log = LogFactoryUtil.getLog(PortletDisplay.class);
 
-	private static StringBundler _blankStringBundler = new StringBundler(
+	private static final StringBundler _blankStringBundler = new StringBundler(
 		StringPool.BLANK);
 
-	private boolean _access;
 	private boolean _active;
 	private int _columnCount;
 	private String _columnId = StringPool.BLANK;
 	private int _columnPos;
 	private StringBundler _content = _blankStringBundler;
+	private String _controlPanelCategory = StringPool.BLANK;
 	private String _customCSSClassName = StringPool.BLANK;
 	private String _description = StringPool.BLANK;
 	private String _id = StringPool.BLANK;
@@ -784,7 +875,9 @@ public class PortletDisplay implements Serializable {
 	private boolean _modeView;
 	private String _namespace = StringPool.BLANK;
 	private String _portletName = StringPool.BLANK;
+	private String _portletResource = StringPool.BLANK;
 	private PortletPreferences _portletSetup;
+	private PortletToolbar _portletToolbar;
 	private String _resourcePK = StringPool.BLANK;
 	private boolean _restoreCurrentView;
 	private String _rootPortletId = StringPool.BLANK;
@@ -803,6 +896,7 @@ public class PortletDisplay implements Serializable {
 	private boolean _showPortletIcon;
 	private boolean _showPrintIcon;
 	private boolean _showRefreshIcon;
+	private boolean _showStagingIcon;
 	private boolean _stateExclusive;
 	private boolean _stateMax;
 	private boolean _stateMin;
@@ -813,6 +907,7 @@ public class PortletDisplay implements Serializable {
 	private String _urlBack = StringPool.BLANK;
 	private String _urlClose = StringPool.BLANK;
 	private String _urlConfiguration = StringPool.BLANK;
+	private String _urlConfigurationJS = StringPool.BLANK;
 	private String _urlEdit = StringPool.BLANK;
 	private String _urlEditDefaults = StringPool.BLANK;
 	private String _urlEditGuest = StringPool.BLANK;
@@ -824,6 +919,7 @@ public class PortletDisplay implements Serializable {
 	private String _urlPortletCss = StringPool.BLANK;
 	private String _urlPrint = StringPool.BLANK;
 	private String _urlRefresh = StringPool.BLANK;
+	private String _urlStaging = StringPool.BLANK;
 	private boolean _webDAVEnabled;
 
 }

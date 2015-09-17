@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portlet.documentlibrary.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.util.MethodCache;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 
 /**
- * The utility for the document library file shortcut remote service. This utility wraps {@link com.liferay.portlet.documentlibrary.service.impl.DLFileShortcutServiceImpl} and is the primary access point for service operations in application layer code running on a remote server.
- *
- * <p>
- * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
- * </p>
+ * Provides the remote service utility for DLFileShortcut. This utility wraps
+ * {@link com.liferay.portlet.documentlibrary.service.impl.DLFileShortcutServiceImpl} and is the
+ * primary access point for service operations in application layer code running
+ * on a remote server. Methods of this service are expected to have security
+ * checks based on the propagated JAAS credentials because this service can be
+ * accessed remotely.
  *
  * @author Brian Wing Shun Chan
  * @see DLFileShortcutService
@@ -31,6 +33,7 @@ import com.liferay.portal.kernel.util.ReferenceRegistry;
  * @see com.liferay.portlet.documentlibrary.service.impl.DLFileShortcutServiceImpl
  * @generated
  */
+@ProviderType
 public class DLFileShortcutServiceUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -38,36 +41,57 @@ public class DLFileShortcutServiceUtil {
 	 * Never modify this class directly. Add custom service methods to {@link com.liferay.portlet.documentlibrary.service.impl.DLFileShortcutServiceImpl} and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static com.liferay.portlet.documentlibrary.model.DLFileShortcut addFileShortcut(
-		long groupId, long folderId, long toFileEntryId,
+		long groupId, long repositoryId, long folderId, long toFileEntryId,
 		com.liferay.portal.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
-				   .addFileShortcut(groupId, folderId, toFileEntryId,
-			serviceContext);
+				   .addFileShortcut(groupId, repositoryId, folderId,
+			toFileEntryId, serviceContext);
 	}
 
 	public static void deleteFileShortcut(long fileShortcutId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().deleteFileShortcut(fileShortcutId);
+	}
+
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	public static java.lang.String getBeanIdentifier() {
+		return getService().getBeanIdentifier();
 	}
 
 	public static com.liferay.portlet.documentlibrary.model.DLFileShortcut getFileShortcut(
 		long fileShortcutId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getFileShortcut(fileShortcutId);
 	}
 
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public static void setBeanIdentifier(java.lang.String beanIdentifier) {
+		getService().setBeanIdentifier(beanIdentifier);
+	}
+
 	public static com.liferay.portlet.documentlibrary.model.DLFileShortcut updateFileShortcut(
-		long fileShortcutId, long folderId, long toFileEntryId,
+		long fileShortcutId, long repositoryId, long folderId,
+		long toFileEntryId,
 		com.liferay.portal.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
-				   .updateFileShortcut(fileShortcutId, folderId, toFileEntryId,
-			serviceContext);
+				   .updateFileShortcut(fileShortcutId, repositoryId, folderId,
+			toFileEntryId, serviceContext);
+	}
+
+	public static void updateFileShortcuts(long oldToFileEntryId,
+		long newToFileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		getService().updateFileShortcuts(oldToFileEntryId, newToFileEntryId);
 	}
 
 	public static DLFileShortcutService getService() {
@@ -76,20 +100,16 @@ public class DLFileShortcutServiceUtil {
 
 			ReferenceRegistry.registerReference(DLFileShortcutServiceUtil.class,
 				"_service");
-			MethodCache.remove(DLFileShortcutService.class);
 		}
 
 		return _service;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setService(DLFileShortcutService service) {
-		MethodCache.remove(DLFileShortcutService.class);
-
-		_service = service;
-
-		ReferenceRegistry.registerReference(DLFileShortcutServiceUtil.class,
-			"_service");
-		MethodCache.remove(DLFileShortcutService.class);
 	}
 
 	private static DLFileShortcutService _service;

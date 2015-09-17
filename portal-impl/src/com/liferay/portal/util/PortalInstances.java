@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,13 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.NoSuchCompanyException;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.dao.shard.ShardUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.search.SearchEngineUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -30,17 +30,18 @@ import com.liferay.portal.model.Company;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.LayoutSet;
 import com.liferay.portal.model.PortletCategory;
+import com.liferay.portal.model.User;
 import com.liferay.portal.model.VirtualHost;
-import com.liferay.portal.search.lucene.LuceneHelperUtil;
 import com.liferay.portal.security.auth.CompanyThreadLocal;
+import com.liferay.portal.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.security.exportimport.UserImporterUtil;
 import com.liferay.portal.security.ldap.LDAPSettingsUtil;
-import com.liferay.portal.security.ldap.PortalLDAPImporterUtil;
 import com.liferay.portal.service.CompanyLocalServiceUtil;
 import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.service.PortletLocalServiceUtil;
+import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.service.VirtualHostLocalServiceUtil;
-import com.liferay.portlet.journal.service.JournalContentSearchLocalServiceUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -116,6 +117,10 @@ public class PortalInstances {
 		_instance._reload(servletContext);
 	}
 
+	public static void removeCompany(long companyId) {
+		_instance._removeCompanyId(companyId);
+	}
+
 	private PortalInstances() {
 		_companyIds = new long[0];
 		_autoLoginIgnoreHosts = SetUtil.fromArray(
@@ -169,19 +174,21 @@ public class PortalInstances {
 
 			if (cookieCompanyId > 0) {
 				try {
-					CompanyLocalServiceUtil.getCompanyById(cookieCompanyId);
+					if (CompanyLocalServiceUtil.fetchCompanyById(
+							cookieCompanyId) == null) {
 
-					companyId = cookieCompanyId;
-
-					if (_log.isDebugEnabled()) {
-						_log.debug("Company id from cookie " + companyId);
+						if (_log.isWarnEnabled()) {
+							_log.warn(
+								"Company id from cookie " + cookieCompanyId +
+									" does not exist");
+						}
 					}
-				}
-				catch (NoSuchCompanyException nsce) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Company id from cookie " + cookieCompanyId +
-								" does not exist");
+					else {
+						companyId = cookieCompanyId;
+
+						if (_log.isDebugEnabled()) {
+							_log.debug("Company id from cookie " + companyId);
+						}
 					}
 				}
 				catch (Exception e) {
@@ -202,7 +209,7 @@ public class PortalInstances {
 			_log.debug("Set company id " + companyId);
 		}
 
-		request.setAttribute(WebKeys.COMPANY_ID, new Long(companyId));
+		request.setAttribute(WebKeys.COMPANY_ID, Long.valueOf(companyId));
 
 		CompanyThreadLocal.setCompanyId(companyId);
 
@@ -249,17 +256,8 @@ public class PortalInstances {
 			}
 
 			if (virtualHost.getLayoutSetId() != 0) {
-				LayoutSet layoutSet = null;
-
-				try {
-					ShardUtil.pushCompanyService(virtualHost.getCompanyId());
-
-					layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-						virtualHost.getLayoutSetId());
-				}
-				finally {
-					ShardUtil.popCompanyService();
-				}
+				LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+					virtualHost.getLayoutSetId());
 
 				if (_log.isDebugEnabled()) {
 					_log.debug(
@@ -286,7 +284,7 @@ public class PortalInstances {
 	}
 
 	private long[] _getCompanyIdsBySQL() throws SQLException {
-		List<Long> companyIds = new ArrayList<Long>();
+		List<Long> companyIds = new ArrayList<>();
 
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -330,7 +328,7 @@ public class PortalInstances {
 			List<Company> companies = CompanyLocalServiceUtil.getCompanies(
 				false);
 
-			List<String> webIdsList = new ArrayList<String>(companies.size());
+			List<String> webIdsList = new ArrayList<>(companies.size());
 
 			for (Company company : companies) {
 				String webId = company.getWebId();
@@ -349,7 +347,7 @@ public class PortalInstances {
 			_log.error(e, e);
 		}
 
-		if ((_webIds == null) || (_webIds.length == 0)) {
+		if (ArrayUtil.isEmpty(_webIds)) {
 			_webIds = new String[] {PropsValues.COMPANY_DEFAULT_WEB_ID};
 		}
 
@@ -375,108 +373,111 @@ public class PortalInstances {
 			_log.error(e, e);
 		}
 
-		CompanyThreadLocal.setCompanyId(companyId);
+		Long currentThreadCompanyId = CompanyThreadLocal.getCompanyId();
 
-		// Lucene
-
-		LuceneHelperUtil.startup(companyId);
-
-		// Initialize display
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Initialize display");
-		}
+		String currentThreadPrincipalName = PrincipalThreadLocal.getName();
 
 		try {
-			String xml = HttpUtil.URLtoString(servletContext.getResource(
-				"/WEB-INF/liferay-display.xml"));
+			CompanyThreadLocal.setCompanyId(companyId);
 
-			PortletCategory portletCategory = (PortletCategory)WebAppPool.get(
-				companyId, WebKeys.PORTLET_CATEGORY);
-
-			if (portletCategory == null) {
-				portletCategory = new PortletCategory();
-			}
-
-			PortletCategory newPortletCategory =
-				PortletLocalServiceUtil.getEARDisplay(xml);
-
-			portletCategory.merge(newPortletCategory);
-
-			for (int i = 0; i < _companyIds.length; i++) {
-				long currentCompanyId = _companyIds[i];
-
-				PortletCategory currentPortletCategory =
-					(PortletCategory)WebAppPool.get(
-						currentCompanyId, WebKeys.PORTLET_CATEGORY);
-
-				if (currentPortletCategory != null) {
-					portletCategory.merge(currentPortletCategory);
-				}
-			}
-
-			WebAppPool.put(
-				companyId, WebKeys.PORTLET_CATEGORY, portletCategory);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-
-		// Check journal content search
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Check journal content search");
-		}
-
-		if (GetterUtil.getBoolean(
-				PropsUtil.get(
-					PropsKeys.JOURNAL_SYNC_CONTENT_SEARCH_ON_STARTUP))) {
+			String principalName = null;
 
 			try {
-				JournalContentSearchLocalServiceUtil.checkContentSearches(
-					companyId);
+				User user = UserLocalServiceUtil.getUser(
+					PrincipalThreadLocal.getUserId());
+
+				if (user.getCompanyId() == companyId) {
+					principalName = currentThreadPrincipalName;
+				}
+			}
+			catch (Exception e) {
+			}
+
+			PrincipalThreadLocal.setName(principalName);
+
+			// Initialize display
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("Initialize display");
+			}
+
+			try {
+				String xml = HttpUtil.URLtoString(
+					servletContext.getResource("/WEB-INF/liferay-display.xml"));
+
+				PortletCategory portletCategory = (PortletCategory)
+					WebAppPool.get(companyId, WebKeys.PORTLET_CATEGORY);
+
+				if (portletCategory == null) {
+					portletCategory = new PortletCategory();
+				}
+
+				PortletCategory newPortletCategory =
+					PortletLocalServiceUtil.getEARDisplay(xml);
+
+				portletCategory.merge(newPortletCategory);
+
+				for (int i = 0; i < _companyIds.length; i++) {
+					long currentCompanyId = _companyIds[i];
+
+					PortletCategory currentPortletCategory =
+						(PortletCategory)WebAppPool.get(
+							currentCompanyId, WebKeys.PORTLET_CATEGORY);
+
+					if (currentPortletCategory != null) {
+						portletCategory.merge(currentPortletCategory);
+					}
+				}
+
+				WebAppPool.put(
+					companyId, WebKeys.PORTLET_CATEGORY, portletCategory);
 			}
 			catch (Exception e) {
 				_log.error(e, e);
 			}
-		}
 
-		// LDAP Import
+			// LDAP import
 
-		try {
-			if (LDAPSettingsUtil.isImportOnStartup(companyId)) {
-				PortalLDAPImporterUtil.importFromLDAP(companyId);
+			try {
+				if (LDAPSettingsUtil.isImportOnStartup(companyId)) {
+					UserImporterUtil.importUsers(companyId);
+				}
 			}
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
 
-		// Process application startup events
+			// Process application startup events
 
-		if (_log.isDebugEnabled()) {
-			_log.debug("Process application startup events");
+			if (_log.isDebugEnabled()) {
+				_log.debug("Process application startup events");
+			}
+
+			try {
+				EventsProcessorUtil.process(
+					PropsKeys.APPLICATION_STARTUP_EVENTS,
+					PropsValues.APPLICATION_STARTUP_EVENTS,
+					new String[] {String.valueOf(companyId)});
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+
+			// End initializing company
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"End initializing company with web id " + webId +
+						" and company id " + companyId);
+			}
+
+			addCompanyId(companyId);
 		}
+		finally {
+			CompanyThreadLocal.setCompanyId(currentThreadCompanyId);
 
-		try {
-			EventsProcessorUtil.process(
-				PropsKeys.APPLICATION_STARTUP_EVENTS,
-				PropsValues.APPLICATION_STARTUP_EVENTS,
-				new String[] {String.valueOf(companyId)});
+			PrincipalThreadLocal.setName(currentThreadPrincipalName);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-
-		// End initializing company
-
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"End initializing company with web id " + webId +
-					" and company id " + companyId);
-		}
-
-		addCompanyId(companyId);
 
 		return companyId;
 	}
@@ -524,18 +525,30 @@ public class PortalInstances {
 		}
 	}
 
+	private void _removeCompanyId(long companyId) {
+		_companyIds = ArrayUtil.remove(_companyIds, companyId);
+		_webIds = null;
+
+		_getWebIds();
+
+		SearchEngineUtil.removeCompany(companyId);
+
+		WebAppPool.remove(companyId, WebKeys.PORTLET_CATEGORY);
+	}
+
 	private static final String _GET_COMPANY_IDS =
 		"select companyId from Company";
 
-	private static Log _log = LogFactoryUtil.getLog(PortalInstances.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		PortalInstances.class);
 
-	private static PortalInstances _instance = new PortalInstances();
+	private static final PortalInstances _instance = new PortalInstances();
 
-	private Set<String> _autoLoginIgnoreHosts;
-	private Set<String> _autoLoginIgnorePaths;
+	private final Set<String> _autoLoginIgnoreHosts;
+	private final Set<String> _autoLoginIgnorePaths;
 	private long[] _companyIds;
-	private Set<String> _virtualHostsIgnoreHosts;
-	private Set<String> _virtualHostsIgnorePaths;
+	private final Set<String> _virtualHostsIgnoreHosts;
+	private final Set<String> _virtualHostsIgnorePaths;
 	private String[] _webIds;
 
 }

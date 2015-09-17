@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,10 +17,6 @@ package com.liferay.portal.kernel.util;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.nio.charset.CharsetDecoderUtil;
-import com.liferay.portal.kernel.nio.charset.CharsetEncoderUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,15 +25,9 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Reader;
 
-import java.lang.reflect.Method;
-
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
-
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -59,22 +49,18 @@ public class PropertiesUtil {
 		}
 	}
 
-	public static Properties fromMap(Map<String, String> map) {
+	public static Properties fromMap(Map<String, ?> map) {
 		Properties properties = new Properties();
 
-		for (Map.Entry<String, String> entry : map.entrySet()) {
+		for (Map.Entry<String, ?> entry : map.entrySet()) {
 			String key = entry.getKey();
-			String value = entry.getValue();
+			Object value = entry.getValue();
 
-			if (value != null) {
-				properties.setProperty(key, value);
+			if ((value != null) && (value instanceof String)) {
+				properties.setProperty(key, (String)value);
 			}
 		}
 
-		return properties;
-	}
-
-	public static Properties fromMap(Properties properties) {
 		return properties;
 	}
 
@@ -145,119 +131,57 @@ public class PropertiesUtil {
 	public static Properties load(InputStream is, String charsetName)
 		throws IOException {
 
-		if (JavaProps.isJDK6()) {
-			return loadJDK6(new InputStreamReader(is, charsetName));
-		}
-		else {
-			return loadJDK5(is, charsetName);
-		}
+		return load(new InputStreamReader(is, charsetName));
 	}
 
 	public static void load(Properties properties, String s)
 		throws IOException {
 
-		if (Validator.isNotNull(s)) {
-			s = UnicodeFormatter.toString(s);
+		if (Validator.isNull(s)) {
+			return;
+		}
 
-			s = StringUtil.replace(s, "\\u003d", "=");
-			s = StringUtil.replace(s, "\\u000a", "\n");
-			s = StringUtil.replace(s, "\\u0021", "!");
-			s = StringUtil.replace(s, "\\u0023", "#");
-			s = StringUtil.replace(s, "\\u0020", " ");
-			s = StringUtil.replace(s, "\\u005c", "\\");
+		s = UnicodeFormatter.toString(s);
 
-			properties.load(new UnsyncByteArrayInputStream(s.getBytes()));
+		s = StringUtil.replace(s, "\\u003d", "=");
+		s = StringUtil.replace(s, "\\u000a", "\n");
+		s = StringUtil.replace(s, "\\u0021", "!");
+		s = StringUtil.replace(s, "\\u0023", "#");
+		s = StringUtil.replace(s, "\\u0020", " ");
+		s = StringUtil.replace(s, "\\u005c", "\\");
 
-			List<String> propertyNames = Collections.list(
-				(Enumeration<String>)properties.propertyNames());
+		properties.load(new UnsyncByteArrayInputStream(s.getBytes()));
 
-			for (int i = 0; i < propertyNames.size(); i++) {
-				String key = propertyNames.get(i);
+		List<String> propertyNames = Collections.list(
+			(Enumeration<String>)properties.propertyNames());
 
-				String value = properties.getProperty(key);
+		for (int i = 0; i < propertyNames.size(); i++) {
+			String key = propertyNames.get(i);
 
-				// Trim values because it may leave a trailing \r in certain
-				// Windows environments. This is a known case for loading SQL
-				// scripts in SQL Server.
+			String value = properties.getProperty(key);
 
-				if (value != null) {
-					value = value.trim();
+			// Trim values because it may leave a trailing \r in certain Windows
+			// environments. This is a known case for loading SQL scripts in SQL
+			// Server.
 
-					properties.setProperty(key, value);
-				}
+			if (value != null) {
+				value = value.trim();
+
+				properties.setProperty(key, value);
 			}
 		}
 	}
 
-	public static Properties load(String s) throws IOException {
-		return load(s, StringPool.UTF8);
-	}
-
-	public static Properties load(String s, String charsetName)
-		throws IOException {
-
-		if (JavaProps.isJDK6()) {
-			return loadJDK6(new UnsyncStringReader(s));
-		}
-		else {
-			ByteBuffer byteBuffer = CharsetEncoderUtil.encode(charsetName, s);
-
-			InputStream is = new UnsyncByteArrayInputStream(
-				byteBuffer.array(), byteBuffer.arrayOffset(),
-				byteBuffer.limit());
-
-			return loadJDK5(is, charsetName);
-		}
-	}
-
-	public static Properties loadJDK5(InputStream is, String charsetName)
-		throws IOException {
-
-		Properties iso8859_1Properties = new Properties();
-
-		iso8859_1Properties.load(is);
-
+	public static Properties load(Reader reader) throws IOException {
 		Properties properties = new Properties();
 
-		CharsetEncoder charsetEncoder = CharsetEncoderUtil.getCharsetEncoder(
-			StringPool.ISO_8859_1);
-
-		CharsetDecoder charsetDecoder = CharsetDecoderUtil.getCharsetDecoder(
-			charsetName);
-
-		for (Map.Entry<Object, Object> entry : iso8859_1Properties.entrySet()) {
-			String key = (String)entry.getKey();
-			String value = (String)entry.getValue();
-
-			key = charsetDecoder.decode(
-				charsetEncoder.encode(CharBuffer.wrap(key))).toString();
-			value = charsetDecoder.decode(
-				charsetEncoder.encode(CharBuffer.wrap(value))).toString();
-
-			properties.put(key, value);
-		}
+		properties.load(reader);
 
 		return properties;
 	}
 
-	public static Properties loadJDK6(Reader reader) throws IOException {
-		try {
-			Properties properties = new Properties();
-
-			_jdk6LoadMethod.invoke(properties, reader);
-
-			return properties;
-		}
-		catch (Exception e) {
-			Throwable cause = e.getCause();
-
-			if (cause instanceof IOException) {
-				throw (IOException)cause;
-			}
-
-			throw new IllegalStateException(
-				"Failed to invoke java.util.Properties.load(Reader reader)", e);
-		}
+	public static Properties load(String s) throws IOException {
+		return load(new UnsyncStringReader(s));
 	}
 
 	public static void merge(Properties properties1, Properties properties2) {
@@ -270,6 +194,22 @@ public class PropertiesUtil {
 
 			properties1.setProperty(key, value);
 		}
+	}
+
+	@SuppressWarnings("rawtypes")
+	public static Map toMap(Properties properties) {
+		Map<String, String> propertiesMap = new HashMap<>();
+
+		Enumeration<?> enumeration = properties.propertyNames();
+
+		while (enumeration.hasMoreElements()) {
+			String key = (String)enumeration.nextElement();
+			String value = properties.getProperty(key);
+
+			propertiesMap.put(key, value);
+		}
+
+		return propertiesMap;
 	}
 
 	public static String toString(Properties properties) {
@@ -323,22 +263,6 @@ public class PropertiesUtil {
 			if (!key.equals(trimmedKey)) {
 				properties.remove(key);
 				properties.setProperty(trimmedKey, value);
-			}
-		}
-	}
-
-	private static Log _log = LogFactoryUtil.getLog(PropertiesUtil.class);
-
-	private static Method _jdk6LoadMethod;
-
-	static {
-		if (JavaProps.isJDK6()) {
-			try {
-				_jdk6LoadMethod = ReflectionUtil.getDeclaredMethod(
-					Properties.class, "load", Reader.class);
-			}
-			catch (Exception e) {
-				_log.error(e, e);
 			}
 		}
 	}

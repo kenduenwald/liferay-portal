@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -51,7 +51,7 @@ public class LiferayVideoThumbnailConverter extends LiferayConverter {
 			doConvert();
 		}
 		finally {
-			if (_inputIContainer.isOpened()) {
+			if ((_inputIContainer != null) && _inputIContainer.isOpened()) {
 				_inputIContainer.close();
 			}
 		}
@@ -206,15 +206,15 @@ public class LiferayVideoThumbnailConverter extends LiferayConverter {
 		return _inputIContainer;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		LiferayVideoThumbnailConverter.class);
 
-	private String _extension;
-	private int _height = 240;
+	private final String _extension;
+	private final int _height;
 	private IContainer _inputIContainer;
-	private String _inputURL;
-	private File _outputFile;
-	private int _percentage;
-	private int _width = 320;
+	private final String _inputURL;
+	private final File _outputFile;
+	private final int _percentage;
+	private final int _width;
 
 }

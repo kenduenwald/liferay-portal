@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -41,8 +41,7 @@ public class PortletContextBagPool {
 	}
 
 	private PortletContextBagPool() {
-		_portletContextBagPool =
-			new ConcurrentHashMap<String, PortletContextBag>();
+		_portletContextBagPool = new ConcurrentHashMap<>();
 	}
 
 	private PortletContextBag _get(String servletContextName) {
@@ -59,9 +58,9 @@ public class PortletContextBagPool {
 		return _portletContextBagPool.remove(servletContextName);
 	}
 
-	private static PortletContextBagPool _instance =
+	private static final PortletContextBagPool _instance =
 		new PortletContextBagPool();
 
-	private Map<String, PortletContextBag> _portletContextBagPool;
+	private final Map<String, PortletContextBag> _portletContextBagPool;
 
 }

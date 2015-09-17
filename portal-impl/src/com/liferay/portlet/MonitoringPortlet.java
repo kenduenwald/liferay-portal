@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,19 @@
 
 package com.liferay.portlet;
 
-import com.liferay.portal.kernel.messaging.sender.SingleDestinationMessageSender;
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.monitoring.DataSample;
+import com.liferay.portal.kernel.monitoring.DataSampleThreadLocal;
+import com.liferay.portal.kernel.monitoring.PortletMonitoringControl;
+import com.liferay.portal.kernel.monitoring.PortletRequestType;
 import com.liferay.portal.kernel.monitoring.RequestStatus;
-import com.liferay.portal.kernel.monitoring.statistics.DataSampleThreadLocal;
-import com.liferay.portal.monitoring.statistics.portlet.PortletRequestDataSample;
-import com.liferay.portal.monitoring.statistics.portlet.PortletRequestType;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.portlet.LiferayPortletConfig;
+import com.liferay.portal.monitoring.statistics.DataSampleFactoryUtil;
 
 import java.io.IOException;
+
+import java.util.List;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -35,253 +40,276 @@ import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
+import javax.portlet.filter.ActionFilter;
+import javax.portlet.filter.EventFilter;
+import javax.portlet.filter.RenderFilter;
+import javax.portlet.filter.ResourceFilter;
 
 /**
  * @author Michael C. Han
  * @author Karthik Sudarshan
+ * @author Raymond Augé
  */
-public class MonitoringPortlet implements InvokerPortlet {
-
-	public static boolean isMonitoringPortletActionRequest() {
-		return _monitoringPortletActionRequest;
-	}
-
-	public static boolean isMonitoringPortletEventRequest() {
-		return _monitoringPortletEventRequest;
-	}
-
-	public static boolean isMonitoringPortletRenderRequest() {
-		return _monitoringPortletRenderRequest;
-	}
-
-	public static boolean isMonitoringPortletResourceRequest() {
-		return _monitoringPortletResourceRequest;
-	}
-
-	public static void setMonitoringPortletActionRequest(
-		boolean monitoringPortletActionRequest) {
-
-		_monitoringPortletActionRequest = monitoringPortletActionRequest;
-	}
-
-	public static void setMonitoringPortletEventRequest(
-		boolean monitoringPortletEventRequest) {
-
-		_monitoringPortletEventRequest = monitoringPortletEventRequest;
-	}
-
-	public static void setMonitoringPortletRenderRequest(
-		boolean monitoringPortletRenderRequest) {
-
-		_monitoringPortletRenderRequest = monitoringPortletRenderRequest;
-	}
-
-	public static void setMonitoringPortletResourceRequest(
-		boolean monitoringPortletResourceRequest) {
-
-		_monitoringPortletResourceRequest = monitoringPortletResourceRequest;
-	}
-
-	public MonitoringPortlet() {
-	}
+@ProviderType
+public class MonitoringPortlet
+	implements InvokerFilterContainer, InvokerPortlet {
 
 	public MonitoringPortlet(
 		InvokerPortlet invokerPortlet,
-		SingleDestinationMessageSender singleDestinationMessageSender) {
+		PortletMonitoringControl portletMonitoringControl) {
 
 		_invokerPortlet = invokerPortlet;
-		_singleDestinationMessageSender = singleDestinationMessageSender;
+		_portletMonitoringControl = portletMonitoringControl;
 	}
 
+	@Override
 	public void destroy() {
 		_invokerPortlet.destroy();
 	}
 
+	@Override
+	public List<ActionFilter> getActionFilters() {
+		InvokerFilterContainer invokerFilterContainer =
+			(InvokerFilterContainer)_invokerPortlet;
+
+		return invokerFilterContainer.getActionFilters();
+	}
+
+	@Override
+	public List<EventFilter> getEventFilters() {
+		InvokerFilterContainer invokerFilterContainer =
+			(InvokerFilterContainer)_invokerPortlet;
+
+		return invokerFilterContainer.getEventFilters();
+	}
+
+	@Override
 	public Integer getExpCache() {
 		return _invokerPortlet.getExpCache();
 	}
 
+	@Override
 	public Portlet getPortlet() {
 		return _invokerPortlet.getPortlet();
 	}
 
+	@Override
 	public ClassLoader getPortletClassLoader() {
 		return _invokerPortlet.getPortletClassLoader();
 	}
 
+	@Override
 	public PortletConfig getPortletConfig() {
 		return _invokerPortlet.getPortletConfig();
 	}
 
+	@Override
 	public PortletContext getPortletContext() {
 		return _invokerPortlet.getPortletContext();
 	}
 
+	@Override
 	public Portlet getPortletInstance() {
 		return _invokerPortlet.getPortletInstance();
 	}
 
-	public void init(PortletConfig portletConfig) throws PortletException {
-		PortletConfigImpl portletConfigImpl = (PortletConfigImpl)portletConfig;
+	@Override
+	public List<RenderFilter> getRenderFilters() {
+		InvokerFilterContainer invokerFilterContainer =
+			(InvokerFilterContainer)_invokerPortlet;
 
-		_invokerPortlet.init(portletConfigImpl);
+		return invokerFilterContainer.getRenderFilters();
+	}
+
+	@Override
+	public List<ResourceFilter> getResourceFilters() {
+		InvokerFilterContainer invokerFilterContainer =
+			(InvokerFilterContainer)_invokerPortlet;
+
+		return invokerFilterContainer.getResourceFilters();
+	}
+
+	@Override
+	public void init(PortletConfig portletConfig) throws PortletException {
+		LiferayPortletConfig liferayPortletConfig =
+			(LiferayPortletConfig)portletConfig;
+
+		_invokerPortlet.init(liferayPortletConfig);
 
 		com.liferay.portal.model.Portlet portletModel =
-			portletConfigImpl.getPortlet();
+			liferayPortletConfig.getPortlet();
 
 		_actionTimeout = portletModel.getActionTimeout();
 		_renderTimeout = portletModel.getRenderTimeout();
 	}
 
+	@Override
 	public boolean isCheckAuthToken() {
 		return _invokerPortlet.isCheckAuthToken();
 	}
 
+	@Override
 	public boolean isFacesPortlet() {
 		return _invokerPortlet.isFacesPortlet();
 	}
 
+	@Override
 	public boolean isStrutsBridgePortlet() {
 		return _invokerPortlet.isStrutsBridgePortlet();
 	}
 
+	@Override
 	public boolean isStrutsPortlet() {
 		return _invokerPortlet.isStrutsPortlet();
 	}
 
+	@Override
 	public void processAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws IOException, PortletException {
 
-		PortletRequestDataSample portletRequestDataSample = null;
+		DataSample dataSample = null;
 
 		try {
-			if (_monitoringPortletActionRequest) {
-				portletRequestDataSample = new PortletRequestDataSample(
-					PortletRequestType.ACTION, actionRequest, actionResponse);
+			if (_portletMonitoringControl.isMonitorPortletActionRequest()) {
+				dataSample =
+					DataSampleFactoryUtil.createPortletRequestDataSample(
+						PortletRequestType.ACTION, actionRequest,
+						actionResponse);
 
-				portletRequestDataSample.setTimeout(_actionTimeout);
+				dataSample.setTimeout(_actionTimeout);
 
-				portletRequestDataSample.prepare();
+				dataSample.prepare();
+
+				DataSampleThreadLocal.initialize();
 			}
 
 			_invokerPortlet.processAction(actionRequest, actionResponse);
 
-			if (_monitoringPortletActionRequest) {
-				portletRequestDataSample.capture(RequestStatus.SUCCESS);
+			if (_portletMonitoringControl.isMonitorPortletActionRequest()) {
+				dataSample.capture(RequestStatus.SUCCESS);
 			}
 		}
 		catch (Exception e) {
 			_processException(
-				_monitoringPortletActionRequest, portletRequestDataSample, e);
+				_portletMonitoringControl.isMonitorPortletActionRequest(),
+				dataSample, e);
 		}
 		finally {
-			if (portletRequestDataSample != null) {
-				_singleDestinationMessageSender.send(portletRequestDataSample);
-
-				DataSampleThreadLocal.addDataSample(portletRequestDataSample);
+			if (dataSample != null) {
+				DataSampleThreadLocal.addDataSample(dataSample);
 			}
 		}
 	}
 
+	@Override
 	public void processEvent(
 			EventRequest eventRequest, EventResponse eventResponse)
 		throws IOException, PortletException {
 
-		PortletRequestDataSample portletRequestDataSample = null;
+		DataSample dataSample = null;
 
 		try {
-			if (_monitoringPortletEventRequest) {
-				portletRequestDataSample = new PortletRequestDataSample(
-					PortletRequestType.EVENT, eventRequest, eventResponse);
+			if (_portletMonitoringControl.isMonitorPortletEventRequest()) {
+				dataSample =
+					DataSampleFactoryUtil.createPortletRequestDataSample(
+						PortletRequestType.EVENT, eventRequest, eventResponse);
 
-				portletRequestDataSample.prepare();
+				dataSample.prepare();
+
+				DataSampleThreadLocal.initialize();
 			}
 
 			_invokerPortlet.processEvent(eventRequest, eventResponse);
 
-			if (_monitoringPortletEventRequest) {
-				portletRequestDataSample.capture(RequestStatus.SUCCESS);
+			if (_portletMonitoringControl.isMonitorPortletEventRequest()) {
+				dataSample.capture(RequestStatus.SUCCESS);
 			}
 		}
 		catch (Exception e) {
 			_processException(
-				_monitoringPortletEventRequest, portletRequestDataSample, e);
+				_portletMonitoringControl.isMonitorPortletEventRequest(),
+				dataSample, e);
 		}
 		finally {
-			if (portletRequestDataSample != null) {
-				_singleDestinationMessageSender.send(portletRequestDataSample);
-
-				DataSampleThreadLocal.addDataSample(portletRequestDataSample);
+			if (dataSample != null) {
+				DataSampleThreadLocal.addDataSample(dataSample);
 			}
 		}
 	}
 
+	@Override
 	public void render(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		PortletRequestDataSample portletRequestDataSample = null;
+		DataSample dataSample = null;
 
 		try {
-			if (_monitoringPortletRenderRequest) {
-				portletRequestDataSample = new PortletRequestDataSample(
-					PortletRequestType.RENDER, renderRequest, renderResponse);
+			if (_portletMonitoringControl.isMonitorPortletRenderRequest()) {
+				dataSample =
+					DataSampleFactoryUtil.createPortletRequestDataSample(
+						PortletRequestType.RENDER, renderRequest,
+						renderResponse);
 
-				portletRequestDataSample.setTimeout(_renderTimeout);
+				dataSample.setTimeout(_renderTimeout);
 
-				portletRequestDataSample.prepare();
+				dataSample.prepare();
+
+				DataSampleThreadLocal.initialize();
 			}
 
 			_invokerPortlet.render(renderRequest, renderResponse);
 
-			if (_monitoringPortletRenderRequest) {
-				portletRequestDataSample.capture(RequestStatus.SUCCESS);
+			if (_portletMonitoringControl.isMonitorPortletRenderRequest()) {
+				dataSample.capture(RequestStatus.SUCCESS);
 			}
 		}
 		catch (Exception e) {
 			_processException(
-				_monitoringPortletRenderRequest, portletRequestDataSample, e);
+				_portletMonitoringControl.isMonitorPortletRenderRequest(),
+				dataSample, e);
 		}
 		finally {
-			if (portletRequestDataSample != null) {
-				_singleDestinationMessageSender.send(portletRequestDataSample);
-
-				DataSampleThreadLocal.addDataSample(portletRequestDataSample);
+			if (dataSample != null) {
+				DataSampleThreadLocal.addDataSample(dataSample);
 			}
 		}
 	}
 
+	@Override
 	public void serveResource(
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws IOException, PortletException {
 
-		PortletRequestDataSample portletRequestDataSample = null;
+		DataSample dataSample = null;
 
 		try {
-			if (_monitoringPortletResourceRequest) {
-				portletRequestDataSample = new PortletRequestDataSample(
-					PortletRequestType.RESOURCE, resourceRequest,
-					resourceResponse);
+			if (_portletMonitoringControl.isMonitorPortletResourceRequest()) {
+				dataSample =
+					DataSampleFactoryUtil.createPortletRequestDataSample(
+						PortletRequestType.RESOURCE, resourceRequest,
+						resourceResponse);
 
-				portletRequestDataSample.prepare();
+				dataSample.prepare();
+
+				DataSampleThreadLocal.initialize();
 			}
 
 			_invokerPortlet.serveResource(resourceRequest, resourceResponse);
 
-			if (_monitoringPortletResourceRequest) {
-				portletRequestDataSample.capture(RequestStatus.SUCCESS);
+			if (_portletMonitoringControl.isMonitorPortletResourceRequest()) {
+				dataSample.capture(RequestStatus.SUCCESS);
 			}
 		}
 		catch (Exception e) {
 			_processException(
-				_monitoringPortletResourceRequest, portletRequestDataSample, e);
+				_portletMonitoringControl.isMonitorPortletResourceRequest(),
+				dataSample, e);
 		}
 		finally {
-			if (portletRequestDataSample != null) {
-				_singleDestinationMessageSender.send(portletRequestDataSample);
-
-				DataSampleThreadLocal.addDataSample(portletRequestDataSample);
+			if (dataSample != null) {
+				DataSampleThreadLocal.addDataSample(dataSample);
 			}
 		}
 	}
@@ -290,23 +318,17 @@ public class MonitoringPortlet implements InvokerPortlet {
 		_invokerPortlet = invokerPortlet;
 	}
 
+	@Override
 	public void setPortletFilters() throws PortletException {
 		_invokerPortlet.setPortletFilters();
 	}
 
-	public void setSingleDestinationMessageSender(
-		SingleDestinationMessageSender singleDestinationMessageSender) {
-
-		_singleDestinationMessageSender = singleDestinationMessageSender;
-	}
-
 	private void _processException(
-			boolean monitoringPortletRequest,
-			PortletRequestDataSample portletRequestDataSample, Exception e)
+			boolean monitorPortletRequest, DataSample dataSample, Exception e)
 		throws IOException, PortletException {
 
-		if (monitoringPortletRequest) {
-			portletRequestDataSample.capture(RequestStatus.ERROR);
+		if (monitorPortletRequest) {
+			dataSample.capture(RequestStatus.ERROR);
 		}
 
 		if (e instanceof IOException) {
@@ -320,18 +342,9 @@ public class MonitoringPortlet implements InvokerPortlet {
 		}
 	}
 
-	private static boolean _monitoringPortletActionRequest =
-		PropsValues.MONITORING_PORTLET_ACTION_REQUEST;
-	private static boolean _monitoringPortletEventRequest =
-		PropsValues.MONITORING_PORTLET_EVENT_REQUEST;
-	private static boolean _monitoringPortletRenderRequest =
-		PropsValues.MONITORING_PORTLET_RENDER_REQUEST;
-	private static boolean _monitoringPortletResourceRequest =
-		PropsValues.MONITORING_PORTLET_RESOURCE_REQUEST;
-
 	private long _actionTimeout;
 	private InvokerPortlet _invokerPortlet;
+	private final PortletMonitoringControl _portletMonitoringControl;
 	private long _renderTimeout;
-	private SingleDestinationMessageSender _singleDestinationMessageSender;
 
 }

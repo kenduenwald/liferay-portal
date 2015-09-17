@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.IOException;
@@ -63,32 +64,23 @@ public class OracleDB extends BaseDB {
 
 		oracle = _preBuildSQL(oracle);
 
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(oracle));
-
 		StringBundler imageSB = new StringBundler();
 		StringBundler journalArticleSB = new StringBundler();
-		StringBundler journalStructureSB = new StringBundler();
-		StringBundler journalTemplateSB = new StringBundler();
 
-		String line = null;
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(oracle))) {
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith("insert into Image")) {
-				_convertToOracleCSV(line, imageSB);
-			}
-			else if (line.startsWith("insert into JournalArticle (")) {
-				_convertToOracleCSV(line, journalArticleSB);
-			}
-			else if (line.startsWith("insert into JournalStructure (")) {
-				_convertToOracleCSV(line, journalStructureSB);
-			}
-			else if (line.startsWith("insert into JournalTemplate (")) {
-				_convertToOracleCSV(line, journalTemplateSB);
+			String line = null;
+
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith("insert into Image")) {
+					_convertToOracleCSV(line, imageSB);
+				}
+				else if (line.startsWith("insert into JournalArticle (")) {
+					_convertToOracleCSV(line, journalArticleSB);
+				}
 			}
 		}
-
-		unsyncBufferedReader.close();
 
 		if (imageSB.length() > 0) {
 			FileUtil.write(
@@ -103,20 +95,6 @@ public class OracleDB extends BaseDB {
 				journalArticleSB.toString());
 		}
 
-		if (journalStructureSB.length() > 0) {
-			FileUtil.write(
-				sqlDir + "/" + fileName + "/" + fileName +
-					"-oracle-journalstructure.csv",
-				journalStructureSB.toString());
-		}
-
-		if (journalTemplateSB.length() > 0) {
-			FileUtil.write(
-				sqlDir + "/" + fileName + "/" + fileName +
-					"-oracle-journaltemplate.csv",
-				journalTemplateSB.toString());
-		}
-
 		oracle = _postBuildSQL(oracle);
 
 		FileUtil.write(
@@ -125,7 +103,7 @@ public class OracleDB extends BaseDB {
 
 	@Override
 	public List<Index> getIndexes(Connection con) throws SQLException {
-		List<Index> indexes = new ArrayList<Index>();
+		List<Index> indexes = new ArrayList<>();
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -150,7 +128,7 @@ public class OracleDB extends BaseDB {
 
 				boolean unique = true;
 
-				if (uniqueness.equalsIgnoreCase("NONUNIQUE")) {
+				if (StringUtil.equalsIgnoreCase(uniqueness, "NONUNIQUE")) {
 					unique = false;
 				}
 
@@ -174,6 +152,26 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	protected String[] buildColumnTypeTokens(String line) {
+		Matcher matcher = _varchar2CharPattern.matcher(line);
+
+		StringBuffer sb = new StringBuffer();
+
+		while (matcher.find()) {
+			matcher.appendReplacement(
+				sb, "VARCHAR2(" + matcher.group(1) + "%20CHAR)");
+		}
+
+		matcher.appendTail(sb);
+
+		String[] template = super.buildColumnTypeTokens(sb.toString());
+
+		template[3] = StringUtil.replace(template[3], "%20", StringPool.SPACE);
+
+		return template;
+	}
+
+	@Override
 	protected String buildCreateFileContent(
 			String sqlDir, String databaseName, int population)
 		throws IOException {
@@ -185,18 +183,19 @@ public class OracleDB extends BaseDB {
 		sb.append("drop user &1 cascade;\n");
 		sb.append("create user &1 identified by &2;\n");
 		sb.append("grant connect,resource to &1;\n");
-		sb.append("connect &1/&2;\n");
-		sb.append("set define off;\n");
-		sb.append("\n");
-		sb.append(
-			readFile(
-				sqlDir + "/portal" + suffix + "/portal" + suffix +
-					"-oracle.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/indexes/indexes-oracle.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/sequences/sequences-oracle.sql"));
-		sb.append("\n");
+
+		if (population != BARE) {
+			sb.append("connect &1/&2;\n");
+			sb.append("set define off;\n");
+			sb.append("\n");
+			sb.append(getCreateTablesContent(sqlDir, suffix));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/indexes/indexes-oracle.sql"));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/sequences/sequences-oracle.sql"));
+			sb.append("\n");
+		}
+
 		sb.append("quit");
 
 		return sb.toString();
@@ -222,7 +221,7 @@ public class OracleDB extends BaseDB {
 		StringBuffer sb = new StringBuffer();
 
 		while (matcher.find()) {
-			int size = GetterUtil.getInteger(matcher.group());
+			int size = GetterUtil.getInteger(matcher.group(1));
 
 			if (size > 4000) {
 				size = 4000;
@@ -240,43 +239,49 @@ public class OracleDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith(ALTER_COLUMN_NAME)) {
-				String[] template = buildColumnNameTokens(line);
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith(ALTER_COLUMN_NAME)) {
+					String[] template = buildColumnNameTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ rename column @old-column@ to " +
-						"@new-column@;",
-					REWORD_TEMPLATE, template);
+					line = StringUtil.replace(
+						"alter table @table@ rename column @old-column@ to " +
+							"@new-column@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_COLUMN_TYPE)) {
+					String[] template = buildColumnTypeTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @table@ modify @old-column@ @type@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_TABLE_NAME)) {
+					String[] template = buildTableNameTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @old-table@ rename to @new-table@;",
+						RENAME_TABLE_TEMPLATE, template);
+				}
+				else if (line.contains(DROP_INDEX)) {
+					String[] tokens = StringUtil.split(line, ' ');
+
+					line = StringUtil.replace(
+						"drop index @index@;", "@index@", tokens[2]);
+				}
+
+				sb.append(line);
+				sb.append("\n");
 			}
-			else if (line.startsWith(ALTER_COLUMN_TYPE)) {
-				String[] template = buildColumnTypeTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ modify @old-column@ @type@;",
-					REWORD_TEMPLATE, template);
-			}
-			else if (line.indexOf(DROP_INDEX) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
-
-				line = StringUtil.replace(
-					"drop index @index@;", "@index@", tokens[2]);
-			}
-
-			sb.append(line);
-			sb.append("\n");
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	private void _convertToOracleCSV(String line, StringBundler sb) {
@@ -321,9 +326,11 @@ public class OracleDB extends BaseDB {
 
 	private static final boolean _SUPPORTS_INLINE_DISTINCT = false;
 
-	private static OracleDB _instance = new OracleDB();
+	private static final OracleDB _instance = new OracleDB();
 
-	private static Pattern _varcharPattern = Pattern.compile(
-		"VARCHAR(\\(\\d+\\))");
+	private static final Pattern _varchar2CharPattern = Pattern.compile(
+		"VARCHAR2\\((\\d+) CHAR\\)");
+	private static final Pattern _varcharPattern = Pattern.compile(
+		"VARCHAR\\((\\d+)\\)");
 
 }

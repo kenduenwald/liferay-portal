@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.webdav.WebDAVUtil;
+import com.liferay.portal.kernel.webdav.methods.Method;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,56 +33,56 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class MoveMethodImpl implements Method {
 
-	public int process(WebDAVRequest webDavRequest) throws WebDAVException {
-		WebDAVStorage storage = webDavRequest.getWebDAVStorage();
-		HttpServletRequest request = webDavRequest.getHttpServletRequest();
+	@Override
+	public int process(WebDAVRequest webDAVRequest) throws WebDAVException {
+		WebDAVStorage storage = webDAVRequest.getWebDAVStorage();
+		HttpServletRequest request = webDAVRequest.getHttpServletRequest();
 
-		long companyId = webDavRequest.getCompanyId();
+		long companyId = webDAVRequest.getCompanyId();
 		String destination = WebDAVUtil.getDestination(
 			request, storage.getRootPath());
 
-		StringBundler sb = new StringBundler();
+		StringBundler sb = null;
 
 		if (_log.isInfoEnabled()) {
+			sb = new StringBundler(4);
+
 			sb.append("Destination is ");
 			sb.append(destination);
 		}
 
-		int status = HttpServletResponse.SC_FORBIDDEN;
-
-		if (!destination.equals(webDavRequest.getPath()) &&
+		if (!destination.equals(webDAVRequest.getPath()) &&
 			(WebDAVUtil.getGroupId(companyId, destination) ==
-				webDavRequest.getGroupId())) {
+				webDAVRequest.getGroupId())) {
 
-			Resource resource = storage.getResource(webDavRequest);
+			Resource resource = storage.getResource(webDAVRequest);
 
 			if (resource == null) {
-				status = HttpServletResponse.SC_NOT_FOUND;
+				return HttpServletResponse.SC_NOT_FOUND;
+			}
+
+			boolean overwrite = WebDAVUtil.isOverwrite(request);
+
+			if (_log.isInfoEnabled()) {
+				sb.append(", overwrite is ");
+				sb.append(overwrite);
+
+				_log.info(sb.toString());
+			}
+
+			if (resource.isCollection()) {
+				return storage.moveCollectionResource(
+					webDAVRequest, resource, destination, overwrite);
 			}
 			else {
-				boolean overwrite = WebDAVUtil.isOverwrite(request);
-
-				if (_log.isInfoEnabled()) {
-					sb.append(", overwrite is ");
-					sb.append(overwrite);
-
-					_log.info(sb.toString());
-				}
-
-				if (resource.isCollection()) {
-					status = storage.moveCollectionResource(
-						webDavRequest, resource, destination, overwrite);
-				}
-				else {
-					status = storage.moveSimpleResource(
-						webDavRequest, resource, destination, overwrite);
-				}
+				return storage.moveSimpleResource(
+					webDAVRequest, resource, destination, overwrite);
 			}
 		}
 
-		return status;
+		return HttpServletResponse.SC_FORBIDDEN;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(MoveMethodImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(MoveMethodImpl.class);
 
 }

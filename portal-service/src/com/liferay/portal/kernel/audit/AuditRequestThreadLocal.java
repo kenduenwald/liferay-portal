@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -102,10 +102,9 @@ public class AuditRequestThreadLocal {
 		_sessionID = sessionID;
 	}
 
-	private static ThreadLocal<AuditRequestThreadLocal>
-		_auditRequestThreadLocal =
-			new AutoResetThreadLocal<AuditRequestThreadLocal>(
-				AuditRequestThreadLocal.class + "._auditRequestThreadLocal");
+	private static final ThreadLocal<AuditRequestThreadLocal>
+		_auditRequestThreadLocal = new AutoResetThreadLocal<>(
+			AuditRequestThreadLocal.class + "._auditRequestThreadLocal");
 
 	private String _clientHost;
 	private String _clientIP;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,6 +17,7 @@ package com.liferay.portal.upgrade.v6_0_3;
 import com.liferay.portal.kernel.upgrade.BaseUpgradePortletPreferences;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.verify.VerifyUUID;
+import com.liferay.portal.verify.model.VerifiableUUIDModel;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
 
 import javax.portlet.PortletPreferences;
@@ -28,14 +29,22 @@ public class UpgradeScopes extends BaseUpgradePortletPreferences {
 
 	@Override
 	protected void doUpgrade() throws Exception {
+		super.doUpgrade();
 
-		// UUID
+		VerifyUUID.verify(
+			new VerifiableUUIDModel() {
 
-		VerifyUUID.verifyModel("Layout", "plid");
+				@Override
+				public String getPrimaryKeyColumnName() {
+					return "plid";
+				}
 
-		// PortletPreferences
+				@Override
+				public String getTableName() {
+					return "Layout";
+				}
 
-		updatePortletPreferences();
+			});
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.messageboards.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.messageboards.service.http.MBBanServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.messageboards.service.http.MBBanServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.messageboards.service.http.MBBanServiceSoap
  * @generated
  */
+@ProviderType
 public class MBBanSoap implements Serializable {
 	public static MBBanSoap toSoapModel(MBBan model) {
 		MBBanSoap soapModel = new MBBanSoap();
 
+		soapModel.setUuid(model.getUuid());
 		soapModel.setBanId(model.getBanId());
 		soapModel.setGroupId(model.getGroupId());
 		soapModel.setCompanyId(model.getCompanyId());
@@ -39,6 +43,7 @@ public class MBBanSoap implements Serializable {
 		soapModel.setCreateDate(model.getCreateDate());
 		soapModel.setModifiedDate(model.getModifiedDate());
 		soapModel.setBanUserId(model.getBanUserId());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 
 		return soapModel;
 	}
@@ -89,6 +94,14 @@ public class MBBanSoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setBanId(pk);
+	}
+
+	public String getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String uuid) {
+		_uuid = uuid;
 	}
 
 	public long getBanId() {
@@ -155,6 +168,15 @@ public class MBBanSoap implements Serializable {
 		_banUserId = banUserId;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	private String _uuid;
 	private long _banId;
 	private long _groupId;
 	private long _companyId;
@@ -163,4 +185,5 @@ public class MBBanSoap implements Serializable {
 	private Date _createDate;
 	private Date _modifiedDate;
 	private long _banUserId;
+	private Date _lastPublishDate;
 }

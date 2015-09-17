@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,8 +15,11 @@
 package com.liferay.portal.kernel.search;
 
 /**
- * @author Raymond Augé
+ * @author     Raymond Augé
+ * @deprecated As of 7.0.0 , replaced by {@link
+ *             com.liferay.portal.kernel.search.generic.TermRangeQueryImpl}
  */
+@Deprecated
 public interface TermRangeQueryFactory {
 
 	public TermRangeQuery create(

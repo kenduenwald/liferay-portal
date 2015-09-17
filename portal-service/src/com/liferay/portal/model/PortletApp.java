@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import javax.servlet.ServletContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -51,6 +53,8 @@ public interface PortletApp extends Serializable {
 
 	public String getDefaultNamespace();
 
+	public Set<EventDefinition> getEventDefinitions();
+
 	public PortletFilter getPortletFilter(String filterName);
 
 	public Set<PortletFilter> getPortletFilters();
@@ -63,6 +67,8 @@ public interface PortletApp extends Serializable {
 
 	public PublicRenderParameter getPublicRenderParameter(String identifier);
 
+	public ServletContext getServletContext();
+
 	public String getServletContextName();
 
 	public Set<String> getServletURLPatterns();
@@ -73,7 +79,11 @@ public interface PortletApp extends Serializable {
 
 	public boolean isWARFile();
 
+	public void removePortlet(Portlet portletModel);
+
 	public void setDefaultNamespace(String defaultNamespace);
+
+	public void setServletContext(ServletContext servletContext);
 
 	public void setSpriteImages(String spriteFileName, Properties properties);
 

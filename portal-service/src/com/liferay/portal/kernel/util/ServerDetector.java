@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,8 +22,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
  */
 public class ServerDetector {
 
-	public static final String GERONIMO_ID = "geronimo";
-
 	public static final String GLASSFISH_ID = "glassfish";
 
 	public static final String JBOSS_ID = "jboss";
@@ -41,6 +39,8 @@ public class ServerDetector {
 	public static final String WEBLOGIC_ID = "weblogic";
 
 	public static final String WEBSPHERE_ID = "websphere";
+
+	public static final String WILDFLY_ID = "wildfly";
 
 	public static ServerDetector getInstance() {
 		if (_instance == null) {
@@ -61,10 +61,7 @@ public class ServerDetector {
 
 		serverDetector._serverId = serverId;
 
-		if (serverId.equals(GERONIMO_ID)) {
-			serverDetector._geronimo = true;
-		}
-		else if (serverId.equals(GLASSFISH_ID)) {
+		if (serverId.equals(GLASSFISH_ID)) {
 			serverDetector._glassfish = true;
 		}
 		else if (serverId.equals(JBOSS_ID)) {
@@ -91,15 +88,14 @@ public class ServerDetector {
 		else if (serverId.equals(WEBSPHERE_ID)) {
 			serverDetector._webSphere = true;
 		}
+		else if (serverId.equals(WILDFLY_ID)) {
+			serverDetector._wildfly = true;
+		}
 		else {
 			serverDetector._init();
 		}
 
 		_instance = serverDetector;
-	}
-
-	public static boolean isGeronimo() {
-		return getInstance()._geronimo;
 	}
 
 	public static boolean isGlassfish() {
@@ -127,7 +123,11 @@ public class ServerDetector {
 	}
 
 	public static boolean isSupportsComet() {
-		return getInstance()._supportsComet;
+		return _SUPPORTS_COMET;
+	}
+
+	public static boolean isSupportsHotDeploy() {
+		return getInstance()._supportsHotDeploy;
 	}
 
 	public static boolean isTomcat() {
@@ -140,6 +140,23 @@ public class ServerDetector {
 
 	public static boolean isWebSphere() {
 		return getInstance()._webSphere;
+	}
+
+	public static boolean isWildfly() {
+		return getInstance()._wildfly;
+	}
+
+	public static void setSupportsHotDeploy(boolean supportsHotDeploy) {
+		getInstance()._supportsHotDeploy = supportsHotDeploy;
+
+		if (_log.isInfoEnabled()) {
+			if (supportsHotDeploy) {
+				_log.info("Server supports hot deploy");
+			}
+			else {
+				_log.info("Server does not support hot deploy");
+			}
+		}
 	}
 
 	private boolean _detect(String className) {
@@ -174,11 +191,7 @@ public class ServerDetector {
 	}
 
 	private void _init() {
-		if (_isGeronimo()) {
-			_serverId = GERONIMO_ID;
-			_geronimo = true;
-		}
-		else if (_isGlassfish()) {
+		if (_isGlassfish()) {
 			_serverId = GLASSFISH_ID;
 			_glassfish = true;
 		}
@@ -206,6 +219,10 @@ public class ServerDetector {
 			_serverId = WEBSPHERE_ID;
 			_webSphere = true;
 		}
+		else if (_isWildfly()) {
+			_serverId = WILDFLY_ID;
+			_wildfly = true;
+		}
 
 		if (_serverId == null) {
 			if (_isJetty()) {
@@ -232,10 +249,6 @@ public class ServerDetector {
 		/*if (_serverId == null) {
 			throw new RuntimeException("Server is not supported");
 		}*/
-	}
-
-	private boolean _isGeronimo() {
-		return _hasSystemProperty("org.apache.geronimo.home.dir");
 	}
 
 	private boolean _isGlassfish() {
@@ -274,11 +287,16 @@ public class ServerDetector {
 		return _detect("/com/ibm/websphere/product/VersionInfo.class");
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ServerDetector.class);
+	private boolean _isWildfly() {
+		return _hasSystemProperty("jboss.home.dir");
+	}
+
+	private static final boolean _SUPPORTS_COMET = false;
+
+	private static final Log _log = LogFactoryUtil.getLog(ServerDetector.class);
 
 	private static ServerDetector _instance;
 
-	private boolean _geronimo;
 	private boolean _glassfish;
 	private boolean _jBoss;
 	private boolean _jetty;
@@ -286,9 +304,10 @@ public class ServerDetector {
 	private boolean _oc4j;
 	private boolean _resin;
 	private String _serverId;
-	private boolean _supportsComet;
+	private boolean _supportsHotDeploy;
 	private boolean _tomcat;
 	private boolean _webLogic;
 	private boolean _webSphere;
+	private boolean _wildfly;
 
 }

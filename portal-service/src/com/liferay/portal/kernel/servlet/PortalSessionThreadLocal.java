@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -37,8 +37,8 @@ public class PortalSessionThreadLocal {
 		_sessionId.set(session.getId());
 	}
 
-	private static ThreadLocal<String> _sessionId =
-		new AutoResetThreadLocal<String>(
+	private static final ThreadLocal<String> _sessionId =
+		new AutoResetThreadLocal<>(
 			PortalSessionThreadLocal.class + "._sessionId");
 
 }

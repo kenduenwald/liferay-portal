@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -38,6 +38,7 @@ public class ClusterManageActionWrapper
 		_manageAction = manageAction;
 	}
 
+	@Override
 	public FutureClusterResponses action() throws ManageActionException {
 		try {
 			return doAction();
@@ -48,9 +49,7 @@ public class ClusterManageActionWrapper
 		}
 	}
 
-	protected FutureClusterResponses doAction()
-		throws ManageActionException, SystemException {
-
+	protected FutureClusterResponses doAction() throws ManageActionException {
 		MethodHandler manageActionMethodHandler =
 			PortalManagerUtil.createManageActionMethodHandler(_manageAction);
 
@@ -104,7 +103,7 @@ public class ClusterManageActionWrapper
 		}
 	}
 
-	private ClusterGroup _clusterGroup;
-	private ManageAction<?> _manageAction;
+	private final ClusterGroup _clusterGroup;
+	private final ManageAction<?> _manageAction;
 
 }

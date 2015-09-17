@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,7 +15,6 @@
 package com.liferay.portlet.documentlibrary.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.service.ServiceContext;
@@ -31,10 +30,11 @@ import com.liferay.portlet.documentlibrary.service.permission.DLFolderPermission
  */
 public class DLFileShortcutServiceImpl extends DLFileShortcutServiceBaseImpl {
 
+	@Override
 	public DLFileShortcut addFileShortcut(
-			long groupId, long folderId, long toFileEntryId,
+			long groupId, long repositoryId, long folderId, long toFileEntryId,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		DLFolderPermission.check(
 			getPermissionChecker(), groupId, folderId, ActionKeys.ADD_SHORTCUT);
@@ -44,24 +44,25 @@ public class DLFileShortcutServiceImpl extends DLFileShortcutServiceBaseImpl {
 				getPermissionChecker(), toFileEntryId, ActionKeys.VIEW);
 		}
 		catch (PrincipalException pe) {
-			throw new FileShortcutPermissionException();
+			throw new FileShortcutPermissionException(pe);
 		}
 
 		return dlFileShortcutLocalService.addFileShortcut(
-			getUserId(), groupId, folderId, toFileEntryId, serviceContext);
+			getUserId(), groupId, repositoryId, folderId, toFileEntryId,
+			serviceContext);
 	}
 
-	public void deleteFileShortcut(long fileShortcutId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void deleteFileShortcut(long fileShortcutId) throws PortalException {
 		DLFileShortcutPermission.check(
 			getPermissionChecker(), fileShortcutId, ActionKeys.DELETE);
 
 		dlFileShortcutLocalService.deleteFileShortcut(fileShortcutId);
 	}
 
+	@Override
 	public DLFileShortcut getFileShortcut(long fileShortcutId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		DLFileShortcutPermission.check(
 			getPermissionChecker(), fileShortcutId, ActionKeys.VIEW);
@@ -69,10 +70,11 @@ public class DLFileShortcutServiceImpl extends DLFileShortcutServiceBaseImpl {
 		return dlFileShortcutLocalService.getFileShortcut(fileShortcutId);
 	}
 
+	@Override
 	public DLFileShortcut updateFileShortcut(
-			long fileShortcutId, long folderId, long toFileEntryId,
-			ServiceContext serviceContext)
-		throws PortalException, SystemException {
+			long fileShortcutId, long repositoryId, long folderId,
+			long toFileEntryId, ServiceContext serviceContext)
+		throws PortalException {
 
 		DLFileShortcutPermission.check(
 			getPermissionChecker(), fileShortcutId, ActionKeys.UPDATE);
@@ -82,12 +84,32 @@ public class DLFileShortcutServiceImpl extends DLFileShortcutServiceBaseImpl {
 				getPermissionChecker(), toFileEntryId, ActionKeys.VIEW);
 		}
 		catch (PrincipalException pe) {
-			throw new FileShortcutPermissionException();
+			throw new FileShortcutPermissionException(pe);
 		}
 
 		return dlFileShortcutLocalService.updateFileShortcut(
-			getUserId(), fileShortcutId, folderId, toFileEntryId,
+			getUserId(), fileShortcutId, repositoryId, folderId, toFileEntryId,
 			serviceContext);
+	}
+
+	@Override
+	public void updateFileShortcuts(
+			long oldToFileEntryId, long newToFileEntryId)
+		throws PortalException {
+
+		try {
+			DLFileEntryPermission.check(
+				getPermissionChecker(), oldToFileEntryId, ActionKeys.VIEW);
+
+			DLFileEntryPermission.check(
+				getPermissionChecker(), newToFileEntryId, ActionKeys.VIEW);
+		}
+		catch (PrincipalException pe) {
+			throw new FileShortcutPermissionException(pe);
+		}
+
+		dlFileShortcutLocalService.updateFileShortcuts(
+			oldToFileEntryId, newToFileEntryId);
 	}
 
 }

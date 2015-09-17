@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.social.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.social.model.SocialActivityAchievement;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing SocialActivityAchievement in entity cache.
@@ -29,8 +35,33 @@ import java.io.Serializable;
  * @see SocialActivityAchievement
  * @generated
  */
+@ProviderType
 public class SocialActivityAchievementCacheModel implements CacheModel<SocialActivityAchievement>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof SocialActivityAchievementCacheModel)) {
+			return false;
+		}
+
+		SocialActivityAchievementCacheModel socialActivityAchievementCacheModel = (SocialActivityAchievementCacheModel)obj;
+
+		if (activityAchievementId == socialActivityAchievementCacheModel.activityAchievementId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, activityAchievementId);
+	}
+
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(15);
@@ -54,6 +85,7 @@ public class SocialActivityAchievementCacheModel implements CacheModel<SocialAct
 		return sb.toString();
 	}
 
+	@Override
 	public SocialActivityAchievement toEntityModel() {
 		SocialActivityAchievementImpl socialActivityAchievementImpl = new SocialActivityAchievementImpl();
 
@@ -75,6 +107,36 @@ public class SocialActivityAchievementCacheModel implements CacheModel<SocialAct
 		socialActivityAchievementImpl.resetOriginalValues();
 
 		return socialActivityAchievementImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		activityAchievementId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		createDate = objectInput.readLong();
+		name = objectInput.readUTF();
+		firstInGroup = objectInput.readBoolean();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(activityAchievementId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+		objectOutput.writeLong(createDate);
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		objectOutput.writeBoolean(firstInGroup);
 	}
 
 	public long activityAchievementId;

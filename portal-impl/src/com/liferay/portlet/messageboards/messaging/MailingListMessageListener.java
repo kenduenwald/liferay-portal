@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,11 +14,13 @@
 
 package com.liferay.portlet.messageboards.messaging;
 
-import com.liferay.portal.NoSuchUserException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.mail.Account;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringPool;
@@ -27,8 +29,6 @@ import com.liferay.portal.security.permission.PermissionCheckerUtil;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PortletKeys;
-import com.liferay.portlet.messageboards.NoSuchMessageException;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBMessageConstants;
 import com.liferay.portlet.messageboards.service.MBMessageLocalServiceUtil;
@@ -109,15 +109,11 @@ public class MailingListMessageListener extends BaseMessageListener {
 	}
 
 	protected Folder getFolder(Store store) throws Exception {
-		Folder defaultFolder = store.getDefaultFolder();
+		Folder folder = store.getFolder("INBOX");
 
-		Folder[] folders = defaultFolder.list();
-
-		if ((folders != null) && (folders.length == 0)) {
+		if (!folder.exists()) {
 			throw new MessagingException("Inbox not found");
 		}
-
-		Folder folder = folders[0];
 
 		folder.open(Folder.READ_WRITE);
 
@@ -162,7 +158,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 
 		Address[] addresses = mailMessage.getFrom();
 
-		if ((addresses != null) && (addresses.length > 0)) {
+		if (ArrayUtil.isNotEmpty(addresses)) {
 			Address address = addresses[0];
 
 			if (address instanceof InternetAddress) {
@@ -183,18 +179,18 @@ public class MailingListMessageListener extends BaseMessageListener {
 
 		boolean anonymous = false;
 
-		User user = UserLocalServiceUtil.getUserById(
-			companyId, mailingListRequest.getUserId());
+		User user = UserLocalServiceUtil.fetchUserByEmailAddress(
+			companyId, from);
 
-		try {
-			user = UserLocalServiceUtil.getUserByEmailAddress(companyId, from);
-		}
-		catch (NoSuchUserException nsue) {
-			anonymous = true;
-
+		if (user == null) {
 			if (!mailingListRequest.isAllowAnonymous()) {
 				return;
 			}
+
+			anonymous = true;
+
+			user = UserLocalServiceUtil.getUserById(
+				companyId, mailingListRequest.getUserId());
 		}
 
 		long parentMessageId = MBUtil.getParentMessageId(mailMessage);
@@ -205,13 +201,9 @@ public class MailingListMessageListener extends BaseMessageListener {
 
 		MBMessage parentMessage = null;
 
-		try {
-			if (parentMessageId > 0) {
-				parentMessage = MBMessageLocalServiceUtil.getMessage(
-					parentMessageId);
-			}
-		}
-		catch (NoSuchMessageException nsme) {
+		if (parentMessageId > 0) {
+			parentMessage = MBMessageLocalServiceUtil.fetchMBMessage(
+				parentMessageId);
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -232,8 +224,13 @@ public class MailingListMessageListener extends BaseMessageListener {
 
 		serviceContext.setAddGroupPermissions(true);
 		serviceContext.setAddGuestPermissions(true);
+
+		String portletId = PortletProviderUtil.getPortletId(
+			MBMessage.class.getName(), PortletProvider.Action.VIEW);
+
 		serviceContext.setLayoutFullURL(
-			PortalUtil.getLayoutFullURL(groupId, PortletKeys.MESSAGE_BOARDS));
+			PortalUtil.getLayoutFullURL(groupId, portletId));
+
 		serviceContext.setScopeGroupId(groupId);
 
 		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
@@ -248,7 +245,6 @@ public class MailingListMessageListener extends BaseMessageListener {
 			}
 			else {
 				MBMessageServiceUtil.addMessage(
-					groupId, categoryId, parentMessage.getThreadId(),
 					parentMessage.getMessageId(), subject,
 					mbMailMessage.getBody(), MBMessageConstants.DEFAULT_FORMAT,
 					inputStreamOVPs, anonymous, 0.0, true, serviceContext);
@@ -279,7 +275,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		MailingListMessageListener.class);
 
 }

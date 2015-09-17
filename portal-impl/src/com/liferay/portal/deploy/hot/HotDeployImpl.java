@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,58 +14,67 @@
 
 package com.liferay.portal.deploy.hot;
 
-import com.liferay.portal.kernel.concurrent.LockRegistry;
+import com.liferay.portal.deploy.RequiredPluginsUtil;
 import com.liferay.portal.kernel.deploy.hot.HotDeploy;
 import com.liferay.portal.kernel.deploy.hot.HotDeployEvent;
 import com.liferay.portal.kernel.deploy.hot.HotDeployException;
 import com.liferay.portal.kernel.deploy.hot.HotDeployListener;
-import com.liferay.portal.kernel.deploy.hot.HotDeployUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletClassLoaderUtil;
-import com.liferay.portal.kernel.spring.context.PortletContextLoaderListener;
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
+import com.liferay.portal.kernel.template.TemplateManagerUtil;
+import com.liferay.portal.kernel.url.ServletContextURLContainer;
+import com.liferay.portal.kernel.url.URLContainer;
 import com.liferay.portal.kernel.util.BasePortalLifecycle;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.PortalLifecycle;
 import com.liferay.portal.kernel.util.PortalLifecycleUtil;
+import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.io.File;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
 /**
  * @author Ivica Cardic
  * @author Brian Wing Shun Chan
  * @author Raymond Augé
  */
+@DoPrivileged
 public class HotDeployImpl implements HotDeploy {
 
 	public HotDeployImpl() {
-		if (_log.isInfoEnabled()) {
-			_log.info("Initializing hot deploy manager " + this.hashCode());
+		if (_log.isDebugEnabled()) {
+			_log.debug("Initializing hot deploy manager " + this.hashCode());
 		}
 
-		_dependentHotDeployEvents = new ArrayList<HotDeployEvent>();
-		_dependentServletContexts =
-			new HashMap<String, Set<DependentServletContext>>();
-		_deployedServletContextNames = new HashSet<String>();
-		_hotDeployListeners = new CopyOnWriteArrayList<HotDeployListener>();
+		_dependentHotDeployEvents = new ArrayList<>();
+		_deployedServletContextNames = new HashSet<>();
+		_hotDeployListeners = new ArrayList<>();
 	}
 
-	public void fireDeployEvent(final HotDeployEvent hotDeployEvent) {
+	@Override
+	public synchronized void fireDeployEvent(
+		final HotDeployEvent hotDeployEvent) {
+
+		PortalLifecycleUtil.register(
+			new HotDeployPortalLifecycle(hotDeployEvent),
+			PortalLifecycle.METHOD_INIT);
+
 		if (_capturePrematureEvents) {
 
 			// Capture events that are fired before the portal initialized
@@ -78,7 +87,7 @@ public class HotDeployImpl implements HotDeploy {
 
 				@Override
 				protected void doPortalInit() {
-					HotDeployUtil.fireDeployEvent(hotDeployEvent);
+					fireDeployEvent(hotDeployEvent);
 				}
 
 			};
@@ -88,48 +97,53 @@ public class HotDeployImpl implements HotDeploy {
 		}
 		else {
 
-			// Fire current event
+			// Fire event
 
-			try {
-				doFireDeployEvent(hotDeployEvent);
-			}
-			finally {
-				String lockKey = PortletContextLoaderListener.getLockKey(
-					hotDeployEvent.getServletContext());
-
-				LockRegistry.finallyFreeLock(lockKey, lockKey, true);
-			}
+			doFireDeployEvent(hotDeployEvent);
 		}
 	}
 
-	public void fireUndeployEvent(HotDeployEvent hotDeployEvent) {
-		for (HotDeployListener hotDeployListener : _hotDeployListeners) {
+	@Override
+	public synchronized void fireUndeployEvent(HotDeployEvent hotDeployEvent) {
+		for (int i = _hotDeployListeners.size() - 1; i >= 0; i--) {
+			HotDeployListener hotDeployListener = _hotDeployListeners.get(i);
+
+			PortletClassLoaderUtil.setServletContextName(
+				hotDeployEvent.getServletContextName());
+
 			try {
 				hotDeployListener.invokeUndeploy(hotDeployEvent);
 			}
 			catch (HotDeployException hde) {
 				_log.error(hde, hde);
 			}
+			finally {
+				PortletClassLoaderUtil.setServletContextName(null);
+			}
 		}
 
 		_deployedServletContextNames.remove(
 			hotDeployEvent.getServletContextName());
+
+		ClassLoader classLoader = hotDeployEvent.getContextClassLoader();
+
+		TemplateManagerUtil.destroy(classLoader);
+
+		_pacl.unregister(classLoader);
+
+		RequiredPluginsUtil.startCheckingRequiredPlugins();
 	}
 
-	public boolean isMissingDependentServletContext(
-		HotDeployEvent hotDeployEvent) {
+	@Override
+	public synchronized boolean registerDependentPortalLifecycle(
+		String servletContextName, PortalLifecycle portalLifecycle) {
 
-		if (_deployedServletContextNames.contains(
-				hotDeployEvent.getServletContextName())) {
+		for (HotDeployEvent hotDeployEvent : _dependentHotDeployEvents) {
+			if (Validator.equals(
+					servletContextName,
+					hotDeployEvent.getServletContextName())) {
 
-			return false;
-		}
-
-		for (String dependentServletContextName :
-				hotDeployEvent.getDependentServletContextNames()) {
-
-			if (!_deployedServletContextNames.contains(
-					dependentServletContextName)) {
+				hotDeployEvent.addPortalLifecycle(portalLifecycle);
 
 				return true;
 			}
@@ -138,74 +152,91 @@ public class HotDeployImpl implements HotDeploy {
 		return false;
 	}
 
-	public void registerDependentServletContextListener(
-		HotDeployEvent hotDeployEvent, ServletContextEvent servletContextEvent,
-		ServletContextListener servletContextListener) {
+	@Override
+	public synchronized void registerListener(
+		HotDeployListener hotDeployListener) {
 
-		String servletContextName = hotDeployEvent.getServletContextName();
-
-		synchronized (_dependentServletContexts) {
-			Set<DependentServletContext> dependentServletContexts =
-				_dependentServletContexts.get(servletContextName);
-
-			if (dependentServletContexts == null) {
-				dependentServletContexts =
-					new HashSet<DependentServletContext>();
-
-				_dependentServletContexts.put(
-					servletContextName, dependentServletContexts);
-			}
-
-			DependentServletContext dependentServletContext =
-				new DependentServletContext(
-					hotDeployEvent, servletContextEvent,
-					servletContextListener);
-
-			dependentServletContexts.add(dependentServletContext);
-		}
-	}
-
-	public void registerListener(HotDeployListener hotDeployListener) {
 		_hotDeployListeners.add(hotDeployListener);
 	}
 
-	public void reset() {
+	@Override
+	public synchronized void reset() {
 		_capturePrematureEvents = true;
 		_dependentHotDeployEvents.clear();
-		_dependentServletContexts.clear();
 		_deployedServletContextNames.clear();
 		_hotDeployListeners.clear();
 	}
 
-	public void setCapturePrematureEvents(boolean capturePrematureEvents) {
+	@Override
+	public synchronized void setCapturePrematureEvents(
+		boolean capturePrematureEvents) {
+
 		_capturePrematureEvents = capturePrematureEvents;
 	}
 
-	public void unregisterListener(HotDeployListener hotDeployListener) {
+	@Override
+	public synchronized void unregisterListener(
+		HotDeployListener hotDeployListener) {
+
 		_hotDeployListeners.remove(hotDeployListener);
 	}
 
-	public void unregisterListeners() {
+	@Override
+	public synchronized void unregisterListeners() {
 		_hotDeployListeners.clear();
+	}
+
+	public interface PACL {
+
+		public void initPolicy(
+			String contextName, URLContainer urlContainer,
+			ClassLoader classLoader, Properties properties);
+
+		public void unregister(ClassLoader classLoader);
+
 	}
 
 	protected void doFireDeployEvent(HotDeployEvent hotDeployEvent) {
 		String servletContextName = hotDeployEvent.getServletContextName();
 
-		if (!isMissingDependentServletContext(hotDeployEvent)) {
-			if (_dependentHotDeployEvents.contains(hotDeployEvent)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
-						"Deploying " + servletContextName + " from queue");
-				}
+		if (_deployedServletContextNames.contains(servletContextName)) {
+			return;
+		}
+
+		boolean hasDependencies = true;
+
+		for (String dependentServletContextName :
+				hotDeployEvent.getDependentServletContextNames()) {
+
+			if (!_deployedServletContextNames.contains(
+					dependentServletContextName)) {
+
+				hasDependencies = false;
+
+				break;
+			}
+		}
+
+		if (hasDependencies) {
+			if (_log.isInfoEnabled()) {
+				_log.info("Deploying " + servletContextName + " from queue");
 			}
 
-			for (HotDeployListener hotDeployListener : _hotDeployListeners) {
+			for (int i = 0; i < _hotDeployListeners.size(); i++) {
+				HotDeployListener hotDeployListener = _hotDeployListeners.get(
+					i);
+
+				PortletClassLoaderUtil.setServletContextName(
+					hotDeployEvent.getServletContextName());
+
 				try {
 					hotDeployListener.invokeDeploy(hotDeployEvent);
 				}
 				catch (HotDeployException hde) {
 					_log.error(hde, hde);
+				}
+				finally {
+					PortletClassLoaderUtil.setServletContextName(null);
 				}
 			}
 
@@ -216,18 +247,18 @@ public class HotDeployImpl implements HotDeploy {
 			ClassLoader contextClassLoader = getContextClassLoader();
 
 			try {
-				setContextClassLoader(PortalClassLoaderUtil.getClassLoader());
+				setContextClassLoader(ClassLoaderUtil.getPortalClassLoader());
 
-				initDependentServletContextListeners();
-
-				List<HotDeployEvent> dependentEvents =
-					new ArrayList<HotDeployEvent>(_dependentHotDeployEvents);
+				List<HotDeployEvent> dependentEvents = new ArrayList<>(
+					_dependentHotDeployEvents);
 
 				for (HotDeployEvent dependentEvent : dependentEvents) {
 					setContextClassLoader(
 						dependentEvent.getContextClassLoader());
 
-					fireDeployEvent(dependentEvent);
+					doFireDeployEvent(dependentEvent);
+
+					dependentEvent.flushInits();
 				}
 			}
 			finally {
@@ -270,15 +301,13 @@ public class HotDeployImpl implements HotDeploy {
 	}
 
 	protected ClassLoader getContextClassLoader() {
-		Thread thread = Thread.currentThread();
-
-		return thread.getContextClassLoader();
+		return ClassLoaderUtil.getContextClassLoader();
 	}
 
 	protected String getRequiredServletContextNames(
 		HotDeployEvent hotDeployEvent) {
 
-		List<String> requiredServletContextNames = new ArrayList<String>();
+		List<String> requiredServletContextNames = new ArrayList<>();
 
 		for (String dependentServletContextName :
 				hotDeployEvent.getDependentServletContextNames()) {
@@ -295,155 +324,77 @@ public class HotDeployImpl implements HotDeploy {
 		return StringUtil.merge(requiredServletContextNames, ", ");
 	}
 
-	protected void initDependentServletContextListener(
-		DependentServletContext dependentServletContext) {
-
-		ClassLoader portletClassLoader =
-			PortletClassLoaderUtil.getClassLoader();
-		String portletServletContextName =
-			PortletClassLoaderUtil.getServletContextName();
-
-		try {
-			PortletClassLoaderUtil.setClassLoader(
-				dependentServletContext.getClassLoader());
-			PortletClassLoaderUtil.setServletContextName(
-				dependentServletContext.getServletContextName());
-
-			ServletContextListener servletContextListener =
-				dependentServletContext.getServletContextListener();
-
-			servletContextListener.contextInitialized(
-				dependentServletContext.getServletContextEvent());
-		}
-		finally {
-			PortletClassLoaderUtil.setClassLoader(portletClassLoader);
-			PortletClassLoaderUtil.setServletContextName(
-				portletServletContextName);
-		}
-	}
-
-	protected void initDependentServletContextListeners() {
-		Set<String> servletContextNames = _dependentServletContexts.keySet();
-
-		Iterator<String> servletContextNamesIterator =
-			servletContextNames.iterator();
-
-		while (servletContextNamesIterator.hasNext()) {
-			String servletContextName = servletContextNamesIterator.next();
-
-			Set<DependentServletContext> dependentServletContexts =
-				_dependentServletContexts.get(servletContextName);
-
-			Iterator<DependentServletContext> dependentServletContextIterator =
-				dependentServletContexts.iterator();
-
-			while (dependentServletContextIterator.hasNext()) {
-				DependentServletContext dependentServletContext =
-					dependentServletContextIterator.next();
-
-				HotDeployEvent hotDeployEvent =
-					dependentServletContext.getHotDeployEvent();
-
-				if (isMissingDependentServletContext(hotDeployEvent)) {
-					continue;
-				}
-
-				initDependentServletContextListener(dependentServletContext);
-
-				dependentServletContextIterator.remove();
-			}
-
-			if (dependentServletContexts.isEmpty()) {
-				servletContextNamesIterator.remove();
-			}
-		}
-	}
-
 	protected void setContextClassLoader(ClassLoader contextClassLoader) {
-		Thread thread = Thread.currentThread();
-
-		thread.setContextClassLoader(contextClassLoader);
+		ClassLoaderUtil.setContextClassLoader(contextClassLoader);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(HotDeployUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(HotDeployImpl.class);
+
+	private static final PACL _pacl = new NoPACL();
 
 	private boolean _capturePrematureEvents = true;
-	private List<HotDeployEvent> _dependentHotDeployEvents;
-	private Set<String> _deployedServletContextNames;
-	private Map<String, Set<DependentServletContext>>
-		_dependentServletContexts;
-	private List<HotDeployListener> _hotDeployListeners;
+	private final List<HotDeployEvent> _dependentHotDeployEvents;
+	private final Set<String> _deployedServletContextNames;
+	private final List<HotDeployListener> _hotDeployListeners;
 
-	private class DependentServletContext {
+	private static class NoPACL implements PACL {
 
-		public DependentServletContext(
-			HotDeployEvent hotDeployEvent,
-			ServletContextEvent servletContextEvent,
-			ServletContextListener servletContextListener) {
-
-			_hotDeployEvent = hotDeployEvent;
-			_servletContextEvent = servletContextEvent;
-			_servletContextListener = servletContextListener;
+		@Override
+		public void initPolicy(
+			String contextName, URLContainer urlContainer,
+			ClassLoader classLoader, Properties properties) {
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-
-			if (!(obj instanceof DependentServletContext)) {
-				return false;
-			}
-
-			DependentServletContext dependentServletContext =
-				(DependentServletContext)obj;
-
-			if (Validator.equals(
-					_servletContextEvent,
-					dependentServletContext._servletContextEvent)) {
-
-				return true;
-			}
-
-			return false;
+		public void unregister(ClassLoader classLoader) {
 		}
 
-		public ClassLoader getClassLoader() {
-			return _hotDeployEvent.getContextClassLoader();
-		}
+	}
 
-		public HotDeployEvent getHotDeployEvent() {
-			return _hotDeployEvent;
-		}
+	private class HotDeployPortalLifecycle extends BasePortalLifecycle {
 
-		public ServletContextEvent getServletContextEvent() {
-			return _servletContextEvent;
-		}
+		public HotDeployPortalLifecycle(HotDeployEvent hotDeployEvent) {
+			_servletContext = hotDeployEvent.getServletContext();
+			_classLoader = hotDeployEvent.getContextClassLoader();
 
-		public ServletContextListener getServletContextListener() {
-			return _servletContextListener;
-		}
-
-		public String getServletContextName() {
-			ServletContext servletContext =
-				_servletContextEvent.getServletContext();
-
-			return servletContext.getServletContextName();
+			ServletContextPool.put(
+				_servletContext.getServletContextName(), _servletContext);
 		}
 
 		@Override
-		public int hashCode() {
-			if (_servletContextEvent != null) {
-				return _servletContextEvent.hashCode();
-			}
-
-			return 0;
+		protected void doPortalDestroy() {
 		}
 
-		private HotDeployEvent _hotDeployEvent;
-		private ServletContextEvent _servletContextEvent;
-		private ServletContextListener _servletContextListener;
+		@Override
+		protected void doPortalInit() throws Exception {
+			Properties properties = null;
+
+			String propertiesString = HttpUtil.URLtoString(
+				_servletContext.getResource(
+					"/WEB-INF/liferay-plugin-package.properties"));
+
+			if (propertiesString != null) {
+				properties = PropertiesUtil.load(propertiesString);
+			}
+			else {
+				properties = new Properties();
+			}
+
+			File tempDir = (File)_servletContext.getAttribute(
+				JavaConstants.JAVAX_SERVLET_CONTEXT_TEMPDIR);
+
+			properties.put(
+				JavaConstants.JAVAX_SERVLET_CONTEXT_TEMPDIR,
+				tempDir.getAbsolutePath());
+
+			_pacl.initPolicy(
+				_servletContext.getServletContextName(),
+				new ServletContextURLContainer(_servletContext), _classLoader,
+				properties);
+		}
+
+		private final ClassLoader _classLoader;
+		private final ServletContext _servletContext;
 
 	}
 

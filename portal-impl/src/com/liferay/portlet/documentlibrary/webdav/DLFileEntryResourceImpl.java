@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,12 @@
 
 package com.liferay.portlet.documentlibrary.webdav;
 
+import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.webdav.BaseResourceImpl;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
-import com.liferay.portal.model.Lock;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
 
 import java.io.InputStream;
@@ -30,27 +30,28 @@ import java.io.InputStream;
 public class DLFileEntryResourceImpl extends BaseResourceImpl {
 
 	public DLFileEntryResourceImpl(
-		WebDAVRequest webDavRequest, FileEntry fileEntry, String parentPath,
+		WebDAVRequest webDAVRequest, FileEntry fileEntry, String parentPath,
 		String name) {
 
 		super(
-			parentPath, name, fileEntry.getTitle(), fileEntry.getCreateDate(),
-			fileEntry.getModifiedDate(), fileEntry.getSize());
+			parentPath, name, fileEntry.getFileName(),
+			fileEntry.getCreateDate(), fileEntry.getModifiedDate(),
+			fileEntry.getSize());
 
 		setModel(fileEntry);
 		setClassName(DLFileEntry.class.getName());
 		setPrimaryKey(fileEntry.getPrimaryKey());
 
-		//_webDavRequest = webDavRequest;
+		//_webDAVRequest = webDAVRequest;
 		_fileEntry = fileEntry;
 	}
 
 	@Override
 	public InputStream getContentAsStream() throws WebDAVException {
 		try {
-			String version = StringPool.BLANK;
+			FileVersion fileVersion = _fileEntry.getLatestFileVersion();
 
-			return _fileEntry.getContentStream(version);
+			return fileVersion.getContentStream(true);
 		}
 		catch (Exception e) {
 			throw new WebDAVException(e);
@@ -59,7 +60,14 @@ public class DLFileEntryResourceImpl extends BaseResourceImpl {
 
 	@Override
 	public String getContentType() {
-		return _fileEntry.getMimeType();
+		try {
+			FileVersion fileVersion = _fileEntry.getLatestFileVersion();
+
+			return fileVersion.getMimeType();
+		}
+		catch (Exception e) {
+			return _fileEntry.getMimeType();
+		}
 	}
 
 	@Override
@@ -71,6 +79,18 @@ public class DLFileEntryResourceImpl extends BaseResourceImpl {
 		}
 
 		return null;
+	}
+
+	@Override
+	public long getSize() {
+		try {
+			FileVersion fileVersion = _fileEntry.getLatestFileVersion();
+
+			return fileVersion.getSize();
+		}
+		catch (Exception e) {
+			return _fileEntry.getSize();
+		}
 	}
 
 	@Override
@@ -89,6 +109,6 @@ public class DLFileEntryResourceImpl extends BaseResourceImpl {
 		return false;
 	}
 
-	private FileEntry _fileEntry;
+	private final FileEntry _fileEntry;
 
 }

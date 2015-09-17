@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,8 @@ package com.liferay.portlet;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.portlet.LiferayPortletContext;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequestDispatcher;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.servlet.URLEncoder;
@@ -38,9 +40,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.portlet.PortletContext;
 import javax.portlet.PortletException;
 import javax.portlet.PortletRequest;
-import javax.portlet.PortletRequestDispatcher;
 import javax.portlet.PortletResponse;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
@@ -55,120 +57,137 @@ import org.apache.struts.Globals;
 /**
  * @author Brian Wing Shun Chan
  * @author Brian Myunghun Kim
+ * @author Raymond Augé
  */
-public class PortletRequestDispatcherImpl implements PortletRequestDispatcher {
+public class PortletRequestDispatcherImpl
+	implements LiferayPortletRequestDispatcher {
 
 	public PortletRequestDispatcherImpl(
 		RequestDispatcher requestDispatcher, boolean named,
-		PortletContextImpl portletContextImpl) {
+		PortletContext portletContext) {
 
-		this(requestDispatcher, named, portletContextImpl, null);
+		this(requestDispatcher, named, portletContext, null);
 	}
 
 	public PortletRequestDispatcherImpl(
 		RequestDispatcher requestDispatcher, boolean named,
-		PortletContextImpl portletContextImpl, String path) {
+		PortletContext portletContext, String path) {
 
 		_requestDispatcher = requestDispatcher;
 		_named = named;
-		_portlet = portletContextImpl.getPortlet();
-		_portletContextImpl = portletContextImpl;
+		_liferayPortletContext = (LiferayPortletContext)portletContext;
 		_path = path;
+
+		_portlet = _liferayPortletContext.getPortlet();
 	}
 
+	@Override
 	public void forward(
 			PortletRequest portletRequest, PortletResponse portletResponse)
 		throws IllegalStateException, IOException, PortletException {
 
-		HttpServletResponse response = PortalUtil.getHttpServletResponse(
-			portletResponse);
+		HttpServletResponse httpServletResponse =
+			PortalUtil.getHttpServletResponse(portletResponse);
 
-		if (response.isCommitted()) {
+		if (httpServletResponse.isCommitted()) {
 			throw new IllegalStateException("Response is already committed");
 		}
 
-		try {
-			dispatch(portletRequest, portletResponse, false, false);
-		}
-		catch (ServletException se) {
-			_log.error(se, se);
-
-			throw new PortletException(se);
-		}
+		dispatch(portletRequest, portletResponse, false, false);
 	}
 
+	@Override
 	public void include(
 			PortletRequest portletRequest, PortletResponse portletResponse)
 		throws IOException, PortletException {
 
-		try {
-			dispatch(portletRequest, portletResponse, false, true);
-		}
-		catch (ServletException se) {
-			_log.error(se, se);
-
-			throw new PortletException(se);
-		}
+		dispatch(portletRequest, portletResponse, false, true);
 	}
 
+	@Override
 	public void include(
 			PortletRequest portletRequest, PortletResponse portletResponse,
 			boolean strutsURLEncoder)
 		throws IOException, PortletException {
 
-		try {
-			dispatch(portletRequest, portletResponse, strutsURLEncoder, true);
-		}
-		catch (ServletException se) {
-			_log.error(se, se);
-
-			throw new PortletException(se);
-		}
+		dispatch(portletRequest, portletResponse, strutsURLEncoder, true);
 	}
 
+	@Override
 	public void include(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		try {
-			dispatch(renderRequest, renderResponse, false, true);
-		}
-		catch (ServletException se) {
-			_log.error(se, se);
+		dispatch(renderRequest, renderResponse, false, true);
+	}
 
-			throw new PortletException(se);
+	protected void checkCalledFlushBuffer(
+		boolean include, PortletResponse portletResponse) {
+
+		if (!include && (portletResponse instanceof MimeResponseImpl)) {
+			MimeResponseImpl mimeResponseImpl =
+				(MimeResponseImpl)portletResponse;
+
+			if (mimeResponseImpl.isCalledFlushBuffer()) {
+				throw new IllegalStateException();
+			}
 		}
+	}
+
+	protected HttpServletRequest createDynamicServletRequest(
+		HttpServletRequest httpServletRequest,
+		PortletRequestImpl portletRequestImpl,
+		Map<String, String[]> parameterMap) {
+
+		DynamicServletRequest dynamicServletRequest = null;
+
+		if (portletRequestImpl.isPrivateRequestAttributes()) {
+			String portletNamespace = PortalUtil.getPortletNamespace(
+				portletRequestImpl.getPortletName());
+
+			dynamicServletRequest = new NamespaceServletRequest(
+				httpServletRequest, portletNamespace, portletNamespace);
+		}
+		else {
+			dynamicServletRequest = new DynamicServletRequest(
+				httpServletRequest);
+		}
+
+		for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+			String name = entry.getKey();
+
+			String[] values = entry.getValue();
+
+			String[] oldValues = dynamicServletRequest.getParameterValues(name);
+
+			if (oldValues != null) {
+				values = ArrayUtil.append(values, oldValues);
+			}
+
+			dynamicServletRequest.setParameterValues(name, values);
+		}
+
+		return dynamicServletRequest;
 	}
 
 	protected void dispatch(
 			PortletRequest portletRequest, PortletResponse portletResponse,
 			boolean strutsURLEncoder, boolean include)
-		throws IOException, ServletException {
+		throws IOException, PortletException {
 
-		if (!include) {
-			if (portletResponse instanceof MimeResponseImpl) {
-				MimeResponseImpl mimeResponseImpl =
-					(MimeResponseImpl)portletResponse;
-
-				if (mimeResponseImpl.isCalledFlushBuffer()) {
-					throw new IllegalStateException();
-				}
-			}
-		}
+		checkCalledFlushBuffer(include, portletResponse);
 
 		PortletRequestImpl portletRequestImpl =
 			PortletRequestImpl.getPortletRequestImpl(portletRequest);
 		PortletResponseImpl portletResponseImpl =
 			PortletResponseImpl.getPortletResponseImpl(portletResponse);
 
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			portletRequest);
-		HttpServletResponse response = PortalUtil.getHttpServletResponse(
-			portletResponse);
+		HttpServletRequest httpServletRequest =
+			PortalUtil.getHttpServletRequest(portletRequest);
 
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			JavaConstants.JAVAX_PORTLET_REQUEST, portletRequest);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			JavaConstants.JAVAX_PORTLET_RESPONSE, portletResponse);
 
 		String pathInfo = null;
@@ -185,74 +204,9 @@ public class PortletRequestDispatcherImpl implements PortletRequestDispatcher {
 				pathNoQueryString = _path.substring(0, pos);
 				queryString = _path.substring(pos + 1);
 
-				Map<String, String[]> queryParams =
-					new HashMap<String, String[]>();
-
-				String[] queryParamsArray = StringUtil.split(
-					queryString, CharPool.AMPERSAND);
-
-				for (int i = 0; i < queryParamsArray.length; i++) {
-					String[] nameValuePair = StringUtil.split(
-						queryParamsArray[i], CharPool.EQUAL);
-
-					String name = nameValuePair[0];
-					String value = StringPool.BLANK;
-
-					if (nameValuePair.length == 2) {
-						value = nameValuePair[1];
-					}
-
-					String[] values = queryParams.get(name);
-
-					if (values == null) {
-						queryParams.put(name, new String[] {value});
-					}
-					else {
-						String[] newValues = new String[values.length + 1];
-
-						System.arraycopy(
-							values, 0, newValues, 0, values.length);
-
-						newValues[newValues.length - 1] = value;
-
-						queryParams.put(name, newValues);
-					}
-				}
-
-				DynamicServletRequest dynamicRequest = null;
-
-				if (portletRequestImpl.isPrivateRequestAttributes()) {
-					String portletNamespace = PortalUtil.getPortletNamespace(
-						portletRequestImpl.getPortletName());
-
-					dynamicRequest = new NamespaceServletRequest(
-						request, portletNamespace, portletNamespace);
-				}
-				else {
-					dynamicRequest = new DynamicServletRequest(request);
-				}
-
-				for (Map.Entry<String, String[]> entry :
-						queryParams.entrySet()) {
-
-					String name = entry.getKey();
-					String[] values = entry.getValue();
-
-					String[] oldValues = dynamicRequest.getParameterValues(
-						name);
-
-					if (oldValues == null) {
-						dynamicRequest.setParameterValues(name, values);
-					}
-					else {
-						String[] newValues = ArrayUtil.append(
-							values, oldValues);
-
-						dynamicRequest.setParameterValues(name, newValues);
-					}
-				}
-
-				request = dynamicRequest;
+				httpServletRequest = createDynamicServletRequest(
+					httpServletRequest, portletRequestImpl,
+					toParameterMap(queryString));
 			}
 
 			Portlet portlet = portletRequestImpl.getPortlet();
@@ -263,11 +217,14 @@ public class PortletRequestDispatcherImpl implements PortletRequestDispatcher {
 
 			for (String urlPattern : servletURLPatterns) {
 				if (urlPattern.endsWith("/*")) {
-					pos = urlPattern.indexOf("/*");
+					urlPattern = urlPattern.substring(
+						0, urlPattern.length() - 2);
 
-					urlPattern = urlPattern.substring(0, pos);
+					if ((pathNoQueryString.length() > urlPattern.length()) &&
+						pathNoQueryString.startsWith(urlPattern) &&
+						(pathNoQueryString.charAt(urlPattern.length()) ==
+							CharPool.SLASH)) {
 
-					if (pathNoQueryString.startsWith(urlPattern)) {
 						pathInfo = pathNoQueryString.substring(
 							urlPattern.length());
 						servletPath = urlPattern;
@@ -277,19 +234,28 @@ public class PortletRequestDispatcherImpl implements PortletRequestDispatcher {
 				}
 			}
 
-			if ((pathInfo == null) && (servletPath == null)) {
+			if (pathInfo == null) {
 				pathInfo = pathNoQueryString;
 			}
 
-			requestURI = portletRequest.getContextPath() + pathNoQueryString;
+			String contextPath = portletRequest.getContextPath();
+
+			if (contextPath.equals(StringPool.SLASH)) {
+				requestURI = pathNoQueryString;
+			}
+			else {
+				requestURI = contextPath + pathNoQueryString;
+			}
 		}
 
 		PortletServletRequest portletServletRequest = new PortletServletRequest(
-			request, portletRequest, pathInfo, queryString, requestURI,
-			servletPath, _named, include);
+			httpServletRequest, portletRequest, pathInfo, queryString,
+			requestURI, servletPath, _named, include);
 
 		PortletServletResponse portletServletResponse =
-			new PortletServletResponse(response, portletResponse, include);
+			new PortletServletResponse(
+				PortalUtil.getHttpServletResponse(portletResponse),
+				portletResponse, include);
 
 		URLEncoder urlEncoder = _portlet.getURLEncoderInstance();
 
@@ -304,30 +270,73 @@ public class PortletRequestDispatcherImpl implements PortletRequestDispatcher {
 			URLEncoder strutsURLEncoderObj = new StrutsURLEncoder(
 				portletServletRequest.getContextPath(),
 				themeDisplay.getPathMain(),
-				(String)_portletContextImpl.getAttribute(
+				(String)_liferayPortletContext.getAttribute(
 					Globals.SERVLET_KEY),
 				(LiferayPortletURL)portletResponseImpl.createRenderURL());
 
 			portletResponseImpl.setURLEncoder(strutsURLEncoderObj);
 		}
 
-		if (include) {
-			_requestDispatcher.include(
-				portletServletRequest, portletServletResponse);
+		try {
+			if (include) {
+				_requestDispatcher.include(
+					portletServletRequest, portletServletResponse);
+			}
+			else {
+				_requestDispatcher.forward(
+					portletServletRequest, portletServletResponse);
+			}
 		}
-		else {
-			_requestDispatcher.forward(
-				portletServletRequest, portletServletResponse);
+		catch (ServletException se) {
+			_log.error(se, se);
+
+			throw new PortletException(se);
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	protected Map<String, String[]> toParameterMap(String queryString) {
+		Map<String, String[]> parameterMap = new HashMap<>();
+
+		for (String parameter :
+				StringUtil.split(queryString, CharPool.AMPERSAND)) {
+
+			String[] parameterArray = StringUtil.split(
+				parameter, CharPool.EQUAL);
+
+			String name = parameterArray[0];
+
+			String value = StringPool.BLANK;
+
+			if (parameterArray.length == 2) {
+				value = parameterArray[1];
+			}
+
+			String[] values = parameterMap.get(name);
+
+			if (values == null) {
+				parameterMap.put(name, new String[] {value});
+			}
+			else {
+				String[] newValues = new String[values.length + 1];
+
+				System.arraycopy(values, 0, newValues, 0, values.length);
+
+				newValues[newValues.length - 1] = value;
+
+				parameterMap.put(name, newValues);
+			}
+		}
+
+		return parameterMap;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
 		PortletRequestDispatcherImpl.class);
 
-	private boolean _named;
-	private String _path;
-	private Portlet _portlet;
-	private PortletContextImpl _portletContextImpl;
-	private RequestDispatcher _requestDispatcher;
+	private final LiferayPortletContext _liferayPortletContext;
+	private final boolean _named;
+	private final String _path;
+	private final Portlet _portlet;
+	private final RequestDispatcher _requestDispatcher;
 
 }

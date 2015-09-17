@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -22,14 +24,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.OrgLaborServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.OrgLaborServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.OrgLaborServiceSoap
  * @generated
  */
+@ProviderType
 public class OrgLaborSoap implements Serializable {
 	public static OrgLaborSoap toSoapModel(OrgLabor model) {
 		OrgLaborSoap soapModel = new OrgLaborSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setOrgLaborId(model.getOrgLaborId());
 		soapModel.setOrganizationId(model.getOrganizationId());
 		soapModel.setTypeId(model.getTypeId());
@@ -99,6 +103,14 @@ public class OrgLaborSoap implements Serializable {
 		setOrgLaborId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
 	public long getOrgLaborId() {
 		return _orgLaborId;
 	}
@@ -115,11 +127,11 @@ public class OrgLaborSoap implements Serializable {
 		_organizationId = organizationId;
 	}
 
-	public int getTypeId() {
+	public long getTypeId() {
 		return _typeId;
 	}
 
-	public void setTypeId(int typeId) {
+	public void setTypeId(long typeId) {
 		_typeId = typeId;
 	}
 
@@ -235,9 +247,10 @@ public class OrgLaborSoap implements Serializable {
 		_satClose = satClose;
 	}
 
+	private long _mvccVersion;
 	private long _orgLaborId;
 	private long _organizationId;
-	private int _typeId;
+	private long _typeId;
 	private int _sunOpen;
 	private int _sunClose;
 	private int _monOpen;

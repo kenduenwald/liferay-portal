@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,83 +14,37 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.StringUtil;
+import aQute.bnd.annotation.ProviderType;
 
-import org.openid4java.consumer.ConsumerException;
-import org.openid4java.consumer.ConsumerManager;
-import org.openid4java.consumer.InMemoryConsumerAssociationStore;
-import org.openid4java.consumer.InMemoryNonceVerifier;
+import com.liferay.portal.kernel.openid.OpenId;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
 
 /**
  * @author Jorge Ferrer
  */
+@ProviderType
 public class OpenIdUtil {
 
-	public static ConsumerManager getConsumerManager() {
-		_instance._initialize();
-
-		return _instance._manager;
+	public static boolean isEnabled(long companyId) {
+		return getOpenId().isEnabled(companyId);
 	}
 
-	public static String getScreenName(String openId) {
-		String result = normalize(openId);
-
-		if (result.startsWith(Http.HTTP_WITH_SLASH)) {
-			result = result.substring(Http.HTTP_WITH_SLASH.length());
-		}
-
-		if (result.startsWith(Http.HTTPS_WITH_SLASH)) {
-			result = result.substring(Http.HTTPS_WITH_SLASH.length());
-		}
-
-		result = StringUtil.replace(
-			result, new String[] {StringPool.SLASH, StringPool.UNDERLINE},
-			new String[] {StringPool.PERIOD, StringPool.PERIOD});
-
-		return result;
+	protected static OpenId getOpenId() {
+		return _instance._serviceTracker.getService();
 	}
 
-	public static boolean isEnabled(long companyId) throws SystemException {
-		return PrefsPropsUtil.getBoolean(
-			companyId, PropsKeys.OPEN_ID_AUTH_ENABLED,
-			PropsValues.OPEN_ID_AUTH_ENABLED);
+	private OpenIdUtil() {
+		Registry registry = RegistryUtil.getRegistry();
+
+		_serviceTracker = registry.trackServices(OpenId.class);
+
+		_serviceTracker.open();
 	}
 
-	public static String normalize(String identity) {
-		String result = identity;
+	private static final OpenIdUtil _instance = new OpenIdUtil();
 
-		if (result.endsWith(StringPool.SLASH)) {
-			result = result.substring(0, result.length() - 1);
-		}
-
-		return result;
-	}
-
-	private void _initialize() {
-		try {
-			if (_manager == null) {
-				_manager = new ConsumerManager();
-
-				_manager.setAssociations(
-					new InMemoryConsumerAssociationStore());
-				_manager.setNonceVerifier(new InMemoryNonceVerifier(5000));
-			}
-		}
-		catch (ConsumerException ce) {
-			_log.error(ce.getMessage());
-		}
-	}
-
-	private static Log _log = LogFactoryUtil.getLog(OpenIdUtil.class);
-
-	private static OpenIdUtil _instance = new OpenIdUtil();
-
-	private ConsumerManager _manager;
+	private final ServiceTracker<OpenId, OpenId> _serviceTracker;
 
 }

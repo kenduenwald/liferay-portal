@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.documentlibrary.model.DLContent;
 import com.liferay.portlet.documentlibrary.service.DLContentLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.documentlibrary.service.DLContentLocalServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see DLContentImpl
- * @see com.liferay.portlet.documentlibrary.model.DLContent
+ * @see DLContent
  * @generated
  */
+@ProviderType
 public abstract class DLContentBaseImpl extends DLContentModelImpl
 	implements DLContent {
 	/*
@@ -38,7 +39,8 @@ public abstract class DLContentBaseImpl extends DLContentModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a document library content model instance should use the {@link DLContent} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			DLContentLocalServiceUtil.addDLContent(this);
 		}

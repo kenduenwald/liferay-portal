@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,44 +14,62 @@
 
 package com.liferay.portal.kernel.cache;
 
+import com.liferay.portal.kernel.nio.intraband.proxy.annotation.Id;
+import com.liferay.portal.kernel.nio.intraband.proxy.annotation.Proxy;
+
 import java.io.Serializable;
 
-import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Edward Han
  * @author Shuyang Zhou
  */
-public interface PortalCache {
+public interface PortalCache<K extends Serializable, V> {
 
-	public void destroy();
+	public static final int DEFAULT_TIME_TO_LIVE = 0;
 
-	public Collection<Object> get(Collection<Serializable> keys);
+	@Proxy
+	public V get(K key);
 
-	public Object get(Serializable key);
+	@Proxy
+	public List<K> getKeys();
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCacheName()}
+	 */
+	@Deprecated
+	@Id
 	public String getName();
 
-	public void put(Serializable key, Object value);
+	public PortalCacheManager<K, V> getPortalCacheManager();
 
-	public void put(Serializable key, Object value, int timeToLive);
+	@Id
+	public String getPortalCacheName();
 
-	public void put(Serializable key, Serializable value);
+	@Proxy
+	public void put(K key, V value);
 
-	public void put(Serializable key, Serializable value, int timeToLive);
+	@Proxy
+	public void put(K key, V value, int timeToLive);
 
-	public void registerCacheListener(CacheListener cacheListener);
+	public void registerPortalCacheListener(
+		PortalCacheListener<K, V> portalCacheListener);
 
-	public void registerCacheListener(
-		CacheListener cacheListener, CacheListenerScope cacheListenerScope);
+	public void registerPortalCacheListener(
+		PortalCacheListener<K, V> portalCacheListener,
+		PortalCacheListenerScope portalCacheListenerScope);
 
-	public void remove(Serializable key);
+	@Proxy
+	public void remove(K key);
 
+	@Proxy
 	public void removeAll();
 
-	public void unregisterCacheListener(CacheListener cacheListener);
+	public void unregisterPortalCacheListener(
+		PortalCacheListener<K, V> portalCacheListener);
 
-	public void unregisterCacheListeners();
+	public void unregisterPortalCacheListeners();
 
 }

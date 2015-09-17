@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,19 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
+import com.liferay.portal.model.MVCCModel;
 import com.liferay.portal.model.PortalPreferences;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing PortalPreferences in entity cache.
@@ -28,13 +35,53 @@ import java.io.Serializable;
  * @see PortalPreferences
  * @generated
  */
+@ProviderType
 public class PortalPreferencesCacheModel implements CacheModel<PortalPreferences>,
-	Serializable {
+	Externalizable, MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof PortalPreferencesCacheModel)) {
+			return false;
+		}
+
+		PortalPreferencesCacheModel portalPreferencesCacheModel = (PortalPreferencesCacheModel)obj;
+
+		if ((portalPreferencesId == portalPreferencesCacheModel.portalPreferencesId) &&
+				(mvccVersion == portalPreferencesCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, portalPreferencesId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(9);
+		StringBundler sb = new StringBundler(11);
 
-		sb.append("{portalPreferencesId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", portalPreferencesId=");
 		sb.append(portalPreferencesId);
 		sb.append(", ownerId=");
 		sb.append(ownerId);
@@ -47,9 +94,11 @@ public class PortalPreferencesCacheModel implements CacheModel<PortalPreferences
 		return sb.toString();
 	}
 
+	@Override
 	public PortalPreferences toEntityModel() {
 		PortalPreferencesImpl portalPreferencesImpl = new PortalPreferencesImpl();
 
+		portalPreferencesImpl.setMvccVersion(mvccVersion);
 		portalPreferencesImpl.setPortalPreferencesId(portalPreferencesId);
 		portalPreferencesImpl.setOwnerId(ownerId);
 		portalPreferencesImpl.setOwnerType(ownerType);
@@ -66,6 +115,32 @@ public class PortalPreferencesCacheModel implements CacheModel<PortalPreferences
 		return portalPreferencesImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		portalPreferencesId = objectInput.readLong();
+		ownerId = objectInput.readLong();
+		ownerType = objectInput.readInt();
+		preferences = objectInput.readUTF();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(portalPreferencesId);
+		objectOutput.writeLong(ownerId);
+		objectOutput.writeInt(ownerType);
+
+		if (preferences == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(preferences);
+		}
+	}
+
+	public long mvccVersion;
 	public long portalPreferencesId;
 	public long ownerId;
 	public int ownerType;

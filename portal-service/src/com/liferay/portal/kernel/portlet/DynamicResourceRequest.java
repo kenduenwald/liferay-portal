@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -39,15 +39,15 @@ public class DynamicResourceRequest extends ResourceRequestWrapper {
 	}
 
 	public DynamicResourceRequest(
-		ResourceRequest resourceRequest, Map<String, String[]> params) {
-
-		this(resourceRequest, params, true);
-	}
-
-	public DynamicResourceRequest(
 		ResourceRequest resourceRequest, boolean inherit) {
 
 		this(resourceRequest, null, inherit);
+	}
+
+	public DynamicResourceRequest(
+		ResourceRequest resourceRequest, Map<String, String[]> params) {
+
+		this(resourceRequest, params, true);
 	}
 
 	public DynamicResourceRequest(
@@ -56,7 +56,7 @@ public class DynamicResourceRequest extends ResourceRequestWrapper {
 
 		super(resourceRequest);
 
-		_params = new HashMap<String, String[]>();
+		_params = new HashMap<>();
 		_inherit = inherit;
 
 		if (params != null) {
@@ -101,7 +101,7 @@ public class DynamicResourceRequest extends ResourceRequestWrapper {
 			return super.getParameter(name);
 		}
 
-		if ((values != null) && (values.length > 0)) {
+		if (ArrayUtil.isNotEmpty(values)) {
 			return values[0];
 		}
 		else {
@@ -111,7 +111,7 @@ public class DynamicResourceRequest extends ResourceRequestWrapper {
 
 	@Override
 	public Map<String, String[]> getParameterMap() {
-		Map<String, String[]> map = new HashMap<String, String[]>();
+		Map<String, String[]> map = new HashMap<>();
 
 		if (_inherit) {
 			map.putAll(super.getParameterMap());
@@ -124,7 +124,7 @@ public class DynamicResourceRequest extends ResourceRequestWrapper {
 
 	@Override
 	public Enumeration<String> getParameterNames() {
-		Set<String> names = new LinkedHashSet<String>();
+		Set<String> names = new LinkedHashSet<>();
 
 		if (_inherit) {
 			Enumeration<String> enu = super.getParameterNames();
@@ -158,7 +158,7 @@ public class DynamicResourceRequest extends ResourceRequestWrapper {
 		_params.put(name, values);
 	}
 
-	private boolean _inherit;
-	private Map<String, String[]> _params;
+	private final boolean _inherit;
+	private final Map<String, String[]> _params;
 
 }

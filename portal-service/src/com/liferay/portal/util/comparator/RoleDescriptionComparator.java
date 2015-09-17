@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@ import com.liferay.portal.model.Role;
 /**
  * @author Brian Wing Shun Chan
  */
-public class RoleDescriptionComparator extends OrderByComparator {
+public class RoleDescriptionComparator extends OrderByComparator<Role> {
 
 	public static final String ORDER_BY_ASC =
 		"Role_.description ASC, Role_.name ASC";
@@ -39,14 +39,17 @@ public class RoleDescriptionComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Role role1 = (Role)obj1;
-		Role role2 = (Role)obj2;
+	public int compare(Role role1, Role role2) {
+		String description1 = role1.getDescription();
+		String description2 = role2.getDescription();
 
-		int value = role1.getDescription().compareTo(role2.getDescription());
+		int value = description1.compareTo(description2);
 
 		if (value == 0) {
-			value = role1.getName().compareTo(role2.getName());
+			String name1 = role1.getName();
+			String name2 = role2.getName();
+
+			value = name1.compareTo(name2);
 		}
 
 		if (_ascending) {
@@ -77,6 +80,6 @@ public class RoleDescriptionComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

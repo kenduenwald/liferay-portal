@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -25,14 +25,30 @@ public class DLFileEntryTypeConstants {
 
 	public static final long FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT = 0;
 
-	public static final String NAME_BASIC_DOCUMENT = "Basic Document";
+	public static final String FILE_ENTRY_TYPE_KEY_CONTRACT = "CONTRACT";
 
-	public static final String NAME_CONTRACT = "Contract";
+	public static final String FILE_ENTRY_TYPE_KEY_IG_IMAGE =
+		"IMAGE GALLERY IMAGE";
 
-	public static final String NAME_MARKETING_BANNER = "Marketing Banner";
+	public static final String FILE_ENTRY_TYPE_KEY_MARKETING_BANNER =
+		"MARKETING BANNER";
 
-	public static final String NAME_ONLINE_TRAINING = "Online Training";
+	public static final String FILE_ENTRY_TYPE_KEY_ONLINE_TRAINING =
+		"ONLINE TRAINING";
 
-	public static final String NAME_SALES_PRESENTATION = "Sales Presentation";
+	public static final String FILE_ENTRY_TYPE_KEY_SALES_PRESENTATION =
+		"SALES PRESENTATION";
+
+	public static final String NAME_BASIC_DOCUMENT = "basic-document";
+
+	public static final String NAME_CONTRACT = "contract";
+
+	public static final String NAME_IG_IMAGE = "image-gallery-image";
+
+	public static final String NAME_MARKETING_BANNER = "marketing-banner";
+
+	public static final String NAME_ONLINE_TRAINING = "online-training";
+
+	public static final String NAME_SALES_PRESENTATION = "sales-presentation";
 
 }

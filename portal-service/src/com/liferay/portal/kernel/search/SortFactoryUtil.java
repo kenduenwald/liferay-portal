@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +13,9 @@
  */
 
 package com.liferay.portal.kernel.search;
+
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+import com.liferay.portal.kernel.util.ProxyFactory;
 
 import java.util.List;
 
@@ -35,12 +38,28 @@ public class SortFactoryUtil {
 	}
 
 	public static Sort getSort(
+		Class<?> clazz, int type, String orderByCol, boolean inferSortField,
+		String orderByType) {
+
+		return getSortFactory().getSort(
+			clazz, type, orderByCol, inferSortField, orderByType);
+	}
+
+	public static Sort getSort(
+		Class<?> clazz, int type, String orderByCol, String orderByType) {
+
+		return getSortFactory().getSort(clazz, type, orderByCol, orderByType);
+	}
+
+	public static Sort getSort(
 		Class<?> clazz, String orderByCol, String orderByType) {
 
 		return getSortFactory().getSort(clazz, orderByCol, orderByType);
 	}
 
 	public static SortFactory getSortFactory() {
+		PortalRuntimePermission.checkGetBeanProperty(SortFactoryUtil.class);
+
 		return _sortFactory;
 	}
 
@@ -48,10 +67,7 @@ public class SortFactoryUtil {
 		return getSortFactory().toArray(sorts);
 	}
 
-	public void setSortFactory(SortFactory sortFactory) {
-		_sortFactory = sortFactory;
-	}
-
-	private static SortFactory _sortFactory;
+	private static final SortFactory _sortFactory =
+		ProxyFactory.newServiceTrackedInstance(SortFactory.class);
 
 }

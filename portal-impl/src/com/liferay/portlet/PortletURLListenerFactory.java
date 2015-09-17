@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -42,8 +42,7 @@ public class PortletURLListenerFactory {
 	}
 
 	private PortletURLListenerFactory() {
-		_pool = new ConcurrentHashMap
-			<String, Map<String, PortletURLGenerationListener>>();
+		_pool = new ConcurrentHashMap<>();
 	}
 
 	private PortletURLGenerationListener _create(
@@ -57,8 +56,7 @@ public class PortletURLListenerFactory {
 				portletApp.getServletContextName());
 
 		if (portletURLGenerationListeners == null) {
-			portletURLGenerationListeners =
-				new ConcurrentHashMap<String, PortletURLGenerationListener>();
+			portletURLGenerationListeners = new ConcurrentHashMap<>();
 
 			_pool.put(
 				portletApp.getServletContextName(),
@@ -69,26 +67,28 @@ public class PortletURLListenerFactory {
 			portletURLGenerationListeners.get(
 				portletURLListener.getListenerClass());
 
-		if (portletURLGenerationListener == null) {
-			if (portletApp.isWARFile()) {
-				PortletContextBag portletContextBag = PortletContextBagPool.get(
-					portletApp.getServletContextName());
-
-				portletURLGenerationListener =
-					portletContextBag.getPortletURLListeners().get(
-						portletURLListener.getListenerClass());
-
-				portletURLGenerationListener = _init(
-					portletURLListener, portletURLGenerationListener);
-			}
-			else {
-				portletURLGenerationListener = _init(portletURLListener);
-			}
-
-			portletURLGenerationListeners.put(
-				portletURLListener.getListenerClass(),
-				portletURLGenerationListener);
+		if (portletURLGenerationListener != null) {
+			return portletURLGenerationListener;
 		}
+
+		if (portletApp.isWARFile()) {
+			PortletContextBag portletContextBag = PortletContextBagPool.get(
+				portletApp.getServletContextName());
+
+			portletURLGenerationListener =
+				portletContextBag.getPortletURLListeners().get(
+					portletURLListener.getListenerClass());
+
+			portletURLGenerationListener = _init(
+				portletURLListener, portletURLGenerationListener);
+		}
+		else {
+			portletURLGenerationListener = _init(portletURLListener);
+		}
+
+		portletURLGenerationListeners.put(
+			portletURLListener.getListenerClass(),
+			portletURLGenerationListener);
 
 		return portletURLGenerationListener;
 	}
@@ -142,9 +142,9 @@ public class PortletURLListenerFactory {
 		return portletURLGenerationListener;
 	}
 
-	private static PortletURLListenerFactory _instance =
+	private static final PortletURLListenerFactory _instance =
 		new PortletURLListenerFactory();
 
-	private Map<String, Map<String, PortletURLGenerationListener>> _pool;
+	private final Map<String, Map<String, PortletURLGenerationListener>> _pool;
 
 }

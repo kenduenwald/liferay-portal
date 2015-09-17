@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -87,10 +87,8 @@ public class CreditCard {
 			}
 		}
 		else if (type.equals("mastercard")) {
-			if (!number.startsWith("51") &&
-				!number.startsWith("52") &&
-				!number.startsWith("53") &&
-				!number.startsWith("54") &&
+			if (!number.startsWith("51") && !number.startsWith("52") &&
+				!number.startsWith("53") && !number.startsWith("54") &&
 				!number.startsWith("55")) {
 
 				return false;
@@ -102,7 +100,6 @@ public class CreditCard {
 		}
 		else if (type.equals("discover")) {
 			if (!number.startsWith("6011")) {
-
 				return false;
 			}
 
@@ -111,10 +108,8 @@ public class CreditCard {
 			}
 		}
 		else if (type.equals("amex")) {
-			if (!number.startsWith("34") &&
-				!number.startsWith("35") &&
-				!number.startsWith("36") &&
-				!number.startsWith("37")) {
+			if (!number.startsWith("34") && !number.startsWith("35") &&
+				!number.startsWith("36") && !number.startsWith("37")) {
 
 				return false;
 			}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,13 @@
 
 package com.liferay.portal.kernel.xml;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.Reader;
@@ -27,6 +34,7 @@ import java.util.Map;
 /**
  * @author Brian Wing Shun Chan
  */
+@ProviderType
 public class SAXReaderUtil {
 
 	public static Attribute createAttribute(
@@ -114,6 +122,12 @@ public class SAXReaderUtil {
 	}
 
 	public static SAXReader getSAXReader() {
+		PortalRuntimePermission.checkGetBeanProperty(SAXReaderUtil.class);
+
+		if (!_XML_SECURITY_ENABLED) {
+			return UnsecureSAXReaderUtil.getSAXReader();
+		}
+
 		return _saxReader;
 	}
 
@@ -157,6 +171,12 @@ public class SAXReaderUtil {
 		return getSAXReader().read(xml, validate);
 	}
 
+	public static Document read(String xml, XMLSchema xmlSchema)
+		throws DocumentException {
+
+		return getSAXReader().read(xml, xmlSchema);
+	}
+
 	public static Document read(URL url) throws DocumentException {
 		return getSAXReader().read(url);
 	}
@@ -192,7 +212,6 @@ public class SAXReaderUtil {
 	}
 
 	public static void sort(List<Node> nodes, String xPathExpression) {
-
 		getSAXReader().sort(nodes, xPathExpression);
 	}
 
@@ -203,8 +222,13 @@ public class SAXReaderUtil {
 	}
 
 	public void setSAXReader(SAXReader saxReader) {
+		PortalRuntimePermission.checkSetBeanProperty(getClass());
+
 		_saxReader = saxReader;
 	}
+
+	private static final boolean _XML_SECURITY_ENABLED = GetterUtil.getBoolean(
+		PropsUtil.get(PropsKeys.XML_SECURITY_ENABLED));
 
 	private static SAXReader _saxReader;
 

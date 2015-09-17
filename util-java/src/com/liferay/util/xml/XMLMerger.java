@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -114,8 +114,8 @@ public class XMLMerger {
 			return;
 		}
 
-		List<Element> originalElements = new ArrayList<Element>();
-		List<Element> duplicateElements = new ArrayList<Element>();
+		List<Element> originalElements = new ArrayList<>();
+		List<Element> duplicateElements = new ArrayList<>();
 
 		for (int i = 0; i < childElements.size(); i++) {
 			Element childElement = childElements.get(i);
@@ -135,6 +135,9 @@ public class XMLMerger {
 			else {
 				originalElements.add(childElement);
 			}
+
+			_orderChildren(
+				childElement, _descriptor.getChildrenOrder(childElement));
 		}
 
 		for (Element duplicateElement : duplicateElements) {
@@ -153,7 +156,7 @@ public class XMLMerger {
 			return;
 		}
 
-		List<Element> elements = new ArrayList<Element>();
+		List<Element> elements = new ArrayList<>();
 
 		for (int i = 0; i < orderedChildrenNames.length; i++) {
 			elements.addAll(parentElement.elements(orderedChildrenNames[i]));
@@ -166,6 +169,6 @@ public class XMLMerger {
 		}
 	}
 
-	private XMLDescriptor _descriptor;
+	private final XMLDescriptor _descriptor;
 
 }

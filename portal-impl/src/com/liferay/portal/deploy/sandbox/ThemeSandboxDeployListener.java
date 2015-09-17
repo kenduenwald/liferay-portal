@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -42,7 +42,7 @@ public class ThemeSandboxDeployListener
 		themeTaglibDTD = portalWebDir + "/WEB-INF/tld/liferay-theme.tld";
 		utilTaglibDTD = portalWebDir + "/WEB-INF/tld/liferay-util.tld";
 
-		jars = new ArrayList<String>();
+		jars = new ArrayList<>();
 
 		String portalLibDir = PortalUtil.getPortalLibDir();
 
@@ -59,11 +59,10 @@ public class ThemeSandboxDeployListener
 
 		super.copyXmls(srcFile, displayName, pluginPackage);
 
-		if (appServerType.equals(ServerDetector.TOMCAT_ID)) {
-			copyDependencyXml("context.xml", srcFile + "/META-INF");
-		}
+		copyTomcatContextXml(srcFile);
 	}
 
+	@Override
 	public void deploy(File dir) throws SandboxDeployException {
 		_sandboxHandler.deploy(dir);
 	}
@@ -75,10 +74,11 @@ public class ThemeSandboxDeployListener
 		return _sandboxHandler.getDisplayName(displayName);
 	}
 
+	@Override
 	public void undeploy(File dir) throws SandboxDeployException {
 		_sandboxHandler.undeploy(dir);
 	}
 
-	private SandboxHandler _sandboxHandler;
+	private final SandboxHandler _sandboxHandler;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,10 @@
 
 package com.liferay.portal.kernel.cache;
 
+import com.liferay.portal.kernel.transaction.NewTransactionLifecycleListener;
+import com.liferay.portal.kernel.transaction.TransactionAttribute;
+import com.liferay.portal.kernel.transaction.TransactionLifecycleListener;
+import com.liferay.portal.kernel.transaction.TransactionStatus;
 import com.liferay.portal.kernel.util.InitialThreadLocal;
 
 import java.io.Serializable;
@@ -26,6 +30,40 @@ import java.util.Map;
  * @author Shuyang Zhou
  */
 public class ThreadLocalCacheManager {
+
+	public static final TransactionLifecycleListener
+		TRANSACTION_LIFECYCLE_LISTENER = new NewTransactionLifecycleListener() {
+
+		@Override
+		protected void doCommitted(
+			TransactionAttribute transactionAttribute,
+			TransactionStatus transactionStatus) {
+
+			if (!transactionAttribute.isReadOnly()) {
+				enable(Lifecycle.REQUEST);
+			}
+		}
+
+		@Override
+		protected void doCreated(
+			TransactionAttribute transactionAttribute,
+			TransactionStatus transactionStatus) {
+
+			if (!transactionAttribute.isReadOnly()) {
+				disable(Lifecycle.REQUEST);
+			}
+		}
+
+		@Override
+		protected void doRollbacked(
+			TransactionAttribute transactionAttribute,
+			TransactionStatus transactionStatus, Throwable throwable) {
+
+			if (!transactionAttribute.isReadOnly()) {
+				enable(Lifecycle.REQUEST);
+			}
+		}
+	};
 
 	public static void clearAll(Lifecycle lifecycle) {
 		Map<Lifecycle, Map<Serializable, ThreadLocalCache<?>>>
@@ -43,8 +81,31 @@ public class ThreadLocalCacheManager {
 		_threadLocalCacheMaps.remove();
 	}
 
+	public static void disable(Lifecycle lifecycle) {
+		Map<Lifecycle, Boolean> threadLocalCacheDisabledFlags =
+			_threadLocalCacheDisabledFlags.get();
+
+		threadLocalCacheDisabledFlags.put(lifecycle, Boolean.TRUE);
+
+		clearAll(lifecycle);
+	}
+
+	public static void enable(Lifecycle lifecycle) {
+		Map<Lifecycle, Boolean> threadLocalCacheDisabledFlags =
+			_threadLocalCacheDisabledFlags.get();
+
+		threadLocalCacheDisabledFlags.remove(lifecycle);
+	}
+
 	public static <T> ThreadLocalCache<T> getThreadLocalCache(
 		Lifecycle lifecycle, Serializable name) {
+
+		Map<Lifecycle, Boolean> threadLocalCacheDisabledFlags =
+			_threadLocalCacheDisabledFlags.get();
+
+		if (threadLocalCacheDisabledFlags.get(lifecycle) == Boolean.TRUE) {
+			return (ThreadLocalCache<T>)_emptyThreadLocalCache;
+		}
 
 		Map<Lifecycle, Map<Serializable, ThreadLocalCache<?>>>
 			threadLocalCacheMaps = _threadLocalCacheMaps.get();
@@ -53,8 +114,7 @@ public class ThreadLocalCacheManager {
 			threadLocalCacheMaps.get(lifecycle);
 
 		if (threadLocalCacheMap == null) {
-			threadLocalCacheMap =
-				new HashMap<Serializable, ThreadLocalCache<?>>();
+			threadLocalCacheMap = new HashMap<>();
 
 			threadLocalCacheMaps.put(lifecycle, threadLocalCacheMap);
 		}
@@ -62,7 +122,7 @@ public class ThreadLocalCacheManager {
 		ThreadLocalCache<?> threadLocalCache = threadLocalCacheMap.get(name);
 
 		if (threadLocalCache == null) {
-			threadLocalCache = new ThreadLocalCache<T>(name, lifecycle);
+			threadLocalCache = new ThreadLocalCache<>(name, lifecycle);
 
 			threadLocalCacheMap.put(name, threadLocalCache);
 		}
@@ -70,7 +130,16 @@ public class ThreadLocalCacheManager {
 		return (ThreadLocalCache<T>)threadLocalCache;
 	}
 
-	private static ThreadLocal
+	private static final EmptyThreadLocalCahce<?> _emptyThreadLocalCache =
+		new EmptyThreadLocalCahce<>();
+	private static final ThreadLocal
+		<Map<Lifecycle, Boolean>>
+			_threadLocalCacheDisabledFlags = new InitialThreadLocal
+				<Map<Lifecycle, Boolean>>(
+					ThreadLocalCacheManager.class +
+						"._threadLocalCacheDisabledFlags",
+					new EnumMap<Lifecycle, Boolean>(Lifecycle.class));
+	private static final ThreadLocal
 		<Map<Lifecycle, Map<Serializable, ThreadLocalCache<?>>>>
 			_threadLocalCacheMaps = new InitialThreadLocal
 				<Map<Lifecycle, Map<Serializable, ThreadLocalCache<?>>>>(
@@ -78,5 +147,35 @@ public class ThreadLocalCacheManager {
 					new EnumMap
 						<Lifecycle, Map<Serializable, ThreadLocalCache<?>>>(
 							Lifecycle.class));
+
+	private static class EmptyThreadLocalCahce<T> extends ThreadLocalCache<T> {
+
+		public EmptyThreadLocalCahce() {
+			super(null, null);
+		}
+
+		@Override
+		public T get(String key) {
+			return null;
+		}
+
+		@Override
+		public void put(String key, T obj) {
+		}
+
+		@Override
+		public void remove(String key) {
+		}
+
+		@Override
+		public void removeAll() {
+		}
+
+		@Override
+		public String toString() {
+			return EmptyThreadLocalCahce.class.getName();
+		}
+
+	}
 
 }

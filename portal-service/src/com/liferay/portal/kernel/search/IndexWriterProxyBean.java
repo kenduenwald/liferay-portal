@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -26,28 +26,47 @@ import java.util.Collection;
 public class IndexWriterProxyBean extends BaseMultiDestinationProxyBean
 	implements IndexWriter {
 
+	@Override
 	public void addDocument(SearchContext searchContext, Document document) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public void addDocuments(
 		SearchContext searchContext, Collection<Document> documents) {
 
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public void clearQuerySuggestionDictionaryIndexes(
+		SearchContext searchContext) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void clearSpellCheckerDictionaryIndexes(
+		SearchContext searchContext) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void deleteDocument(SearchContext searchContext, String uid) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public void deleteDocuments(
 		SearchContext searchContext, Collection<String> uids) {
 
 		throw new UnsupportedOperationException();
 	}
 
-	public void deletePortletDocuments(
-		SearchContext searchContext, String portletId) {
+	@Override
+	public void deleteEntityDocuments(
+		SearchContext searchContext, String className) {
 
 		throw new UnsupportedOperationException();
 	}
@@ -63,10 +82,51 @@ public class IndexWriterProxyBean extends BaseMultiDestinationProxyBean
 		return SearchEngineUtil.getSearchWriterDestinationName(searchEngineId);
 	}
 
+	@Override
+	public void indexKeyword(
+		SearchContext searchContext, float weight, String keywordType) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void indexQuerySuggestionDictionaries(SearchContext searchContext) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void indexQuerySuggestionDictionary(SearchContext searchContext) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void indexSpellCheckerDictionaries(SearchContext searchContext) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void indexSpellCheckerDictionary(SearchContext searchContext) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void partiallyUpdateDocument(
+		SearchContext searchContext, Document document) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void partiallyUpdateDocuments(
+		SearchContext searchContext, Collection<Document> documents) {
+	}
+
+	@Override
 	public void updateDocument(SearchContext searchContext, Document document) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public void updateDocuments(
 		SearchContext searchContext, Collection<Document> documents) {
 

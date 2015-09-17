@@ -4,28 +4,14 @@
 	<import file="build-test.xml" />
 
 	<target name="run-jonas">
-		<antcall target="clean-up-logs" />
-
-		<record action="start" name="log" />
-
-		<antcall target="run-simple-server">
-			<param name="simple.server.dir" value="${app.server.jonas.dir}" />
-			<param name="simple.server.bin.dir" value="${app.server.jonas.bin.dir}" />
-			<param name="simple.server.deploy.dir" value="${app.server.jonas.deploy.dir}" />
-			<param name="simple.server.lib.global.dir" value="${app.server.jonas.lib.global.dir}" />
-			<param name="simple.server.portal.dir" value="${app.server.jonas.portal.dir}" />
-			<param name="simple.server.start.executable" value="jonas${file.suffix.bat}" />
-			<param name="simple.server.start.executable.arg.line" value="start" />
-			<param name="simple.server.stop.executable" value="jonas${file.suffix.bat}" />
-			<param name="simple.server.stop.executable.arg.line" value="stop" />
-		</antcall>
-
-		<record action="stop" name="log" />
-
-		<antcall target="evaluate-logs" />
+		<antcall target="run-simple-server" />
 	</target>
 
 	<target name="run-selenium-jonas">
+		<app-server-properties-update>
+			app.server.type=jonas
+		</app-server-properties-update>
+
 		<if>
 			<not>
 				<isset property="build.app.server" />
@@ -35,14 +21,27 @@
 			</then>
 		</if>
 
+		<copy
+			file="${app.server.jonas.bin.dir}/jonas"
+			tofile="${app.server.jonas.bin.dir}/jonas.sh"
+		/>
+
+		<chmod perm="a+x">
+			<fileset dir="${app.server.jonas.bin.dir}">
+				<include name="*.sh" />
+			</fileset>
+		</chmod>
+
 		<antcall target="revert-test-properties" />
+
+		<ant dir="portal-impl" target="build-selenium-test-case" />
 
 		<antcall target="prepare-virtual-host-name-properties" />
 
 		<antcall target="start-selenium" />
 
-		<antcall target="run-jonas">
-			<param name="test.class" value="${test.name}" />
+		<antcall target="run-jonas" inheritAll="false">
+			<param name="test.class" value="${test.class}" />
 		</antcall>
 
 		<antcall target="stop-selenium" />

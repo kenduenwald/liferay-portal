@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.messageboards.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,17 +25,23 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.messageboards.service.http.MBThreadServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.messageboards.service.http.MBThreadServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.messageboards.service.http.MBThreadServiceSoap
  * @generated
  */
+@ProviderType
 public class MBThreadSoap implements Serializable {
 	public static MBThreadSoap toSoapModel(MBThread model) {
 		MBThreadSoap soapModel = new MBThreadSoap();
 
+		soapModel.setUuid(model.getUuid());
 		soapModel.setThreadId(model.getThreadId());
 		soapModel.setGroupId(model.getGroupId());
 		soapModel.setCompanyId(model.getCompanyId());
+		soapModel.setUserId(model.getUserId());
+		soapModel.setUserName(model.getUserName());
+		soapModel.setCreateDate(model.getCreateDate());
+		soapModel.setModifiedDate(model.getModifiedDate());
 		soapModel.setCategoryId(model.getCategoryId());
 		soapModel.setRootMessageId(model.getRootMessageId());
 		soapModel.setRootMessageUserId(model.getRootMessageUserId());
@@ -43,6 +51,7 @@ public class MBThreadSoap implements Serializable {
 		soapModel.setLastPostDate(model.getLastPostDate());
 		soapModel.setPriority(model.getPriority());
 		soapModel.setQuestion(model.getQuestion());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 		soapModel.setStatus(model.getStatus());
 		soapModel.setStatusByUserId(model.getStatusByUserId());
 		soapModel.setStatusByUserName(model.getStatusByUserName());
@@ -99,6 +108,14 @@ public class MBThreadSoap implements Serializable {
 		setThreadId(pk);
 	}
 
+	public String getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String uuid) {
+		_uuid = uuid;
+	}
+
 	public long getThreadId() {
 		return _threadId;
 	}
@@ -121,6 +138,38 @@ public class MBThreadSoap implements Serializable {
 
 	public void setCompanyId(long companyId) {
 		_companyId = companyId;
+	}
+
+	public long getUserId() {
+		return _userId;
+	}
+
+	public void setUserId(long userId) {
+		_userId = userId;
+	}
+
+	public String getUserName() {
+		return _userName;
+	}
+
+	public void setUserName(String userName) {
+		_userName = userName;
+	}
+
+	public Date getCreateDate() {
+		return _createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		_createDate = createDate;
+	}
+
+	public Date getModifiedDate() {
+		return _modifiedDate;
+	}
+
+	public void setModifiedDate(Date modifiedDate) {
+		_modifiedDate = modifiedDate;
 	}
 
 	public long getCategoryId() {
@@ -199,6 +248,14 @@ public class MBThreadSoap implements Serializable {
 		_question = question;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
 	public int getStatus() {
 		return _status;
 	}
@@ -231,9 +288,14 @@ public class MBThreadSoap implements Serializable {
 		_statusDate = statusDate;
 	}
 
+	private String _uuid;
 	private long _threadId;
 	private long _groupId;
 	private long _companyId;
+	private long _userId;
+	private String _userName;
+	private Date _createDate;
+	private Date _modifiedDate;
 	private long _categoryId;
 	private long _rootMessageId;
 	private long _rootMessageUserId;
@@ -243,6 +305,7 @@ public class MBThreadSoap implements Serializable {
 	private Date _lastPostDate;
 	private double _priority;
 	private boolean _question;
+	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
 	private String _statusByUserName;

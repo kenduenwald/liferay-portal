@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -59,7 +59,7 @@ public class Element {
 	public Element(String name, String text, boolean addHeader) {
 		_name = name;
 		_text = _formatText(text);
-		_elementStack = new LinkedList<Element>();
+		_elementStack = new LinkedList<>();
 		_stringBundler = new StringBundler();
 
 		if (addHeader) {
@@ -204,7 +204,7 @@ public class Element {
 	}
 
 	private void _flushPendingOpenElements() {
-		while (_elementStack.size() > 0) {
+		while (!_elementStack.isEmpty()) {
 			_closeElement(_elementStack.removeLast());
 		}
 	}
@@ -233,12 +233,12 @@ public class Element {
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 
 	private boolean _elementClosed;
-	private LinkedList<Element> _elementStack;
-	private String _name;
+	private final LinkedList<Element> _elementStack;
+	private final String _name;
 	private boolean _openTagClosed;
 	private Element _parentElement;
-	private StringBundler _stringBundler;
-	private String _text;
+	private final StringBundler _stringBundler;
+	private final String _text;
 	private String _xmlString;
 
 }

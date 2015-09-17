@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet;
 
+import aQute.bnd.annotation.ProviderType;
+
 import javax.portlet.EventPortlet;
 import javax.portlet.Portlet;
 import javax.portlet.PortletConfig;
@@ -24,6 +26,7 @@ import javax.portlet.ResourceServingPortlet;
 /**
  * @author Michael Young
  */
+@ProviderType
 public interface InvokerPortlet
 	extends EventPortlet, Portlet, ResourceServingPortlet {
 

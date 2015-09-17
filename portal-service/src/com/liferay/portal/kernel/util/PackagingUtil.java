@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,8 +28,8 @@ import java.util.Stack;
 public class PackagingUtil {
 
 	public static List<String> getPackagesFromPath(File file) {
-		Set<String> packages = new HashSet<String>();
-		Stack<String> packageStack = new Stack<String>();
+		Set<String> packages = new HashSet<>();
+		Stack<String> packageStack = new Stack<>();
 
 		subPackages(file, packages, packageStack);
 

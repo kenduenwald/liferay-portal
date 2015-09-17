@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,7 +24,7 @@ import javax.servlet.jsp.JspException;
  * @author Julio Camarero
  * @generated
  */
-public class BaseLayoutTag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseLayoutTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -45,12 +45,9 @@ public class BaseLayoutTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	protected void cleanUp() {
-		_cssClass = null;
-	}
+		super.cleanUp();
 
-	@Override
-	protected String getEndPage() {
-		return _END_PAGE;
+		_cssClass = null;
 	}
 
 	@Override
@@ -64,9 +61,6 @@ public class BaseLayoutTag extends com.liferay.taglib.util.IncludeTag {
 	}
 
 	protected static final String _ATTRIBUTE_NAMESPACE = "aui:layout:";
-
-	private static final String _END_PAGE =
-		"/html/taglib/aui/layout/end.jsp";
 
 	private static final String _START_PAGE =
 		"/html/taglib/aui/layout/start.jsp";

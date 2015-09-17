@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.asset.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.asset.service.http.AssetEntryServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.asset.service.http.AssetEntryServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.asset.service.http.AssetEntryServiceSoap
  * @generated
  */
+@ProviderType
 public class AssetEntrySoap implements Serializable {
 	public static AssetEntrySoap toSoapModel(AssetEntry model) {
 		AssetEntrySoap soapModel = new AssetEntrySoap();
@@ -42,6 +45,7 @@ public class AssetEntrySoap implements Serializable {
 		soapModel.setClassPK(model.getClassPK());
 		soapModel.setClassUuid(model.getClassUuid());
 		soapModel.setClassTypeId(model.getClassTypeId());
+		soapModel.setListable(model.getListable());
 		soapModel.setVisible(model.getVisible());
 		soapModel.setStartDate(model.getStartDate());
 		soapModel.setEndDate(model.getEndDate());
@@ -197,6 +201,18 @@ public class AssetEntrySoap implements Serializable {
 		_classTypeId = classTypeId;
 	}
 
+	public boolean getListable() {
+		return _listable;
+	}
+
+	public boolean isListable() {
+		return _listable;
+	}
+
+	public void setListable(boolean listable) {
+		_listable = listable;
+	}
+
 	public boolean getVisible() {
 		return _visible;
 	}
@@ -332,6 +348,7 @@ public class AssetEntrySoap implements Serializable {
 	private long _classPK;
 	private String _classUuid;
 	private long _classTypeId;
+	private boolean _listable;
 	private boolean _visible;
 	private Date _startDate;
 	private Date _endDate;

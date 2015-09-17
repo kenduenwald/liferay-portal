@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,14 @@
 
 package com.liferay.taglib.util;
 
+import com.liferay.portal.kernel.servlet.taglib.util.OutputData;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.JspWriter;
 
@@ -30,6 +30,14 @@ import javax.servlet.jsp.JspWriter;
  */
 public class OutputTag extends PositionTagSupport {
 
+	public static StringBundler getData(
+		ServletRequest servletRequest, String webKey) {
+
+		OutputData outputData = _getOutputData(servletRequest);
+
+		return outputData.getMergedData(webKey);
+	}
+
 	public OutputTag(String stringBundlerKey) {
 		_webKey = stringBundlerKey;
 	}
@@ -37,30 +45,31 @@ public class OutputTag extends PositionTagSupport {
 	@Override
 	public int doEndTag() throws JspException {
 		try {
-			if (!_output) {
-				return EVAL_PAGE;
-			}
+			if (_output) {
+				if (isPositionInLine()) {
+					StringBundler replaceSb = new StringBundler(3);
 
-			if (isPositionInLine()) {
-				JspWriter jspWriter = pageContext.getOut();
+					replaceSb.append("<script data-outputkey=\"");
+					replaceSb.append(_outputKey);
+					replaceSb.append("\" ");
 
-				StringBundler bodyContent = getBodyContentAsStringBundler();
+					String bodyContentString =
+						getBodyContentAsStringBundler().toString();
 
-				jspWriter.write(bodyContent.toString());
-			}
-			else {
-				HttpServletRequest request =
-					(HttpServletRequest)pageContext.getRequest();
+					bodyContentString = StringUtil.replace(
+						bodyContentString, "<script", replaceSb.toString());
 
-				StringBundler sb = (StringBundler)request.getAttribute(_webKey);
+					JspWriter jspWriter = pageContext.getOut();
 
-				if (sb == null) {
-					sb = new StringBundler();
-
-					request.setAttribute(_webKey, sb);
+					jspWriter.write(bodyContentString);
 				}
+				else {
+					OutputData outputData = _getOutputData(
+						pageContext.getRequest());
 
-				sb.append(getBodyContentAsStringBundler());
+					outputData.addData(
+						_outputKey, _webKey, getBodyContentAsStringBundler());
+				}
 			}
 
 			return EVAL_PAGE;
@@ -78,9 +87,9 @@ public class OutputTag extends PositionTagSupport {
 	@Override
 	public int doStartTag() {
 		if (Validator.isNotNull(_outputKey)) {
-			Set<String> outputKeys = getOutputKeys();
+			OutputData outputData = _getOutputData(pageContext.getRequest());
 
-			if (!outputKeys.add(_outputKey)) {
+			if (!outputData.addOutputKey(_outputKey)) {
 				_output = false;
 
 				return SKIP_BODY;
@@ -96,24 +105,21 @@ public class OutputTag extends PositionTagSupport {
 		_outputKey = outputKey;
 	}
 
-	protected Set<String> getOutputKeys() {
-		HttpServletRequest request =
-			(HttpServletRequest)pageContext.getRequest();
+	private static OutputData _getOutputData(ServletRequest servletRequest) {
+		OutputData outputData = (OutputData)servletRequest.getAttribute(
+			WebKeys.OUTPUT_DATA);
 
-		Set<String> outputKeys = (Set<String>)request.getAttribute(
-			OutputTag.class.getName());
+		if (outputData == null) {
+			outputData = new OutputData();
 
-		if (outputKeys == null) {
-			outputKeys = new HashSet<String>();
-
-			request.setAttribute(OutputTag.class.getName(), outputKeys);
+			servletRequest.setAttribute(WebKeys.OUTPUT_DATA, outputData);
 		}
 
-		return outputKeys;
+		return outputData;
 	}
 
 	private boolean _output;
 	private String _outputKey;
-	private String _webKey;
+	private final String _webKey;
 
 }

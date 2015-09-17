@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,20 @@
 
 package com.liferay.portal.webdav.methods;
 
+import com.liferay.portal.kernel.flash.FlashMagicBytesUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
+import com.liferay.portal.kernel.webdav.methods.Method;
 
 import java.io.InputStream;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -32,34 +36,47 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class GetMethodImpl implements Method {
 
-	public int process(WebDAVRequest webDavRequest) throws WebDAVException {
+	@Override
+	public int process(WebDAVRequest webDAVRequest) throws WebDAVException {
 		InputStream is = null;
 
 		try {
-			WebDAVStorage storage = webDavRequest.getWebDAVStorage();
+			WebDAVStorage storage = webDAVRequest.getWebDAVStorage();
+			HttpServletRequest request = webDAVRequest.getHttpServletRequest();
 			HttpServletResponse response =
-				webDavRequest.getHttpServletResponse();
+				webDAVRequest.getHttpServletResponse();
 
-			Resource resource = storage.getResource(webDavRequest);
+			Resource resource = storage.getResource(webDAVRequest);
 
-			if (resource != null) {
-				try {
-					is = resource.getContentAsStream();
-				}
-				catch (Exception e) {
-					if (_log.isErrorEnabled()) {
-						_log.error(e.getMessage());
-					}
+			if (resource == null) {
+				return HttpServletResponse.SC_NOT_FOUND;
+			}
+
+			try {
+				is = resource.getContentAsStream();
+			}
+			catch (Exception e) {
+				if (_log.isErrorEnabled()) {
+					_log.error(e.getMessage());
 				}
 			}
 
-			int status = HttpServletResponse.SC_NOT_FOUND;
-
 			if (is != null) {
-				try {
-					response.setContentType(resource.getContentType());
+				String fileName = resource.getDisplayName();
 
-					ServletResponseUtil.write(response, is);
+				FlashMagicBytesUtil.Result flashMagicBytesUtilResult =
+					FlashMagicBytesUtil.check(is);
+
+				if (flashMagicBytesUtilResult.isFlash()) {
+					fileName = FileUtil.stripExtension(fileName) + ".swf";
+				}
+
+				is = flashMagicBytesUtilResult.getInputStream();
+
+				try {
+					ServletResponseUtil.sendFileWithRangeHeader(
+						request, response, fileName, is, resource.getSize(),
+						resource.getContentType());
 				}
 				catch (Exception e) {
 					if (_log.isWarnEnabled()) {
@@ -67,16 +84,16 @@ public class GetMethodImpl implements Method {
 					}
 				}
 
-				status = HttpServletResponse.SC_OK;
+				return HttpServletResponse.SC_OK;
 			}
 
-			return status;
+			return HttpServletResponse.SC_NOT_FOUND;
 		}
 		catch (Exception e) {
 			throw new WebDAVException(e);
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(GetMethodImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(GetMethodImpl.class);
 
 }

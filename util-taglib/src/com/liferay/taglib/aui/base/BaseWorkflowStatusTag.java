@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,7 +24,7 @@ import javax.servlet.jsp.JspException;
  * @author Julio Camarero
  * @generated
  */
-public class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -45,8 +45,20 @@ public class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
 		return _id;
 	}
 
+	public java.lang.String getMarkupView() {
+		return _markupView;
+	}
+
 	public java.lang.Class<?> getModel() {
 		return _model;
+	}
+
+	public boolean getShowIcon() {
+		return _showIcon;
+	}
+
+	public boolean getShowLabel() {
+		return _showLabel;
 	}
 
 	public java.lang.Integer getStatus() {
@@ -79,10 +91,28 @@ public class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
 		setScopedAttribute("id", id);
 	}
 
+	public void setMarkupView(java.lang.String markupView) {
+		_markupView = markupView;
+
+		setScopedAttribute("markupView", markupView);
+	}
+
 	public void setModel(java.lang.Class<?> model) {
 		_model = model;
 
 		setScopedAttribute("model", model);
+	}
+
+	public void setShowIcon(boolean showIcon) {
+		_showIcon = showIcon;
+
+		setScopedAttribute("showIcon", showIcon);
+	}
+
+	public void setShowLabel(boolean showLabel) {
+		_showLabel = showLabel;
+
+		setScopedAttribute("showLabel", showLabel);
 	}
 
 	public void setStatus(java.lang.Integer status) {
@@ -105,10 +135,15 @@ public class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_bean = null;
 		_helpMessage = null;
 		_id = null;
+		_markupView = null;
 		_model = null;
+		_showIcon = true;
+		_showLabel = true;
 		_status = null;
 		_statusMessage = null;
 		_version = null;
@@ -124,7 +159,10 @@ public class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
 		setNamespacedAttribute(request, "bean", _bean);
 		setNamespacedAttribute(request, "helpMessage", _helpMessage);
 		setNamespacedAttribute(request, "id", _id);
+		setNamespacedAttribute(request, "markupView", _markupView);
 		setNamespacedAttribute(request, "model", _model);
+		setNamespacedAttribute(request, "showIcon", _showIcon);
+		setNamespacedAttribute(request, "showLabel", _showLabel);
 		setNamespacedAttribute(request, "status", _status);
 		setNamespacedAttribute(request, "statusMessage", _statusMessage);
 		setNamespacedAttribute(request, "version", _version);
@@ -138,7 +176,10 @@ public class BaseWorkflowStatusTag extends com.liferay.taglib.util.IncludeTag {
 	private java.lang.Object _bean = null;
 	private java.lang.String _helpMessage = null;
 	private java.lang.String _id = null;
+	private java.lang.String _markupView = null;
 	private java.lang.Class<?> _model = null;
+	private boolean _showIcon = true;
+	private boolean _showLabel = true;
 	private java.lang.Integer _status = null;
 	private java.lang.String _statusMessage = null;
 	private java.lang.String _version = null;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,10 +16,7 @@ package com.liferay.portal.kernel.servlet;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.BasePortalLifecycle;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
 
 import java.io.Serializable;
 
@@ -32,63 +29,59 @@ import javax.servlet.http.HttpSessionBindingEvent;
  * @author Bruno Farache
  */
 public class SerializableSessionAttributeListener
-	extends BasePortalLifecycle implements HttpSessionAttributeListener {
+	implements HttpSessionAttributeListener {
 
-	public void attributeAdded(HttpSessionBindingEvent event) {
-		if (!_sessionVerifySerializableAttribute) {
+	@Override
+	public void attributeAdded(
+		HttpSessionBindingEvent httpSessionBindingEvent) {
+
+		String name = httpSessionBindingEvent.getName();
+		Object value = httpSessionBindingEvent.getValue();
+
+		if (value instanceof Serializable) {
 			return;
 		}
 
-		String name = event.getName();
-		Object value = event.getValue();
+		Class<?> clazz = value.getClass();
 
-		if (!(value instanceof Serializable)) {
-			_log.error(
-				value.getClass().getName() +
-					" is not serializable and will prevent this session from " +
-						"being replicated");
+		_log.error(
+			clazz.getName() +
+				" is not serializable and will prevent this session from " +
+					"being replicated");
 
-			if (_requiresSerializable == null) {
-				HttpSession session = event.getSession();
+		if (_requiresSerializable == null) {
+			HttpSession session = httpSessionBindingEvent.getSession();
 
-				ServletContext servletContext = session.getServletContext();
+			ServletContext servletContext = session.getServletContext();
 
-				_requiresSerializable = Boolean.valueOf(
-					GetterUtil.getBoolean(
-						servletContext.getInitParameter(
-							"session-attributes-requires-serializable")));
-			}
+			_requiresSerializable = Boolean.valueOf(
+				GetterUtil.getBoolean(
+					servletContext.getInitParameter(
+						"session-attributes-requires-serializable")));
+		}
 
-			if (_requiresSerializable) {
-				HttpSession session = event.getSession();
+		if (_requiresSerializable) {
+			HttpSession session = httpSessionBindingEvent.getSession();
 
-				session.removeAttribute(name);
-			}
+			session.removeAttribute(name);
 		}
 	}
 
-	public void attributeRemoved(HttpSessionBindingEvent event) {
-	}
-
-	public void attributeReplaced(HttpSessionBindingEvent event) {
-		attributeAdded(event);
+	@Override
+	public void attributeRemoved(
+		HttpSessionBindingEvent httpSessionBindingEvent) {
 	}
 
 	@Override
-	protected void doPortalDestroy() throws Exception {
+	public void attributeReplaced(
+		HttpSessionBindingEvent httpSessionBindingEvent) {
+
+		attributeAdded(httpSessionBindingEvent);
 	}
 
-	@Override
-	protected void doPortalInit() throws Exception {
-		_sessionVerifySerializableAttribute = GetterUtil.getBoolean(
-			PropsUtil.get(PropsKeys.SESSION_VERIFY_SERIALIZABLE_ATTRIBUTE),
-			true);
-	}
-
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		SerializableSessionAttributeListener.class);
 
 	private Boolean _requiresSerializable;
-	private boolean _sessionVerifySerializableAttribute;
 
 }

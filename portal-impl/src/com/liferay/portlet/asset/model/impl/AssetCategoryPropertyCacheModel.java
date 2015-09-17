@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.asset.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.asset.model.AssetCategoryProperty;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,8 +37,33 @@ import java.util.Date;
  * @see AssetCategoryProperty
  * @generated
  */
+@ProviderType
 public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategoryProperty>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof AssetCategoryPropertyCacheModel)) {
+			return false;
+		}
+
+		AssetCategoryPropertyCacheModel assetCategoryPropertyCacheModel = (AssetCategoryPropertyCacheModel)obj;
+
+		if (categoryPropertyId == assetCategoryPropertyCacheModel.categoryPropertyId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, categoryPropertyId);
+	}
+
 	@Override
 	public String toString() {
 		StringBundler sb = new StringBundler(19);
@@ -60,6 +91,7 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 		return sb.toString();
 	}
 
+	@Override
 	public AssetCategoryProperty toEntityModel() {
 		AssetCategoryPropertyImpl assetCategoryPropertyImpl = new AssetCategoryPropertyImpl();
 
@@ -107,6 +139,52 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 		assetCategoryPropertyImpl.resetOriginalValues();
 
 		return assetCategoryPropertyImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		categoryPropertyId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		categoryId = objectInput.readLong();
+		key = objectInput.readUTF();
+		value = objectInput.readUTF();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(categoryPropertyId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+		objectOutput.writeLong(categoryId);
+
+		if (key == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(key);
+		}
+
+		if (value == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(value);
+		}
 	}
 
 	public long categoryPropertyId;

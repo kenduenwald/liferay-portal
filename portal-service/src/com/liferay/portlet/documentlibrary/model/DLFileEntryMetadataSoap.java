@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.documentlibrary.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -22,9 +24,10 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class DLFileEntryMetadataSoap implements Serializable {
 	public static DLFileEntryMetadataSoap toSoapModel(DLFileEntryMetadata model) {
 		DLFileEntryMetadataSoap soapModel = new DLFileEntryMetadataSoap();
@@ -33,7 +36,6 @@ public class DLFileEntryMetadataSoap implements Serializable {
 		soapModel.setFileEntryMetadataId(model.getFileEntryMetadataId());
 		soapModel.setDDMStorageId(model.getDDMStorageId());
 		soapModel.setDDMStructureId(model.getDDMStructureId());
-		soapModel.setFileEntryTypeId(model.getFileEntryTypeId());
 		soapModel.setFileEntryId(model.getFileEntryId());
 		soapModel.setFileVersionId(model.getFileVersionId());
 
@@ -123,14 +125,6 @@ public class DLFileEntryMetadataSoap implements Serializable {
 		_DDMStructureId = DDMStructureId;
 	}
 
-	public long getFileEntryTypeId() {
-		return _fileEntryTypeId;
-	}
-
-	public void setFileEntryTypeId(long fileEntryTypeId) {
-		_fileEntryTypeId = fileEntryTypeId;
-	}
-
 	public long getFileEntryId() {
 		return _fileEntryId;
 	}
@@ -151,7 +145,6 @@ public class DLFileEntryMetadataSoap implements Serializable {
 	private long _fileEntryMetadataId;
 	private long _DDMStorageId;
 	private long _DDMStructureId;
-	private long _fileEntryTypeId;
 	private long _fileEntryId;
 	private long _fileVersionId;
 }

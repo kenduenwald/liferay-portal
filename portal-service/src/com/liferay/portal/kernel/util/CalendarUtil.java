@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,8 +32,8 @@ public class CalendarUtil {
 
 	public static final String[] DAYS_ABBREVIATION = new String[] {
 		"sunday-abbreviation", "monday-abbreviation", "tuesday-abbreviation",
-		"wednesday-abbreviation", "thursday-abbreviation","friday-abbreviation",
-		"saturday-abbreviation"
+		"wednesday-abbreviation", "thursday-abbreviation",
+		"friday-abbreviation", "saturday-abbreviation"
 	};
 
 	public static final String ICAL_EXTENSION = "ics";
@@ -160,20 +160,16 @@ public class CalendarUtil {
 
 			return 31;
 		}
-		else if ((month == 4) || (month == 6) || (month == 9) ||
-				 (month == 11)) {
 
+		if ((month == 4) || (month == 6) || (month == 9) || (month == 11)) {
 			return 30;
 		}
-		else {
-			if (((year % 4) == 0) &&
-				((year % 100) != 0) || ((year % 400) == 0)) {
 
-				return 29;
-			}
-			else {
-				return 28;
-			}
+		if (((year % 4) == 0) && ((year % 100) != 0) || ((year % 400) == 0)) {
+			return 29;
+		}
+		else {
+			return 28;
 		}
 	}
 
@@ -472,7 +468,7 @@ public class CalendarUtil {
 		return millis;
 	}
 
-	private static Map<String, String[]> _calendarPool =
-		new ConcurrentHashMap<String, String[]>();
+	private static final Map<String, String[]> _calendarPool =
+		new ConcurrentHashMap<>();
 
 }

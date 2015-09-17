@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,16 @@
 
 package com.liferay.portal.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 /**
- * <p>
- * This class is a wrapper for {@link PluginSettingService}.
- * </p>
+ * Provides a wrapper for {@link PluginSettingService}.
  *
- * @author    Brian Wing Shun Chan
- * @see       PluginSettingService
+ * @author Brian Wing Shun Chan
+ * @see PluginSettingService
  * @generated
  */
+@ProviderType
 public class PluginSettingServiceWrapper implements PluginSettingService,
 	ServiceWrapper<PluginSettingService> {
 	public PluginSettingServiceWrapper(
@@ -30,34 +31,58 @@ public class PluginSettingServiceWrapper implements PluginSettingService,
 		_pluginSettingService = pluginSettingService;
 	}
 
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	@Override
+	public java.lang.String getBeanIdentifier() {
+		return _pluginSettingService.getBeanIdentifier();
+	}
+
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	@Override
+	public void setBeanIdentifier(java.lang.String beanIdentifier) {
+		_pluginSettingService.setBeanIdentifier(beanIdentifier);
+	}
+
+	@Override
 	public com.liferay.portal.model.PluginSetting updatePluginSetting(
 		long companyId, java.lang.String pluginId, java.lang.String pluginType,
 		java.lang.String roles, boolean active)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return _pluginSettingService.updatePluginSetting(companyId, pluginId,
 			pluginType, roles, active);
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedService}
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedService}
 	 */
+	@Deprecated
 	public PluginSettingService getWrappedPluginSettingService() {
 		return _pluginSettingService;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #setWrappedService}
+	 * @deprecated As of 6.1.0, replaced by {@link #setWrappedService}
 	 */
+	@Deprecated
 	public void setWrappedPluginSettingService(
 		PluginSettingService pluginSettingService) {
 		_pluginSettingService = pluginSettingService;
 	}
 
+	@Override
 	public PluginSettingService getWrappedService() {
 		return _pluginSettingService;
 	}
 
+	@Override
 	public void setWrappedService(PluginSettingService pluginSettingService) {
 		_pluginSettingService = pluginSettingService;
 	}

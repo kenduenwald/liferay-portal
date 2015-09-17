@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.security.permission;
 
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.model.User;
 import com.liferay.portal.util.PropsValues;
 
@@ -22,6 +24,8 @@ import com.liferay.portal.util.PropsValues;
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
  */
+@DoPrivileged
+@OSGiBeanProperties(property = {"service.ranking:Integer=-1"})
 public class PermissionCheckerFactoryImpl implements PermissionCheckerFactory {
 
 	public PermissionCheckerFactoryImpl() throws Exception {
@@ -32,6 +36,7 @@ public class PermissionCheckerFactoryImpl implements PermissionCheckerFactory {
 		_permissionChecker = clazz.newInstance();
 	}
 
+	@Override
 	public PermissionChecker create(User user) throws Exception {
 		PermissionChecker permissionChecker = _permissionChecker.clone();
 
@@ -40,6 +45,6 @@ public class PermissionCheckerFactoryImpl implements PermissionCheckerFactory {
 		return permissionChecker;
 	}
 
-	private PermissionChecker _permissionChecker;
+	private final PermissionChecker _permissionChecker;
 
 }

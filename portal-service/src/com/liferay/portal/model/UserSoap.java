@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,14 +25,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.UserServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.UserServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.UserServiceSoap
  * @generated
  */
+@ProviderType
 public class UserSoap implements Serializable {
 	public static UserSoap toSoapModel(User model) {
 		UserSoap soapModel = new UserSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setUuid(model.getUuid());
 		soapModel.setUserId(model.getUserId());
 		soapModel.setCompanyId(model.getCompanyId());
@@ -49,6 +53,7 @@ public class UserSoap implements Serializable {
 		soapModel.setScreenName(model.getScreenName());
 		soapModel.setEmailAddress(model.getEmailAddress());
 		soapModel.setFacebookId(model.getFacebookId());
+		soapModel.setLdapServerId(model.getLdapServerId());
 		soapModel.setOpenId(model.getOpenId());
 		soapModel.setPortraitId(model.getPortraitId());
 		soapModel.setLanguageId(model.getLanguageId());
@@ -69,6 +74,7 @@ public class UserSoap implements Serializable {
 		soapModel.setLockoutDate(model.getLockoutDate());
 		soapModel.setAgreedToTermsOfUse(model.getAgreedToTermsOfUse());
 		soapModel.setEmailAddressVerified(model.getEmailAddressVerified());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 		soapModel.setStatus(model.getStatus());
 
 		return soapModel;
@@ -120,6 +126,14 @@ public class UserSoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setUserId(pk);
+	}
+
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
 	}
 
 	public String getUuid() {
@@ -276,6 +290,14 @@ public class UserSoap implements Serializable {
 
 	public void setFacebookId(long facebookId) {
 		_facebookId = facebookId;
+	}
+
+	public long getLdapServerId() {
+		return _ldapServerId;
+	}
+
+	public void setLdapServerId(long ldapServerId) {
+		_ldapServerId = ldapServerId;
 	}
 
 	public String getOpenId() {
@@ -450,6 +472,14 @@ public class UserSoap implements Serializable {
 		_emailAddressVerified = emailAddressVerified;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
 	public int getStatus() {
 		return _status;
 	}
@@ -458,6 +488,7 @@ public class UserSoap implements Serializable {
 		_status = status;
 	}
 
+	private long _mvccVersion;
 	private String _uuid;
 	private long _userId;
 	private long _companyId;
@@ -476,6 +507,7 @@ public class UserSoap implements Serializable {
 	private String _screenName;
 	private String _emailAddress;
 	private long _facebookId;
+	private long _ldapServerId;
 	private String _openId;
 	private long _portraitId;
 	private String _languageId;
@@ -496,5 +528,6 @@ public class UserSoap implements Serializable {
 	private Date _lockoutDate;
 	private boolean _agreedToTermsOfUse;
 	private boolean _emailAddressVerified;
+	private Date _lastPublishDate;
 	private int _status;
 }

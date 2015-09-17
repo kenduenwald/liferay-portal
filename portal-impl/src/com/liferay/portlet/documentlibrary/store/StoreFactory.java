@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,119 +16,219 @@ package com.liferay.portlet.documentlibrary.store;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceReference;
+import com.liferay.registry.ServiceTrackerCustomizer;
+import com.liferay.registry.collections.ServiceTrackerCollections;
+import com.liferay.registry.collections.ServiceTrackerMap;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Shuyang Zhou
+ * @author Manuel de la Peña
+ * @author Edward C. Han
  */
 public class StoreFactory {
 
-	public static void checkProperties() {
+	public static StoreFactory getInstance() {
+		if (_storeFactory == null) {
+			_storeFactory = new StoreFactory();
+		}
+
+		return _storeFactory;
+	}
+
+	public void checkProperties() {
 		if (_warned) {
 			return;
 		}
 
 		String dlHookImpl = PropsUtil.get("dl.hook.impl");
 
-		if (Validator.isNotNull(dlHookImpl)) {
-			boolean found = false;
+		if (Validator.isNull(dlHookImpl)) {
+			_warned = true;
 
-			for (String[] dlHookStoreParts : _DL_HOOK_STORES) {
-				if (dlHookImpl.equals(dlHookStoreParts[0])) {
-					PropsValues.DL_STORE_IMPL = dlHookStoreParts[1];
+			return;
+		}
 
-					found = true;
+		boolean found = false;
 
-					break;
-				}
+		for (String key : _storeServiceTrackerMap.keySet()) {
+			Store store = getStore(key);
+
+			Class<?> clazz = store.getClass();
+
+			String className = clazz.getName();
+
+			if (dlHookImpl.equals(className)) {
+				PropsValues.DL_STORE_IMPL = className;
+
+				found = true;
+
+				break;
 			}
+		}
 
-			if (!found) {
-				PropsValues.DL_STORE_IMPL = dlHookImpl;
-			}
+		if (!found) {
+			PropsValues.DL_STORE_IMPL = dlHookImpl;
+		}
 
-			if (_log.isWarnEnabled()) {
-				StringBundler sb = new StringBundler(8);
+		if (_log.isWarnEnabled()) {
+			StringBundler sb = new StringBundler(13);
 
-				sb.append("Liferay is configured with the legacy ");
-				sb.append("property \"dl.hook.impl=" + dlHookImpl + "\" ");
-				sb.append("in portal-ext.properties. Please reconfigure ");
-				sb.append("to use the new property \"");
-				sb.append(PropsKeys.DL_STORE_IMPL + "\". Liferay will ");
-				sb.append("attempt to temporarily set \"");
-				sb.append(PropsKeys.DL_STORE_IMPL + "=");
-				sb.append(PropsValues.DL_STORE_IMPL + "\".");
+			sb.append("Liferay is configured with the legacy ");
+			sb.append("property \"dl.hook.impl=");
+			sb.append(dlHookImpl);
+			sb.append("\" ");
+			sb.append("in portal-ext.properties. Please reconfigure ");
+			sb.append("to use the new property \"");
+			sb.append(PropsKeys.DL_STORE_IMPL);
+			sb.append("\". Liferay will ");
+			sb.append("attempt to temporarily set \"");
+			sb.append(PropsKeys.DL_STORE_IMPL);
+			sb.append("=");
+			sb.append(PropsValues.DL_STORE_IMPL);
+			sb.append("\".");
 
-				_log.warn(sb.toString());
-			}
+			_log.warn(sb.toString());
 		}
 
 		_warned = true;
 	}
 
-	public static Store getInstance() {
+	public void destroy() {
+		_storeServiceTrackerMap.close();
+
+		_storeWrapperServiceTrackerMap.close();
+	}
+
+	public Store getStore() {
 		if (_store == null) {
-			checkProperties();
-
-			if (_log.isDebugEnabled()) {
-				_log.debug("Instantiate " + PropsValues.DL_STORE_IMPL);
+			if (Validator.isNull(_storeType)) {
+				setStore(PropsValues.DL_STORE_IMPL);
 			}
-
-			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
-
-			try {
-				_store = (Store)classLoader.loadClass(
-					PropsValues.DL_STORE_IMPL).newInstance();
-			}
-			catch (Exception e) {
-				_log.error(e, e);
+			else {
+				setStore(_storeType);
 			}
 		}
 
-		if (_log.isDebugEnabled()) {
-			_log.debug("Return " + _store.getClass().getName());
+		if (_store == null) {
+			throw new IllegalStateException("Store is not available");
 		}
 
 		return _store;
 	}
 
-	public static void setInstance(Store store) {
-		if (_log.isDebugEnabled()) {
-			_log.debug("Set " + store.getClass().getName());
+	public Store getStore(String key) {
+		Store store = _storeServiceTrackerMap.getService(key);
+
+		List<StoreWrapper> storeWrappers =
+			_storeWrapperServiceTrackerMap.getService(key);
+
+		if (storeWrappers == null) {
+			return store;
 		}
 
-		_store = store;
+		for (StoreWrapper storeWrapper : storeWrappers) {
+			store = storeWrapper.wrap(store);
+		}
+
+		return store;
 	}
 
-	private static final String[][] _DL_HOOK_STORES = new String[][] {
-		new String[] {
-			"com.liferay.documentlibrary.util.AdvancedFileSystemHook",
-			AdvancedFileSystemStore.class.getName()
-		},
-		new String[] {
-			"com.liferay.documentlibrary.util.CMISHook",
-			CMISStore.class.getName()
-		},
-		new String[] {
-			"com.liferay.documentlibrary.util.FileSystemHook",
-			FileSystemStore.class.getName()
-		},
-		new String[] {
-			"com.liferay.documentlibrary.util.JCRHook", JCRStore.class.getName()
-		},
-		new String[] {
-			"com.liferay.documentlibrary.util.S3Hook", S3Store.class.getName()
+	public String[] getStoreTypes() {
+		Set<String> storeTypes = _storeServiceTrackerMap.keySet();
+
+		return storeTypes.toArray(new String[storeTypes.size()]);
+	}
+
+	public void setStore(String key) {
+		if (key == null) {
+			_store = null;
+			_storeType = null;
+
+			return;
 		}
-	};
 
-	private static Log _log = LogFactoryUtil.getLog(StoreFactory.class);
+		if (_log.isDebugEnabled()) {
+			_log.debug("Set " + key);
+		}
 
-	private static Store _store;
+		_store = getStore(key);
+		_storeType = key;
+	}
+
+	private StoreFactory() {
+		_storeServiceTrackerMap.open();
+
+		_storeWrapperServiceTrackerMap.open();
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(StoreFactory.class);
+
+	private static StoreFactory _storeFactory;
 	private static boolean _warned;
+
+	private volatile Store _store;
+	private final ServiceTrackerMap<String, Store> _storeServiceTrackerMap =
+		ServiceTrackerCollections.singleValueMap(
+			Store.class, "store.type", new StoreServiceTrackerCustomizer());
+	private String _storeType;
+	private final ServiceTrackerMap<String, List<StoreWrapper>>
+		_storeWrapperServiceTrackerMap =
+			ServiceTrackerCollections.multiValueMap(
+				StoreWrapper.class, "store.type");
+
+	private class StoreServiceTrackerCustomizer
+		implements ServiceTrackerCustomizer<Store, Store> {
+
+		@Override
+		public Store addingService(ServiceReference<Store> serviceReference) {
+			cleanUp(serviceReference);
+
+			Registry registry = RegistryUtil.getRegistry();
+
+			return registry.getService(serviceReference);
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<Store> serviceReference, Store service) {
+
+			cleanUp(serviceReference);
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<Store> serviceReference, Store service) {
+
+			cleanUp(serviceReference);
+
+			Registry registry = RegistryUtil.getRegistry();
+
+			registry.ungetService(serviceReference);
+		}
+
+		protected void cleanUp(ServiceReference<Store> serviceReference) {
+			String storeType = (String)serviceReference.getProperty(
+				"store.type");
+
+			if (Validator.isNotNull(_storeType) &&
+				_storeType.equals(storeType)) {
+
+				_store = null;
+			}
+		}
+
+	}
 
 }

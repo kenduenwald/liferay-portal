@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@
 <%@ page import="com.liferay.portal.kernel.util.HttpUtil" %>
 <%@ page import="com.liferay.portal.kernel.util.ParamUtil" %>
 <%@ page import="com.liferay.portal.kernel.util.StringPool" %>
-<%@ page import="com.liferay.portal.kernel.util.Validator" %>
+<%@ page import="com.liferay.portal.util.PortalUtil" %>
 
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Map" %>
@@ -34,7 +34,7 @@ String defaultHeight = GetterUtil.getString(portletConfig.getInitParameter("wai.
 
 Map<String, String[]> parameterMap = new HashMap<String, String[]>(renderRequest.getParameterMap());
 
-String appURL = ParamUtil.getString(request, "appURL", renderRequest.getContextPath());
+String appURL = ParamUtil.getString(request, "appURL", PortalUtil.getPathContext(renderRequest));
 
 parameterMap.remove("appURL");
 
@@ -104,11 +104,11 @@ portletURL.setParameter("appURL", StringPool.BLANK);
 			}
 
 			var resizeIframe = function() {
-				iframe.set('height', getHeight());
+				iframe.attr('height', getHeight());
 			};
 
 			var updateIframe = function() {
-				bookmarkLink.set('href', '<%= portletURL.toString() %>' + escape(getURL()));
+				bookmarkLink.attr('href', '<%= portletURL.toString() %>' + escape(getURL()));
 
 				resizeIframe();
 			};

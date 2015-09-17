@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,9 +20,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PwdGenerator;
 import com.liferay.portal.model.PasswordPolicy;
 import com.liferay.portal.util.PropsUtil;
-import com.liferay.util.PwdGenerator;
 
 /**
  * @author Brian Wing Shun Chan
@@ -38,7 +38,7 @@ public class RegExpToolkit extends BasicToolkit {
 
 	@Override
 	public String generate(PasswordPolicy passwordPolicy) {
-		return PwdGenerator.getSecurePassword(_charset, _length);
+		return PwdGenerator.getPassword(_charset, _length);
 	}
 
 	@Override
@@ -54,15 +54,15 @@ public class RegExpToolkit extends BasicToolkit {
 				_log.warn("User " + userId + " attempted an invalid password");
 			}
 
-			throw new UserPasswordException(
-				UserPasswordException.PASSWORD_INVALID);
+			throw new UserPasswordException.MustComplyWithRegex(
+				userId, _pattern);
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(RegExpToolkit.class);
+	private static final Log _log = LogFactoryUtil.getLog(RegExpToolkit.class);
 
-	private String _charset;
-	private int _length;
-	private String _pattern;
+	private final String _charset;
+	private final int _length;
+	private final String _pattern;
 
 }

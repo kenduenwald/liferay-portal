@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -58,7 +58,7 @@ public class DocumentConversionUtil {
 	public static File convert(
 			String id, InputStream inputStream, String sourceExtension,
 			String targetExtension)
-		throws IOException, SystemException {
+		throws IOException {
 
 		return _instance._convert(
 			id, inputStream, sourceExtension, targetExtension);
@@ -87,11 +87,11 @@ public class DocumentConversionUtil {
 	public static boolean isComparableVersion(String extension) {
 		boolean enabled = false;
 
-		String dotExtension = StringPool.PERIOD + extension;
+		String periodAndExtension = StringPool.PERIOD.concat(extension);
 
 		for (int i = 0; i < _COMPARABLE_FILE_EXTENSIONS.length; i++) {
 			if (StringPool.STAR.equals(_COMPARABLE_FILE_EXTENSIONS[i]) ||
-				dotExtension.equals(_COMPARABLE_FILE_EXTENSIONS[i])) {
+				periodAndExtension.equals(_COMPARABLE_FILE_EXTENSIONS[i])) {
 
 				enabled = true;
 
@@ -103,8 +103,8 @@ public class DocumentConversionUtil {
 			return false;
 		}
 
-		if (extension.equals("css") || extension.equals("js") ||
-			extension.equals("htm") || extension.equals("html") ||
+		if (extension.equals("css") || extension.equals("htm") ||
+			extension.equals("html") || extension.equals("js") ||
 			extension.equals("txt") || extension.equals("xml")) {
 
 			return true;
@@ -162,7 +162,7 @@ public class DocumentConversionUtil {
 	private File _convert(
 			String id, InputStream inputStream, String sourceExtension,
 			String targetExtension)
-		throws IOException, SystemException {
+		throws IOException {
 
 		if (!isEnabled()) {
 			return null;
@@ -171,48 +171,57 @@ public class DocumentConversionUtil {
 		sourceExtension = _fixExtension(sourceExtension);
 		targetExtension = _fixExtension(targetExtension);
 
+		_validate(targetExtension, id);
+
 		String fileName = getFilePath(id, targetExtension);
 
 		File file = new File(fileName);
 
-		if (!PropsValues.OPENOFFICE_CACHE_ENABLED || !file.exists()) {
-			DocumentFormatRegistry documentFormatRegistry =
-				new DefaultDocumentFormatRegistry();
-
-			DocumentFormat inputDocumentFormat =
-				documentFormatRegistry.getFormatByFileExtension(
-					sourceExtension);
-			DocumentFormat outputDocumentFormat =
-				documentFormatRegistry.getFormatByFileExtension(
-					targetExtension);
-
-			if (!inputDocumentFormat.isImportable()) {
-				throw new SystemException(
-					"Conversion is not supported from " +
-						inputDocumentFormat.getName());
-			}
-			else if (!inputDocumentFormat.isExportableTo(
-						outputDocumentFormat)) {
-
-				throw new SystemException(
-					"Conversion is not supported from " +
-						inputDocumentFormat.getName() + " to " +
-							outputDocumentFormat.getName());
-			}
-
-			UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
-				new UnsyncByteArrayOutputStream();
-
-			DocumentConverter documentConverter = _getDocumentConverter();
-
-			documentConverter.convert(
-				inputStream, inputDocumentFormat, unsyncByteArrayOutputStream,
-				outputDocumentFormat);
-
-			FileUtil.write(
-				file, unsyncByteArrayOutputStream.unsafeGetByteArray(), 0,
-				unsyncByteArrayOutputStream.size());
+		if (PropsValues.OPENOFFICE_CACHE_ENABLED && file.exists()) {
+			return file;
 		}
+
+		DocumentFormatRegistry documentFormatRegistry =
+			new DefaultDocumentFormatRegistry();
+
+		DocumentFormat inputDocumentFormat =
+			documentFormatRegistry.getFormatByFileExtension(sourceExtension);
+		DocumentFormat outputDocumentFormat =
+			documentFormatRegistry.getFormatByFileExtension(targetExtension);
+
+		if (inputDocumentFormat == null) {
+			throw new SystemException(
+				"Conversion is not supported from ." + sourceExtension);
+		}
+		else if (!inputDocumentFormat.isImportable()) {
+			throw new SystemException(
+				"Conversion is not supported from " +
+					inputDocumentFormat.getName());
+		}
+		else if (outputDocumentFormat == null) {
+			throw new SystemException(
+				"Conversion is not supported from " +
+					inputDocumentFormat.getName() + " to ." + targetExtension);
+		}
+		else if (!inputDocumentFormat.isExportableTo(outputDocumentFormat)) {
+			throw new SystemException(
+				"Conversion is not supported from " +
+					inputDocumentFormat.getName() + " to " +
+						outputDocumentFormat.getName());
+		}
+
+		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
+			new UnsyncByteArrayOutputStream();
+
+		DocumentConverter documentConverter = _getDocumentConverter();
+
+		documentConverter.convert(
+			inputStream, inputDocumentFormat, unsyncByteArrayOutputStream,
+			outputDocumentFormat);
+
+		FileUtil.write(
+			file, unsyncByteArrayOutputStream.unsafeGetByteArray(), 0,
+			unsyncByteArrayOutputStream.size());
 
 		return file;
 	}
@@ -241,7 +250,7 @@ public class DocumentConversionUtil {
 		}
 		else {
 			if (ArrayUtil.contains(conversions, extension)) {
-				List<String> conversionsList = new ArrayList<String>();
+				List<String> conversionsList = new ArrayList<>();
 
 				for (int i = 0; i < conversions.length; i++) {
 					String conversion = conversions[i];
@@ -259,7 +268,7 @@ public class DocumentConversionUtil {
 		return conversions;
 	}
 
-	private DocumentConverter _getDocumentConverter() throws SystemException {
+	private DocumentConverter _getDocumentConverter() {
 		if ((_openOfficeConnection != null) && (_documentConverter != null)) {
 			return _documentConverter;
 		}
@@ -307,7 +316,7 @@ public class DocumentConversionUtil {
 			PropsKeys.OPENOFFICE_CONVERSION_TARGET_EXTENSIONS, filter);
 
 		for (String sourceExtension : sourceExtensions) {
-			List<String> conversions = new SortedArrayList<String>();
+			List<String> conversions = new SortedArrayList<>();
 
 			DocumentFormat sourceDocumentFormat =
 				documentFormatRegistry.getFormatByFileExtension(
@@ -361,6 +370,16 @@ public class DocumentConversionUtil {
 		}
 	}
 
+	private void _validate(String targetExtension, String id) {
+		if (!Validator.isFileExtension(targetExtension)) {
+			throw new SystemException("Invalid extension: " + targetExtension);
+		}
+
+		if (!Validator.isFileName(id)) {
+			throw new SystemException("Invalid file name: " + id);
+		}
+	}
+
 	private static final String[] _COMPARABLE_FILE_EXTENSIONS =
 		PropsValues.DL_COMPARABLE_FILE_EXTENSIONS;
 
@@ -370,14 +389,13 @@ public class DocumentConversionUtil {
 
 	private static final String _LOCALHOST_IP = "127.0.0.1";
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		DocumentConversionUtil.class);
 
-	private static DocumentConversionUtil _instance =
+	private static final DocumentConversionUtil _instance =
 		new DocumentConversionUtil();
 
-	private Map<String, String[]> _conversionsMap =
-		new HashMap<String, String[]>();
+	private final Map<String, String[]> _conversionsMap = new HashMap<>();
 	private DocumentConverter _documentConverter;
 	private OpenOfficeConnection _openOfficeConnection;
 

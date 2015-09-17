@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.documentlibrary.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.documentlibrary.service.http.DLFolderServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.documentlibrary.service.http.DLFolderServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.documentlibrary.service.http.DLFolderServiceSoap
  * @generated
  */
+@ProviderType
 public class DLFolderSoap implements Serializable {
 	public static DLFolderSoap toSoapModel(DLFolder model) {
 		DLFolderSoap soapModel = new DLFolderSoap();
@@ -42,11 +45,18 @@ public class DLFolderSoap implements Serializable {
 		soapModel.setRepositoryId(model.getRepositoryId());
 		soapModel.setMountPoint(model.getMountPoint());
 		soapModel.setParentFolderId(model.getParentFolderId());
+		soapModel.setTreePath(model.getTreePath());
 		soapModel.setName(model.getName());
 		soapModel.setDescription(model.getDescription());
 		soapModel.setLastPostDate(model.getLastPostDate());
 		soapModel.setDefaultFileEntryTypeId(model.getDefaultFileEntryTypeId());
-		soapModel.setOverrideFileEntryTypes(model.getOverrideFileEntryTypes());
+		soapModel.setHidden(model.getHidden());
+		soapModel.setRestrictionType(model.getRestrictionType());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
+		soapModel.setStatus(model.getStatus());
+		soapModel.setStatusByUserId(model.getStatusByUserId());
+		soapModel.setStatusByUserName(model.getStatusByUserName());
+		soapModel.setStatusDate(model.getStatusDate());
 
 		return soapModel;
 	}
@@ -191,6 +201,14 @@ public class DLFolderSoap implements Serializable {
 		_parentFolderId = parentFolderId;
 	}
 
+	public String getTreePath() {
+		return _treePath;
+	}
+
+	public void setTreePath(String treePath) {
+		_treePath = treePath;
+	}
+
 	public String getName() {
 		return _name;
 	}
@@ -223,16 +241,64 @@ public class DLFolderSoap implements Serializable {
 		_defaultFileEntryTypeId = defaultFileEntryTypeId;
 	}
 
-	public boolean getOverrideFileEntryTypes() {
-		return _overrideFileEntryTypes;
+	public boolean getHidden() {
+		return _hidden;
 	}
 
-	public boolean isOverrideFileEntryTypes() {
-		return _overrideFileEntryTypes;
+	public boolean isHidden() {
+		return _hidden;
 	}
 
-	public void setOverrideFileEntryTypes(boolean overrideFileEntryTypes) {
-		_overrideFileEntryTypes = overrideFileEntryTypes;
+	public void setHidden(boolean hidden) {
+		_hidden = hidden;
+	}
+
+	public int getRestrictionType() {
+		return _restrictionType;
+	}
+
+	public void setRestrictionType(int restrictionType) {
+		_restrictionType = restrictionType;
+	}
+
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	public int getStatus() {
+		return _status;
+	}
+
+	public void setStatus(int status) {
+		_status = status;
+	}
+
+	public long getStatusByUserId() {
+		return _statusByUserId;
+	}
+
+	public void setStatusByUserId(long statusByUserId) {
+		_statusByUserId = statusByUserId;
+	}
+
+	public String getStatusByUserName() {
+		return _statusByUserName;
+	}
+
+	public void setStatusByUserName(String statusByUserName) {
+		_statusByUserName = statusByUserName;
+	}
+
+	public Date getStatusDate() {
+		return _statusDate;
+	}
+
+	public void setStatusDate(Date statusDate) {
+		_statusDate = statusDate;
 	}
 
 	private String _uuid;
@@ -246,9 +312,16 @@ public class DLFolderSoap implements Serializable {
 	private long _repositoryId;
 	private boolean _mountPoint;
 	private long _parentFolderId;
+	private String _treePath;
 	private String _name;
 	private String _description;
 	private Date _lastPostDate;
 	private long _defaultFileEntryTypeId;
-	private boolean _overrideFileEntryTypes;
+	private boolean _hidden;
+	private int _restrictionType;
+	private Date _lastPublishDate;
+	private int _status;
+	private long _statusByUserId;
+	private String _statusByUserName;
+	private Date _statusDate;
 }

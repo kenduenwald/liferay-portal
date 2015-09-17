@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,16 +15,16 @@
 package com.liferay.portal.kernel.repository;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.repository.model.RepositoryEntry;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.model.Lock;
 import com.liferay.portal.service.ServiceContext;
 
 import java.io.File;
@@ -35,254 +35,265 @@ import java.util.List;
 /**
  * @author Alexander Chow
  */
-public interface Repository {
+public interface Repository extends DocumentRepository {
 
+	/**
+	 * @deprecated As of 7.0.0, see {@link #addFileEntry(long, long, String,
+	 *             String, String, String, String, File, ServiceContext)}
+	 */
+	@Deprecated
 	public FileEntry addFileEntry(
 			long folderId, String sourceFileName, String mimeType, String title,
 			String description, String changeLog, File file,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, see {@link #addFileEntry(long, long, String,
+	 *             String, String, String, String, InputStream, long,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
 	public FileEntry addFileEntry(
 			long folderId, String sourceFileName, String mimeType, String title,
 			String description, String changeLog, InputStream is, long size,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #addFolder(long, long,
+	 *             String, String, ServiceContext)}
+	 */
+	@Deprecated
 	public Folder addFolder(
-			long parentFolderId, String title, String description,
+			long parentFolderId, String name, String description,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
-	public void cancelCheckOut(long fileEntryId)
-		throws PortalException, SystemException;
+	public FileVersion cancelCheckOut(long fileEntryId) throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #checkInFileEntry(long, long,
+	 *             boolean, String, ServiceContext)}
+	 */
+	@Deprecated
 	public void checkInFileEntry(
 			long fileEntryId, boolean major, String changeLog,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 6.2.0, replaced by {@link #checkInFileEntry(long,
+	 *             String, ServiceContext)}
+	 */
+	@Deprecated
 	public void checkInFileEntry(long fileEntryId, String lockUuid)
-		throws PortalException, SystemException;
+		throws PortalException;
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #checkInFileEntry(long, long,
+	 *             String, com.liferay.portal.service.ServiceContext)}
+	 */
+	@Deprecated
+	public void checkInFileEntry(
+			long fileEntryId, String lockUuid, ServiceContext serviceContext)
+		throws PortalException;
 
 	public FileEntry checkOutFileEntry(
 			long fileEntryId, ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public FileEntry checkOutFileEntry(
 			long fileEntryId, String owner, long expirationTime,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #copyFileEntry(long, long,
+	 *             long, long, ServiceContext)}
+	 */
+	@Deprecated
 	public FileEntry copyFileEntry(
 			long groupId, long fileEntryId, long destFolderId,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
-
-	public void deleteFileEntry(long fileEntryId)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public void deleteFileEntry(long folderId, String title)
-		throws PortalException, SystemException;
+		throws PortalException;
 
-	public void deleteFolder(long folderId)
-		throws PortalException, SystemException;
+	public void deleteFileVersion(long fileEntryId, String version)
+		throws PortalException;
 
-	public void deleteFolder(long parentFolderId, String title)
-		throws PortalException, SystemException;
-
-	public List<FileEntry> getFileEntries(
-			long folderId, int start, int end, OrderByComparator obc)
-		throws SystemException;
+	public void deleteFolder(long parentFolderId, String name)
+		throws PortalException;
 
 	public List<FileEntry> getFileEntries(
 			long folderId, long fileEntryTypeId, int start, int end,
-			OrderByComparator obc)
-		throws SystemException;
+			OrderByComparator<FileEntry> obc)
+		throws PortalException;
 
 	public List<FileEntry> getFileEntries(
 			long folderId, String[] mimeTypes, int start, int end,
-			OrderByComparator obc)
-		throws PortalException, SystemException;
-
-	public List<Object> getFileEntriesAndFileShortcuts(
-			long folderId, int status, int start, int end)
-		throws SystemException;
-
-	public int getFileEntriesAndFileShortcutsCount(long folderId, int status)
-		throws SystemException;
+			OrderByComparator<FileEntry> obc)
+		throws PortalException;
 
 	public int getFileEntriesAndFileShortcutsCount(
 			long folderId, int status, String[] mimeTypes)
-		throws PortalException, SystemException;
-
-	public int getFileEntriesCount(long folderId)
-		throws SystemException;
+		throws PortalException;
 
 	public int getFileEntriesCount(long folderId, long fileEntryTypeId)
-		throws SystemException;
+		throws PortalException;
 
 	public int getFileEntriesCount(long folderId, String[] mimeTypes)
-		throws PortalException, SystemException;
+		throws PortalException;
 
-	public FileEntry getFileEntry(long fileEntryId)
-		throws PortalException, SystemException;
-
-	public FileEntry getFileEntry(long folderId, String title)
-		throws PortalException, SystemException;
-
-	public FileEntry getFileEntryByUuid(String uuid)
-		throws PortalException, SystemException;
-
-	public FileVersion getFileVersion(long fileVersionId)
-		throws PortalException, SystemException;
-
-	public Folder getFolder(long folderId)
-		throws PortalException, SystemException;
-
-	public Folder getFolder(long parentFolderId, String title)
-		throws PortalException, SystemException;
-
-	public List<Folder> getFolders(
-			long parentFolderId, boolean includeMountFolders, int start,
-			int end, OrderByComparator obc)
-		throws PortalException, SystemException;
-
-	public List<Object> getFoldersAndFileEntriesAndFileShortcuts(
+	public List<RepositoryEntry> getFoldersAndFileEntriesAndFileShortcuts(
 			long folderId, int status, boolean includeMountFolders, int start,
-			int end, OrderByComparator obc)
-		throws SystemException;
+			int end, OrderByComparator<?> obc)
+		throws PortalException;
 
-	public List<Object> getFoldersAndFileEntriesAndFileShortcuts(
+	public List<RepositoryEntry> getFoldersAndFileEntriesAndFileShortcuts(
 			long folderId, int status, String[] mimetypes,
 			boolean includeMountFolders, int start, int end,
-			OrderByComparator obc)
-		throws PortalException, SystemException;
+			OrderByComparator<?> obc)
+		throws PortalException;
 
 	public int getFoldersAndFileEntriesAndFileShortcutsCount(
 			long folderId, int status, boolean includeMountFolders)
-		throws SystemException;
+		throws PortalException;
 
 	public int getFoldersAndFileEntriesAndFileShortcutsCount(
 			long folderId, int status, String[] mimetypes,
 			boolean includeMountFolders)
-		throws PortalException, SystemException;
-
-	public int getFoldersCount(long parentFolderId, boolean includeMountfolders)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public int getFoldersFileEntriesCount(List<Long> folderIds, int status)
-		throws SystemException;
+		throws PortalException;
 
 	public List<Folder> getMountFolders(
-			long parentFolderId, int start, int end, OrderByComparator obc)
-		throws SystemException;
+			long parentFolderId, int start, int end,
+			OrderByComparator<Folder> obc)
+		throws PortalException;
 
-	public int getMountFoldersCount(long parentFolderId) throws SystemException;
-
-	public List<FileEntry> getRepositoryFileEntries(
-			long userId, long rootFolderId, int start, int end,
-			OrderByComparator obc)
-		throws SystemException;
+	public int getMountFoldersCount(long parentFolderId) throws PortalException;
 
 	public List<FileEntry> getRepositoryFileEntries(
 			long userId, long rootFolderId, String[] mimeTypes, int status,
-			int start, int end, OrderByComparator obc)
-		throws PortalException, SystemException;
+			int start, int end, OrderByComparator<FileEntry> obc)
+		throws PortalException;
 
 	public int getRepositoryFileEntriesCount(long userId, long rootFolderId)
-		throws SystemException;
+		throws PortalException;
 
 	public int getRepositoryFileEntriesCount(
 			long userId, long rootFolderId, String[] mimeTypes, int status)
-		throws PortalException, SystemException;
-
-	public long getRepositoryId();
+		throws PortalException;
 
 	public void getSubfolderIds(List<Long> folderIds, long folderId)
-		throws SystemException;
+		throws PortalException;
 
 	public List<Long> getSubfolderIds(long folderId, boolean recurse)
-		throws SystemException;
+		throws PortalException;
 
-	public Lock lockFileEntry(long fileEntryId)
-		throws PortalException, SystemException;
-
-	public Lock lockFileEntry(
-			long fileEntryId, String owner, long expirationTime)
-		throws PortalException, SystemException;
-
-	public Lock lockFolder(long folderId)
-		throws PortalException, SystemException;
+	public Lock lockFolder(long folderId) throws PortalException;
 
 	public Lock lockFolder(
 			long folderId, String owner, boolean inheritable,
 			long expirationTime)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #moveFileEntry(long, long,
+	 *             long, ServiceContext)}
+	 */
+	@Deprecated
 	public FileEntry moveFileEntry(
 			long fileEntryId, long newFolderId, ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #moveFolder(long, long, long,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
 	public Folder moveFolder(
 			long folderId, long newParentFolderId,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public Lock refreshFileEntryLock(
 			String lockUuid, long companyId, long expirationTime)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public Lock refreshFolderLock(
 			String lockUuid, long companyId, long expirationTime)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #revertFileEntry(long, long,
+	 *             String, ServiceContext)}
+	 */
+	@Deprecated
 	public void revertFileEntry(
 			long fileEntryId, String version, ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
+
+	public Hits search(long creatorUserId, int status, int start, int end)
+		throws PortalException;
+
+	public Hits search(
+			long creatorUserId, long folderId, String[] mimeTypes, int status,
+			int start, int end)
+		throws PortalException;
 
 	public Hits search(SearchContext searchContext) throws SearchException;
 
 	public Hits search(SearchContext searchContext, Query query)
 		throws SearchException;
 
-	public void unlockFileEntry(long fileEntryId)
-		throws PortalException, SystemException;
-
-	public void unlockFileEntry(long fileEntryId, String lockUuid)
-		throws PortalException, SystemException;
-
 	public void unlockFolder(long folderId, String lockUuid)
-		throws PortalException, SystemException;
+		throws PortalException;
 
-	public void unlockFolder(long parentFolderId, String title, String lockUuid)
-		throws PortalException, SystemException;
+	public void unlockFolder(long parentFolderId, String name, String lockUuid)
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #updateFileEntry(long, long,
+	 *             String, String, String, String, String, boolean, File,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
 	public FileEntry updateFileEntry(
 			long fileEntryId, String sourceFileName, String mimeType,
 			String title, String description, String changeLog,
 			boolean majorVersion, File file, ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #updateFileEntry(long, long,
+	 *             String, String, String, String, String, boolean, InputStream,
+	 *             long, ServiceContext)}
+	 */
+	@Deprecated
 	public FileEntry updateFileEntry(
 			long fileEntryId, String sourceFileName, String mimeType,
 			String title, String description, String changeLog,
 			boolean majorVersion, InputStream is, long size,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public Folder updateFolder(
-			long folderId, String title, String description,
+			long folderId, String name, String description,
 			ServiceContext serviceContext)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public boolean verifyFileEntryCheckOut(long fileEntryId, String lockUuid)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public boolean verifyFileEntryLock(long fileEntryId, String lockUuid)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	public boolean verifyInheritableLock(long folderId, String lockUuid)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 }

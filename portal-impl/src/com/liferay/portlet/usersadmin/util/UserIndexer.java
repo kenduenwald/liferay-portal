@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,17 +14,14 @@
 
 package com.liferay.portlet.usersadmin.util;
 
-import com.liferay.portal.kernel.dao.orm.DynamicQuery;
-import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
-import com.liferay.portal.kernel.dao.orm.Projection;
-import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
-import com.liferay.portal.kernel.dao.orm.ProjectionList;
-import com.liferay.portal.kernel.dao.orm.Property;
-import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.NoSuchContactException;
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
-import com.liferay.portal.kernel.search.BooleanQueryFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
@@ -32,8 +29,11 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchEngineUtil;
 import com.liferay.portal.kernel.search.Summary;
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
+import com.liferay.portal.kernel.search.filter.TermsFilter;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.Contact;
@@ -44,47 +44,50 @@ import com.liferay.portal.security.auth.FullNameGenerator;
 import com.liferay.portal.security.auth.FullNameGeneratorFactory;
 import com.liferay.portal.service.OrganizationLocalServiceUtil;
 import com.liferay.portal.service.UserLocalServiceUtil;
-import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.PropsValues;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
-import javax.portlet.PortletURL;
+import javax.portlet.PortletRequest;
+import javax.portlet.PortletResponse;
 
 /**
  * @author Raymond Augé
  * @author Zsigmond Rab
  * @author Hugo Huijser
  */
-public class UserIndexer extends BaseIndexer {
+@OSGiBeanProperties
+public class UserIndexer extends BaseIndexer<User> {
 
-	public static final String[] CLASS_NAMES = {User.class.getName()};
+	public static final String CLASS_NAME = User.class.getName();
 
-	public static final String PORTLET_ID = PortletKeys.USERS_ADMIN;
+	public static long getUserId(Document document) {
+		return GetterUtil.getLong(document.get(Field.USER_ID));
+	}
 
 	public UserIndexer() {
+		setCommitImmediately(true);
+		setDefaultSelectedFieldNames(
+			Field.ASSET_TAG_NAMES, Field.COMPANY_ID, Field.ENTRY_CLASS_NAME,
+			Field.ENTRY_CLASS_PK, Field.GROUP_ID, Field.MODIFIED_DATE,
+			Field.SCOPE_GROUP_ID, Field.UID, Field.USER_ID);
 		setIndexerEnabled(PropsValues.USERS_INDEXER_ENABLED);
 		setPermissionAware(true);
 		setStagingAware(false);
 	}
 
-	public String[] getClassNames() {
-		return CLASS_NAMES;
-	}
-
-	public String getPortletId() {
-		return PORTLET_ID;
+	@Override
+	public String getClassName() {
+		return CLASS_NAME;
 	}
 
 	@Override
-	public void postProcessContextQuery(
-			BooleanQuery contextQuery, SearchContext searchContext)
+	public void postProcessContextBooleanFilter(
+			BooleanFilter contextBooleanFilter, SearchContext searchContext)
 		throws Exception {
 
 		int status = GetterUtil.getInteger(
@@ -92,39 +95,43 @@ public class UserIndexer extends BaseIndexer {
 			WorkflowConstants.STATUS_APPROVED);
 
 		if (status != WorkflowConstants.STATUS_ANY) {
-			contextQuery.addRequiredTerm(Field.STATUS, status);
+			contextBooleanFilter.addRequiredTerm(Field.STATUS, status);
 		}
 
 		LinkedHashMap<String, Object> params =
 			(LinkedHashMap<String, Object>)searchContext.getAttribute("params");
 
-		if (params != null) {
-			for (Map.Entry<String, Object> entry : params.entrySet()) {
-				String key = entry.getKey();
-				Object value = entry.getValue();
+		if (params == null) {
+			return;
+		}
 
-				if (value == null) {
+		for (Map.Entry<String, Object> entry : params.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+
+			if (value == null) {
+				continue;
+			}
+
+			Class<?> clazz = value.getClass();
+
+			if (clazz.isArray()) {
+				Object[] values = (Object[])value;
+
+				if (values.length == 0) {
 					continue;
 				}
-
-				Class<?> clazz = value.getClass();
-
-				if (clazz.isArray()) {
-					Object[] values = (Object[])value;
-
-					if (values.length == 0) {
-						continue;
-					}
-				}
-
-				addContextQueryParams(contextQuery, searchContext, key, value);
 			}
+
+			addContextQueryParams(
+				contextBooleanFilter, searchContext, key, value);
 		}
 	}
 
 	@Override
 	public void postProcessSearchQuery(
-			BooleanQuery searchQuery, SearchContext searchContext)
+			BooleanQuery searchQuery, BooleanFilter fullQueryBooleanFilter,
+			SearchContext searchContext)
 		throws Exception {
 
 		addSearchTerm(searchQuery, searchContext, "city", false);
@@ -152,60 +159,86 @@ public class UserIndexer extends BaseIndexer {
 	}
 
 	protected void addContextQueryParams(
-			BooleanQuery contextQuery, SearchContext searchContext, String key,
-			Object value)
+			BooleanFilter contextFilter, SearchContext searchContext,
+			String key, Object value)
 		throws Exception {
 
-		if (key.equals("usersOrgs")) {
+		if (key.equals("usersGroups")) {
 			if (value instanceof Long[]) {
 				Long[] values = (Long[])value;
 
-				BooleanQuery usersOrgsQuery = BooleanQueryFactoryUtil.create(
-					searchContext);
-
-				for (long organizationId : values) {
-					usersOrgsQuery.addTerm("organizationIds", organizationId);
-					usersOrgsQuery.addTerm(
-						"ancestorOrganizationIds", organizationId);
+				if (ArrayUtil.isEmpty(values)) {
+					return;
 				}
 
-				contextQuery.add(usersOrgsQuery, BooleanClauseOccur.MUST);
+				TermsFilter userGroupsTermsFilter = new TermsFilter("groupIds");
+
+				userGroupsTermsFilter.addValues(
+					ArrayUtil.toStringArray(values));
+
+				contextFilter.add(
+					userGroupsTermsFilter, BooleanClauseOccur.MUST);
 			}
 			else {
-				contextQuery.addRequiredTerm(
+				contextFilter.addRequiredTerm(
+					"groupIds", String.valueOf(value));
+			}
+		}
+		else if (key.equals("usersOrgs")) {
+			if (value instanceof Long[]) {
+				Long[] values = (Long[])value;
+
+				if (ArrayUtil.isEmpty(values)) {
+					return;
+				}
+
+				TermsFilter organizationsTermsFilter = new TermsFilter(
+					"organizationIds");
+				TermsFilter ancestorOrgsTermsFilter = new TermsFilter(
+					"ancestorOrganizationIds");
+
+				String[] organizationIdsStrings = ArrayUtil.toStringArray(
+					values);
+
+				ancestorOrgsTermsFilter.addValues(organizationIdsStrings);
+
+				organizationsTermsFilter.addValues(organizationIdsStrings);
+
+				BooleanFilter userOrgsBooleanFilter = new BooleanFilter();
+
+				userOrgsBooleanFilter.add(ancestorOrgsTermsFilter);
+				userOrgsBooleanFilter.add(organizationsTermsFilter);
+
+				contextFilter.add(
+					userOrgsBooleanFilter, BooleanClauseOccur.MUST);
+			}
+			else {
+				contextFilter.addRequiredTerm(
 					"organizationIds", String.valueOf(value));
 			}
 		}
 		else if (key.equals("usersOrgsCount")) {
-			contextQuery.addRequiredTerm(
+			contextFilter.addRequiredTerm(
 				"organizationCount", String.valueOf(value));
 		}
 		else if (key.equals("usersRoles")) {
-			contextQuery.addRequiredTerm("roleIds", String.valueOf(value));
+			contextFilter.addRequiredTerm("roleIds", String.valueOf(value));
 		}
 		else if (key.equals("usersTeams")) {
-			contextQuery.addRequiredTerm("teamIds", String.valueOf(value));
+			contextFilter.addRequiredTerm("teamIds", String.valueOf(value));
 		}
 		else if (key.equals("usersUserGroups")) {
-			contextQuery.addRequiredTerm("userGroupIds", String.valueOf(value));
+			contextFilter.addRequiredTerm(
+				"userGroupIds", String.valueOf(value));
 		}
-	}
-
-	protected void addReindexCriteria(
-		DynamicQuery dynamicQuery, long companyId) {
-
-		Property property = PropertyFactoryUtil.forName("companyId");
-
-		dynamicQuery.add(property.eq(companyId));
 	}
 
 	@Override
-	protected void doDelete(Object obj) throws Exception {
-		User user = (User)obj;
-
+	protected void doDelete(User user) throws Exception {
 		deleteDocument(user.getCompanyId(), user.getUserId());
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(Contact.class);
+		Indexer<Contact> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Contact.class);
 
 		Contact contact = new ContactImpl();
 
@@ -216,23 +249,22 @@ public class UserIndexer extends BaseIndexer {
 	}
 
 	@Override
-	protected Document doGetDocument(Object obj) throws Exception {
-		User user = (User)obj;
-
-		Document document = getBaseModelDocument(PORTLET_ID, user);
+	protected Document doGetDocument(User user) throws Exception {
+		Document document = getBaseModelDocument(CLASS_NAME, user);
 
 		long[] organizationIds = user.getOrganizationIds();
 
 		document.addKeyword(Field.COMPANY_ID, user.getCompanyId());
+		document.addKeyword(Field.GROUP_ID, user.getGroupIds());
 		document.addDate(Field.MODIFIED_DATE, user.getModifiedDate());
+		document.addKeyword(Field.SCOPE_GROUP_ID, user.getGroupIds());
 		document.addKeyword(Field.STATUS, user.getStatus());
 		document.addKeyword(Field.USER_ID, user.getUserId());
 		document.addKeyword(Field.USER_NAME, user.getFullName());
 
 		document.addKeyword(
 			"ancestorOrganizationIds",
-			getAncestorOrganizationIds(
-				user.getUserId(), user.getOrganizationIds()));
+			getAncestorOrganizationIds(user.getOrganizationIds()));
 		document.addText("emailAddress", user.getEmailAddress());
 		document.addText("firstName", user.getFirstName());
 		document.addText("fullName", user.getFullName());
@@ -278,7 +310,7 @@ public class UserIndexer extends BaseIndexer {
 	@Override
 	protected Summary doGetSummary(
 		Document document, Locale locale, String snippet,
-		PortletURL portletURL) {
+		PortletRequest portletRequest, PortletResponse portletResponse) {
 
 		String firstName = document.get("firstName");
 		String middleName = document.get("middleName");
@@ -292,85 +324,7 @@ public class UserIndexer extends BaseIndexer {
 
 		String content = null;
 
-		String userId = document.get(Field.USER_ID);
-
-		portletURL.setParameter("struts_action", "/users_admin/edit_user");
-		portletURL.setParameter("p_u_i_d", userId);
-
-		return new Summary(title, content, portletURL);
-	}
-
-	@Override
-	protected void doReindex(Object obj) throws Exception {
-		if (obj instanceof List<?>) {
-			List<User> users = (List<User>)obj;
-
-			for (User user : users) {
-				doReindex(user);
-			}
-		}
-		else if (obj instanceof Long) {
-			long userId = (Long)obj;
-
-			User user = UserLocalServiceUtil.getUserById(userId);
-
-			doReindex(user);
-		}
-		else if (obj instanceof long[]) {
-			long[] userIds = (long[])obj;
-
-			Map<Long, Collection<Document>> documentsMap =
-				new HashMap<Long, Collection<Document>>();
-
-			for (long userId : userIds) {
-				User user = UserLocalServiceUtil.getUserById(userId);
-
-				if (user.isDefaultUser()) {
-					continue;
-				}
-
-				Document document = getDocument(user);
-
-				long companyId = user.getCompanyId();
-
-				Collection<Document> documents = documentsMap.get(companyId);
-
-				if (documents == null) {
-					documents = new ArrayList<Document>();
-
-					documentsMap.put(companyId, documents);
-				}
-
-				documents.add(document);
-			}
-
-			for (Map.Entry<Long, Collection<Document>> entry :
-					documentsMap.entrySet()) {
-
-				long companyId = entry.getKey();
-				Collection<Document> documents = entry.getValue();
-
-				SearchEngineUtil.updateDocuments(
-					getSearchEngineId(), companyId, documents);
-			}
-		}
-		else if (obj instanceof User) {
-			User user = (User)obj;
-
-			if (user.isDefaultUser()) {
-				return;
-			}
-
-			Document document = getDocument(user);
-
-			SearchEngineUtil.updateDocument(
-				getSearchEngineId(), user.getCompanyId(), document);
-
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-				Contact.class);
-
-			indexer.reindex(user.getContact());
-		}
+		return new Summary(title, content);
 	}
 
 	@Override
@@ -387,110 +341,87 @@ public class UserIndexer extends BaseIndexer {
 		reindexUsers(companyId);
 	}
 
-	protected long[] getAncestorOrganizationIds(
-			long userId, long[] organizationIds)
+	@Override
+	protected void doReindex(User user) throws Exception {
+		if (user.isDefaultUser()) {
+			return;
+		}
+
+		Document document = getDocument(user);
+
+		SearchEngineUtil.updateDocument(
+			getSearchEngineId(), user.getCompanyId(), document,
+			isCommitImmediately());
+
+		Indexer<Contact> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Contact.class);
+
+		try {
+			indexer.reindex(user.getContact());
+		}
+		catch (NoSuchContactException nsce) {
+
+			// This is a temporary workaround for LPS-46825
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(nsce, nsce);
+			}
+		}
+	}
+
+	protected long[] getAncestorOrganizationIds(long[] organizationIds)
 		throws Exception {
 
-		List<Organization> ancestorOrganizations =
-			new ArrayList<Organization>();
+		Set<Long> ancestorOrganizationIds = new HashSet<>();
 
 		for (long organizationId : organizationIds) {
 			Organization organization =
 				OrganizationLocalServiceUtil.getOrganization(organizationId);
 
-			ancestorOrganizations.addAll(organization.getAncestors());
-		}
+			for (long ancestorOrganizationId :
+					organization.getAncestorOrganizationIds()) {
 
-		long[] ancestorOrganizationIds = new long[ancestorOrganizations.size()];
-
-		for (int i = 0; i < ancestorOrganizations.size(); i++) {
-			Organization ancestorOrganization = ancestorOrganizations.get(i);
-
-			ancestorOrganizationIds[i] =
-				ancestorOrganization.getOrganizationId();
-		}
-
-		return ancestorOrganizationIds;
-	}
-
-	@Override
-	protected String getPortletId(SearchContext searchContext) {
-		return PORTLET_ID;
-	}
-
-	protected void reindexUsers(long companyId) throws Exception {
-		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
-			User.class, PortalClassLoaderUtil.getClassLoader());
-
-		Projection minUserIdProjection = ProjectionFactoryUtil.min("userId");
-		Projection maxUserIdProjection = ProjectionFactoryUtil.max("userId");
-
-		ProjectionList projectionList = ProjectionFactoryUtil.projectionList();
-
-		projectionList.add(minUserIdProjection);
-		projectionList.add(maxUserIdProjection);
-
-		dynamicQuery.setProjection(projectionList);
-
-		addReindexCriteria(dynamicQuery, companyId);
-
-		List<Object[]> results = UserLocalServiceUtil.dynamicQuery(
-			dynamicQuery);
-
-		Object[] minAndMaxUserIds = results.get(0);
-
-		if ((minAndMaxUserIds[0] == null) || (minAndMaxUserIds[1] == null)) {
-			return;
-		}
-
-		long minUserId = (Long)minAndMaxUserIds[0];
-		long maxUserId = (Long)minAndMaxUserIds[1];
-
-		long startUserId = minUserId;
-		long endUserId = startUserId + DEFAULT_INTERVAL;
-
-		while (startUserId <= maxUserId) {
-			reindexUsers(companyId, startUserId, endUserId);
-
-			startUserId = endUserId;
-			endUserId += DEFAULT_INTERVAL;
-		}
-	}
-
-	protected void reindexUsers(
-			long companyId, long startUserId, long endUserId)
-		throws Exception {
-
-		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
-			User.class, PortalClassLoaderUtil.getClassLoader());
-
-		Property property = PropertyFactoryUtil.forName("userId");
-
-		dynamicQuery.add(property.ge(startUserId));
-		dynamicQuery.add(property.lt(endUserId));
-
-		addReindexCriteria(dynamicQuery, companyId);
-
-		List<User> users = UserLocalServiceUtil.dynamicQuery(dynamicQuery);
-
-		if (users.isEmpty()) {
-			return;
-		}
-
-		Collection<Document> documents = new ArrayList<Document>(users.size());
-
-		for (User user : users) {
-			if (user.isDefaultUser()) {
-				continue;
+				ancestorOrganizationIds.add(ancestorOrganizationId);
 			}
-
-			Document document = getDocument(user);
-
-			documents.add(document);
 		}
 
-		SearchEngineUtil.updateDocuments(
-			getSearchEngineId(), companyId, documents);
+		return ArrayUtil.toLongArray(ancestorOrganizationIds);
 	}
+
+	protected void reindexUsers(long companyId) throws PortalException {
+		final ActionableDynamicQuery actionableDynamicQuery =
+			UserLocalServiceUtil.getActionableDynamicQuery();
+
+		actionableDynamicQuery.setCompanyId(companyId);
+		actionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod() {
+
+				@Override
+				public void performAction(Object object) {
+					User user = (User)object;
+
+					if (!user.isDefaultUser()) {
+						try {
+							Document document = getDocument(user);
+
+							actionableDynamicQuery.addDocument(document);
+						}
+						catch (PortalException pe) {
+							if (_log.isWarnEnabled()) {
+								_log.warn(
+									"Unable to index user " + user.getUserId(),
+									pe);
+							}
+						}
+					}
+				}
+
+			});
+		actionableDynamicQuery.setSearchEngineId(getSearchEngineId());
+
+		actionableDynamicQuery.performActions();
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(UserIndexer.class);
 
 }

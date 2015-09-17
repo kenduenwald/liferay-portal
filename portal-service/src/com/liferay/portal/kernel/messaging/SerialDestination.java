@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,9 +20,6 @@ import com.liferay.portal.kernel.concurrent.ThreadPoolExecutor;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.CentralizedThreadLocal;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.auth.CompanyThreadLocal;
-import com.liferay.portal.security.auth.PrincipalThreadLocal;
 
 import java.util.Set;
 
@@ -37,66 +34,24 @@ import java.util.Set;
 public class SerialDestination extends BaseAsyncDestination {
 
 	public SerialDestination() {
-		super();
-
 		setWorkersCoreSize(_WORKERS_CORE_SIZE);
 		setWorkersMaxSize(_WORKERS_MAX_SIZE);
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public SerialDestination(String name) {
-		super(name, _WORKERS_CORE_SIZE, _WORKERS_MAX_SIZE);
 	}
 
 	@Override
 	protected void dispatch(
 		final Set<MessageListener> messageListeners, final Message message) {
 
-		if (!message.contains("companyId")) {
-			message.put("companyId", CompanyThreadLocal.getCompanyId());
-		}
-
-		if (!message.contains("principalName")) {
-			message.put("principalName", PrincipalThreadLocal.getName());
-		}
-
-		if (!message.contains("principalPassword")) {
-			message.put(
-				"principalPassword", PrincipalThreadLocal.getPassword());
-		}
+		final Thread currentThread = Thread.currentThread();
 
 		ThreadPoolExecutor threadPoolExecutor = getThreadPoolExecutor();
 
 		Runnable runnable = new MessageRunnable(message) {
 
+			@Override
 			public void run() {
-				long companyId = CompanyThreadLocal.getCompanyId();
-				String principalName = PrincipalThreadLocal.getName();
-				String principalPassword = PrincipalThreadLocal.getPassword();
-
 				try {
-					long messageCompanyId = message.getLong("companyId");
-
-					if (messageCompanyId > 0) {
-						CompanyThreadLocal.setCompanyId(messageCompanyId);
-					}
-
-					String messagePrincipalName = message.getString(
-						"principalName");
-
-					if (Validator.isNotNull(messagePrincipalName)) {
-						PrincipalThreadLocal.setName(messagePrincipalName);
-					}
-
-					String messagePrincipalPassword = message.getString(
-						"principalPassword");
-
-					if (Validator.isNotNull(messagePrincipalPassword)) {
-						PrincipalThreadLocal.setPassword(
-							messagePrincipalPassword);
-					}
+					populateThreadLocalsFromMessage(message);
 
 					for (MessageListener messageListener : messageListeners) {
 						try {
@@ -109,12 +64,11 @@ public class SerialDestination extends BaseAsyncDestination {
 					}
 				}
 				finally {
-					CompanyThreadLocal.setCompanyId(companyId);
-					PrincipalThreadLocal.setName(principalName);
-					PrincipalThreadLocal.setPassword(principalPassword);
-					ThreadLocalCacheManager.clearAll(Lifecycle.REQUEST);
+					if (Thread.currentThread() != currentThread) {
+						ThreadLocalCacheManager.clearAll(Lifecycle.REQUEST);
 
-					CentralizedThreadLocal.clearShortLivedThreadLocals();
+						CentralizedThreadLocal.clearShortLivedThreadLocals();
+					}
 				}
 			}
 
@@ -127,6 +81,7 @@ public class SerialDestination extends BaseAsyncDestination {
 
 	private static final int _WORKERS_MAX_SIZE = 1;
 
-	private static Log _log = LogFactoryUtil.getLog(SerialDestination.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		SerialDestination.class);
 
 }

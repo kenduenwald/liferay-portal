@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,40 +24,43 @@ public interface MultiVMPool {
 
 	public void clear();
 
-	public void clear(String name);
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCache(String)}
+	 */
+	@Deprecated
+	public PortalCache<? extends Serializable, ? extends Serializable>
+		getCache(String portalCacheName);
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCache(String,
+	 *             boolean)}
 	 */
-	public Object get(PortalCache portalCache, String key);
-
-	public Object get(String name, String key);
-
-	public PortalCache getCache(String name);
-
-	public PortalCache getCache(String name, boolean blocking);
+	@Deprecated
+	public PortalCache<? extends Serializable, ? extends Serializable>
+		getCache(String portalCacheName, boolean blocking);
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #getPortalCacheManager()}
 	 */
-	public void put(PortalCache portalCache, String key, Object value);
+	@Deprecated
+	public PortalCacheManager<? extends Serializable, ? extends Serializable>
+		getCacheManager();
+
+	public PortalCache<? extends Serializable, ? extends Serializable>
+		getPortalCache(String portalCacheName);
+
+	public PortalCache<? extends Serializable, ? extends Serializable>
+		getPortalCache(String portalCacheName, boolean blocking);
+
+	public PortalCacheManager<? extends Serializable, ? extends Serializable>
+		getPortalCacheManager();
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 7.0.0, replaced by {@link #removePortalCache(String)}
 	 */
-	public void put(PortalCache portalCache, String key, Serializable value);
+	@Deprecated
+	public void removeCache(String portalCacheName);
 
-	public void put(String name, String key, Object value);
-
-	public void put(String name, String key, Serializable value);
-
-	/**
-	 * @deprecated
-	 */
-	public void remove(PortalCache portalCache, String key);
-
-	public void remove(String name, String key);
-
-	public void removeCache(String name);
+	public void removePortalCache(String portalCacheName);
 
 }

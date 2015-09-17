@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -21,19 +21,29 @@ String currentURL = PortalUtil.getCurrentURL(request);
 
 String referer = ParamUtil.getString(request, WebKeys.REFERER, currentURL);
 
-if (referer.equals(themeDisplay.getPathMain() + "/portal/update_password")) {
-	referer = themeDisplay.getPathMain() + "?doAsUserId=" + themeDisplay.getDoAsUserId();
+String ticketKey = ParamUtil.getString(request, "ticketKey");
+
+if (referer.startsWith(themeDisplay.getPathMain() + "/portal/update_password") && Validator.isNotNull(ticketKey)) {
+	referer = themeDisplay.getPathMain();
 }
 
 PasswordPolicy passwordPolicy = user.getPasswordPolicy();
-
-String ticketKey = ParamUtil.getString(request, "ticketKey");
 %>
 
 <c:choose>
-	<c:when test="<%= SessionErrors.contains(request, UserLockoutException.class.getName()) %>">
-		<div class="portlet-msg-error">
-			<liferay-ui:message key="this-account-has-been-locked" />
+	<c:when test="<%= SessionErrors.contains(request, UserLockoutException.LDAPLockout.class.getName()) %>">
+		<div class="alert alert-danger">
+			<liferay-ui:message key="this-account-is-locked" />
+		</div>
+	</c:when>
+	<c:when test="<%= SessionErrors.contains(request, UserLockoutException.PasswordPolicyLockout.class.getName()) %>">
+		<div class="alert alert-danger">
+
+			<%
+			UserLockoutException.PasswordPolicyLockout ule = (UserLockoutException.PasswordPolicyLockout)SessionErrors.get(request, UserLockoutException.PasswordPolicyLockout.class.getName());
+			%>
+
+			<liferay-ui:message arguments="<%= ule.user.getUnlockDate() %>" key="this-account-is-locked-until-x" translateArguments="<%= false %>" />
 		</div>
 	</c:when>
 	<c:otherwise>
@@ -45,57 +55,68 @@ String ticketKey = ParamUtil.getString(request, "ticketKey");
 			<aui:input name="<%= WebKeys.REFERER %>" type="hidden" value="<%= referer %>" />
 			<aui:input name="ticketKey" type="hidden" value="<%= ticketKey %>" />
 
-			<div class="portlet-msg-info">
+			<div class="alert alert-info">
 				<liferay-ui:message key="please-set-a-new-password" />
 			</div>
 
-			<c:if test="<%= SessionErrors.contains(request, UserPasswordException.class.getName()) %>">
+			<c:if test="<%= !SessionErrors.isEmpty(request) %>">
+				<div class="alert alert-danger">
+					<c:choose>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustBeLonger.class.getName()) %>">
 
-				<%
-				UserPasswordException upe = (UserPasswordException)SessionErrors.get(request, UserPasswordException.class.getName());
-				%>
+							<%
+							UserPasswordException.MustBeLonger upe = (UserPasswordException.MustBeLonger)SessionErrors.get(request, UserPasswordException.MustBeLonger.class.getName());
+							%>
 
-				<div class="portlet-msg-error">
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_ALREADY_USED %>">
-						<liferay-ui:message key="that-password-has-already-been-used-please-enter-in-a-different-password" />
-					</c:if>
+							<%= LanguageUtil.format(request, "that-password-is-too-short", String.valueOf(upe.minLength), false) %>
+						</c:when>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_CONTAINS_TRIVIAL_WORDS %>">
-						<liferay-ui:message key="that-password-uses-common-words-please-enter-in-a-password-that-is-harder-to-guess-i-e-contains-a-mix-of-numbers-and-letters" />
-					</c:if>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustComplyWithModelListeners.class.getName()) %>">
+							<liferay-ui:message key="that-password-is-invalid-please-enter-a-different-password" />
+						</c:when>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_INVALID %>">
-						<liferay-ui:message key="that-password-is-invalid-please-enter-in-a-different-password" />
-					</c:if>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustComplyWithRegex.class.getName()) %>">
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_LENGTH %>">
-						<%= LanguageUtil.format(pageContext, "that-password-is-too-short-or-too-long-please-make-sure-your-password-is-between-x-and-512-characters", String.valueOf(passwordPolicy.getMinLength()), false) %>
-					</c:if>
+							<%
+							UserPasswordException.MustComplyWithRegex upe = (UserPasswordException.MustComplyWithRegex)SessionErrors.get(request, UserPasswordException.MustComplyWithRegex.class.getName());
+							%>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_NOT_CHANGEABLE %>">
-						<liferay-ui:message key="your-password-cannot-be-changed" />
-					</c:if>
+							<%= LanguageUtil.format(request, "that-password-does-not-comply-with-the-regular-expression", upe.regex, false) %>
+						</c:when>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_SAME_AS_CURRENT %>">
-						<liferay-ui:message key="your-new-password-cannot-be-the-same-as-your-old-password-please-enter-in-a-different-password" />
-					</c:if>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustMatch.class.getName()) %>">
+							<liferay-ui:message key="the-passwords-you-entered-do-not-match" />
+						</c:when>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_TOO_TRIVIAL %>">
-						<liferay-ui:message key="that-password-is-too-trivial" />
-					</c:if>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustNotBeEqualToCurrent.class.getName()) %>">
+							<liferay-ui:message key="your-new-password-cannot-be-the-same-as-your-old-password-please-enter-a-different-password" />
+						</c:when>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORD_TOO_YOUNG %>">
-						<%= LanguageUtil.format(pageContext, "you-cannot-change-your-password-yet-please-wait-at-least-x-before-changing-your-password-again", LanguageUtil.getTimeDescription(pageContext, passwordPolicy.getMinAge() * 1000), false) %>
-					</c:if>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustNotBeNull.class.getName()) %>">
+							<liferay-ui:message key="the-password-cannot-be-blank" />
+						</c:when>
 
-					<c:if test="<%= upe.getType() == UserPasswordException.PASSWORDS_DO_NOT_MATCH %>">
-						<liferay-ui:message key="the-passwords-you-entered-do-not-match-each-other-please-re-enter-your-password" />
-					</c:if>
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustNotBeRecentlyUsed.class.getName()) %>">
+							<liferay-ui:message key="that-password-has-already-been-used-please-enter-a-different-password" />
+						</c:when>
+
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustNotBeTrivial.class.getName()) %>">
+							<liferay-ui:message key="that-password-uses-common-words-please-enter-a-password-that-is-harder-to-guess-i-e-contains-a-mix-of-numbers-and-letters" />
+						</c:when>
+
+						<c:when test="<%= SessionErrors.contains(request, UserPasswordException.MustNotContainDictionaryWords.class.getName()) %>">
+							<liferay-ui:message key="that-password-uses-common-dictionary-words" />
+						</c:when>
+
+						<c:otherwise>
+							<liferay-ui:message key="your-request-failed-to-complete" />
+						</c:otherwise>
+					</c:choose>
 				</div>
 			</c:if>
 
 			<aui:fieldset label="new-password">
-				<aui:input class="lfr-input-text-container" label="password" name="password1" type="password" />
+				<aui:input autoFocus="<%= true %>" class="lfr-input-text-container" label="password" name="password1" type="password" />
 
 				<aui:input class="lfr-input-text-container" label="enter-again" name="password2" type="password" />
 			</aui:fieldset>
@@ -104,9 +125,5 @@ String ticketKey = ParamUtil.getString(request, "ticketKey");
 				<aui:button type="submit" />
 			</aui:button-row>
 		</aui:form>
-
-		<aui:script>
-			Liferay.Util.focusFormField(document.fm.password1);
-		</aui:script>
 	</c:otherwise>
 </c:choose>

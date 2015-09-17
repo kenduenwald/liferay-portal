@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,15 +15,11 @@
 package com.liferay.taglib.util;
 
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
-
-import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspWriter;
 import javax.servlet.jsp.tagext.DynamicAttributes;
 
 /**
@@ -41,28 +37,24 @@ public class AttributesTagSupport
 		return _attributeNamespace;
 	}
 
-	public Object getDynamicAttribute(String key) {
-		return _dynamicAttributes.get(key);
-	}
-
-	public Object getNamespacedAttribute(
-		HttpServletRequest request, String key) {
-
-		return request.getAttribute(_encodeKey(key));
-	}
-
-	public Object getScopedAttribute(String key) {
-		return _scopedAttributes.get(key);
-	}
-
 	public Map<String, Object> getScopedAttributes() {
 		return _scopedAttributes;
+	}
+
+	@Override
+	public void release() {
+		super.release();
+
+		_attributeNamespace = null;
+		_dynamicAttributes = null;
+		_scopedAttributes = null;
 	}
 
 	public void setAttributeNamespace(String attributeNamespace) {
 		_attributeNamespace = attributeNamespace;
 	}
 
+	@Override
 	public void setDynamicAttribute(
 		String uri, String localName, Object value) {
 
@@ -90,17 +82,6 @@ public class AttributesTagSupport
 		return _dynamicAttributes;
 	}
 
-	protected void writeDynamicAttributes(JspWriter jspWriter)
-		throws IOException {
-
-		String dynamicAttributesString = InlineUtil.buildDynamicAttributes(
-			getDynamicAttributes());
-
-		if (Validator.isNotNull(dynamicAttributesString)) {
-			jspWriter.write(dynamicAttributesString);
-		}
-	}
-
 	private String _encodeKey(String key) {
 		if (_attributeNamespace.length() == 0) {
 			return key;
@@ -111,9 +92,7 @@ public class AttributesTagSupport
 	}
 
 	private String _attributeNamespace = StringPool.BLANK;
-	private Map<String, Object> _dynamicAttributes =
-		new HashMap<String, Object>();
-	private Map<String, Object> _scopedAttributes =
-		new HashMap<String, Object>();
+	private Map<String, Object> _dynamicAttributes = new HashMap<>();
+	private Map<String, Object> _scopedAttributes = new HashMap<>();
 
 }

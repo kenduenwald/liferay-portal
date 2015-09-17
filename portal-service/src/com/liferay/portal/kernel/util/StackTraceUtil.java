@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,6 +22,18 @@ import java.io.PrintWriter;
  * @author Brian Wing Shun Chan
  */
 public class StackTraceUtil {
+
+	public static String getCallerKey() {
+		Exception e = new Exception();
+
+		StackTraceElement[] stackTraceElements = e.getStackTrace();
+
+		StackTraceElement stackTraceElement = stackTraceElements[1];
+
+		return stackTraceElement.getClassName() + "#" +
+			stackTraceElement.getMethodName() + "#" +
+				stackTraceElement.getLineNumber();
+	}
 
 	public static String getStackTrace(Throwable t) {
 		String stackTrace = null;

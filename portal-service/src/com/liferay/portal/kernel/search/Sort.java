@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,9 +23,6 @@ import java.io.Serializable;
  */
 public class Sort implements Serializable {
 
-	@Deprecated
-	public static final int AUTO_TYPE = 2;
-
 	public static final int CUSTOM_TYPE = 9;
 
 	public static final int DOC_TYPE = 1;
@@ -33,6 +30,8 @@ public class Sort implements Serializable {
 	public static final int DOUBLE_TYPE = 7;
 
 	public static final int FLOAT_TYPE = 5;
+
+	public static final int GEO_DISTANCE_TYPE = 10;
 
 	public static final int INT_TYPE = 4;
 

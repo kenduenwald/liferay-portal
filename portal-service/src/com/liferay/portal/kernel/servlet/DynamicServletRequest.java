@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,17 +32,22 @@ import javax.servlet.http.HttpServletRequestWrapper;
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
+ * @author Sampsa Sohlman
  */
 public class DynamicServletRequest extends HttpServletRequestWrapper {
 
-	public static HttpServletRequest addQueryString(
-		HttpServletRequest request, String queryString) {
+	public static final String DYNAMIC_QUERY_STRING = "DYNAMIC_QUERY_STRING";
 
-		return addQueryString(request, queryString, true);
+	public static HttpServletRequest addQueryString(
+		HttpServletRequest request, Map<String, String[]> parameterMap,
+		String queryString) {
+
+		return addQueryString(request, parameterMap, queryString, true);
 	}
 
 	public static HttpServletRequest addQueryString(
-		HttpServletRequest request, String queryString, boolean inherit) {
+		HttpServletRequest request, Map<String, String[]> parameterMap,
+		String queryString, boolean inherit) {
 
 		String[] parameters = StringUtil.split(queryString, CharPool.AMPERSAND);
 
@@ -50,7 +55,7 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 			return request;
 		}
 
-		Map<String, String[]> parameterMap = new HashMap<String, String[]>();
+		parameterMap = new HashMap<>(parameterMap);
 
 		for (String parameter : parameters) {
 			String[] parameterParts = StringUtil.split(
@@ -81,7 +86,23 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 
 		request = new DynamicServletRequest(request, parameterMap, inherit);
 
+		request.setAttribute(DYNAMIC_QUERY_STRING, queryString);
+
 		return request;
+	}
+
+	public static HttpServletRequest addQueryString(
+		HttpServletRequest request, String queryString) {
+
+		return addQueryString(
+			request, new HashMap<String, String[]>(), queryString, true);
+	}
+
+	public static HttpServletRequest addQueryString(
+		HttpServletRequest request, String queryString, boolean inherit) {
+
+		return addQueryString(
+			request, new HashMap<String, String[]>(), queryString, inherit);
 	}
 
 	public DynamicServletRequest(HttpServletRequest request) {
@@ -104,7 +125,7 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 
 		super(request);
 
-		_params = new HashMap<String, String[]>();
+		_params = new HashMap<>();
 		_inherit = inherit;
 
 		if (params != null) {
@@ -115,7 +136,7 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 			DynamicServletRequest dynamicRequest =
 				(DynamicServletRequest)request;
 
-			setRequest(dynamicRequest.getRequest());
+			dynamicRequest.injectInto(this);
 
 			params = dynamicRequest.getDynamicParameterMap();
 
@@ -137,6 +158,25 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 		}
 	}
 
+	public void appendParameter(String name, String value) {
+		String[] values = _params.get(name);
+
+		if (values == null) {
+			values = new String[] {value};
+		}
+		else {
+			String[] newValues = new String[values.length + 1];
+
+			System.arraycopy(values, 0, newValues, 0, values.length);
+
+			newValues[newValues.length - 1] = value;
+
+			values = newValues;
+		}
+
+		_params.put(name, values);
+	}
+
 	public Map<String, String[]> getDynamicParameterMap() {
 		return _params;
 	}
@@ -149,7 +189,7 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 			return super.getParameter(name);
 		}
 
-		if ((values != null) && (values.length > 0)) {
+		if (ArrayUtil.isNotEmpty(values)) {
 			return values[0];
 		}
 		else {
@@ -159,7 +199,7 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public Map<String, String[]> getParameterMap() {
-		Map<String, String[]> map = new HashMap<String, String[]>();
+		Map<String, String[]> map = new HashMap<>();
 
 		if (_inherit) {
 			map.putAll(super.getParameterMap());
@@ -172,7 +212,7 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public Enumeration<String> getParameterNames() {
-		Set<String> names = new LinkedHashSet<String>();
+		Set<String> names = new LinkedHashSet<>();
 
 		if (_inherit) {
 			Enumeration<String> enu = super.getParameterNames();
@@ -206,7 +246,11 @@ public class DynamicServletRequest extends HttpServletRequestWrapper {
 		_params.put(name, values);
 	}
 
-	private boolean _inherit;
-	private Map<String, String[]> _params;
+	protected void injectInto(DynamicServletRequest dynamicServletRequest) {
+		dynamicServletRequest.setRequest(getRequest());
+	}
+
+	private final boolean _inherit;
+	private final Map<String, String[]> _params;
 
 }

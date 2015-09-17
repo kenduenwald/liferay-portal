@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -51,7 +51,7 @@ public class Dimensions implements Serializable {
 		return sb.toString();
 	}
 
-	private float _height;
-	private float _width;
+	private final float _height;
+	private final float _width;
 
 }

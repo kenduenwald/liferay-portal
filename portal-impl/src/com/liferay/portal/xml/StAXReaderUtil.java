@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.portal.xml;
 
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.security.xml.SecureXMLFactoryProviderUtil;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -47,7 +48,8 @@ public class StAXReaderUtil {
 	}
 
 	private static XMLInputFactory _createXMLInputFactory() {
-		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+		XMLInputFactory xmlInputFactory =
+			SecureXMLFactoryProviderUtil.newXMLInputFactory();
 
 		xmlInputFactory.setProperty(
 			XMLInputFactory.IS_COALESCING, Boolean.TRUE);
@@ -55,6 +57,7 @@ public class StAXReaderUtil {
 		return xmlInputFactory;
 	}
 
-	private static XMLInputFactory _xmlInputFactory = _createXMLInputFactory();
+	private static final XMLInputFactory _xmlInputFactory =
+		_createXMLInputFactory();
 
 }

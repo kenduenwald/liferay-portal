@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,29 +14,42 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.portal.bean.BeanLocatorImpl;
 import com.liferay.portal.cache.CacheRegistryImpl;
 import com.liferay.portal.configuration.ConfigurationFactoryImpl;
 import com.liferay.portal.dao.db.DBFactoryImpl;
 import com.liferay.portal.dao.jdbc.DataSourceFactoryImpl;
+import com.liferay.portal.kernel.bean.BeanLocator;
+import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactoryUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.log.SanitizerLogWrapper;
+import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.JavaProps;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.log.Log4jLogFactoryImpl;
-import com.liferay.portal.spring.util.SpringUtil;
+import com.liferay.portal.module.framework.ModuleFrameworkUtilAdapter;
+import com.liferay.portal.security.lang.DoPrivilegedUtil;
+import com.liferay.portal.security.lang.SecurityManagerUtil;
+import com.liferay.portal.spring.context.ArrayApplicationContext;
 import com.liferay.util.log4j.Log4JUtil;
 
 import com.sun.syndication.io.XmlReader;
 
+import java.util.List;
+
 import org.apache.commons.lang.time.StopWatch;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -48,13 +61,9 @@ public class InitUtil {
 			return;
 		}
 
-		StopWatch stopWatch = null;
+		StopWatch stopWatch = new StopWatch();
 
-		if (_PRINT_TIME) {
-			stopWatch = new StopWatch();
-
-			stopWatch.start();
-		}
+		stopWatch.start();
 
 		// Set the default locale used by Liferay. This locale is no longer set
 		// at the VM level. See LEP-2584.
@@ -75,19 +84,21 @@ public class InitUtil {
 		// Shared class loader
 
 		try {
-			Thread currentThread = Thread.currentThread();
-
 			PortalClassLoaderUtil.setClassLoader(
-				currentThread.getContextClassLoader());
+				ClassLoaderUtil.getContextClassLoader());
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
 
+		// Properties
+
+		com.liferay.portal.kernel.util.PropsUtil.setProps(new PropsImpl());
+
 		// Log4J
 
-		if (GetterUtil.getBoolean(SystemProperties.get(
-				"log4j.configure.on.startup"), true)) {
+		if (GetterUtil.getBoolean(
+				SystemProperties.get("log4j.configure.on.startup"), true)) {
 
 			ClassLoader classLoader = InitUtil.class.getClassLoader();
 
@@ -103,26 +114,41 @@ public class InitUtil {
 			e.printStackTrace();
 		}
 
+		// Log sanitizer
+
+		SanitizerLogWrapper.init();
+
+		// Security manager
+
+		SecurityManagerUtil.init();
+
+		if (SecurityManagerUtil.ENABLED) {
+			com.liferay.portal.kernel.util.PropsUtil.setProps(
+				DoPrivilegedUtil.wrap(
+					com.liferay.portal.kernel.util.PropsUtil.getProps()));
+
+			LogFactoryUtil.setLogFactory(
+				DoPrivilegedUtil.wrap(LogFactoryUtil.getLogFactory()));
+		}
+
 		// Cache registry
 
-		CacheRegistryUtil.setCacheRegistry(new CacheRegistryImpl());
+		CacheRegistryUtil.setCacheRegistry(
+			DoPrivilegedUtil.wrap(new CacheRegistryImpl()));
 
 		// Configuration factory
 
 		ConfigurationFactoryUtil.setConfigurationFactory(
-			new ConfigurationFactoryImpl());
+			DoPrivilegedUtil.wrap(new ConfigurationFactoryImpl()));
 
 		// Data source factory
 
-		DataSourceFactoryUtil.setDataSourceFactory(new DataSourceFactoryImpl());
+		DataSourceFactoryUtil.setDataSourceFactory(
+			DoPrivilegedUtil.wrap(new DataSourceFactoryImpl()));
 
 		// DB factory
 
-		DBFactoryUtil.setDBFactory(new DBFactoryImpl());
-
-		// Java properties
-
-		JavaProps.isJDK5();
+		DBFactoryUtil.setDBFactory(DoPrivilegedUtil.wrap(new DBFactoryImpl()));
 
 		// ROME
 
@@ -136,14 +162,18 @@ public class InitUtil {
 		_initialized = true;
 	}
 
-	public synchronized static void initWithSpring() {
-		initWithSpring(false);
+	public synchronized static void initWithSpring(
+		boolean initModuleFramework) {
+
+		List<String> configLocations = ListUtil.fromArray(
+			PropsUtil.getArray(
+				com.liferay.portal.kernel.util.PropsKeys.SPRING_CONFIGS));
+
+		initWithSpring(configLocations, initModuleFramework);
 	}
 
-	public synchronized static void initWithSpring(boolean force) {
-		if (force) {
-			_initialized = false;
-		}
+	public synchronized static void initWithSpring(
+		List<String> configLocations, boolean initModuleFramework) {
 
 		if (_initialized) {
 			return;
@@ -158,9 +188,65 @@ public class InitUtil {
 
 		init();
 
-		SpringUtil.loadContext();
+		try {
+			if (initModuleFramework) {
+				PropsValues.LIFERAY_WEB_PORTAL_CONTEXT_TEMPDIR =
+					System.getProperty(SystemProperties.TMP_DIR);
+
+				ModuleFrameworkUtilAdapter.initFramework();
+			}
+
+			ApplicationContext applicationContext = new ArrayApplicationContext(
+				PropsValues.SPRING_INFRASTRUCTURE_CONFIGS);
+
+			if (initModuleFramework) {
+				ModuleFrameworkUtilAdapter.registerContext(applicationContext);
+
+				ModuleFrameworkUtilAdapter.startFramework();
+			}
+
+			applicationContext = new ClassPathXmlApplicationContext(
+				configLocations.toArray(new String[configLocations.size()]),
+				applicationContext);
+
+			BeanLocator beanLocator = new BeanLocatorImpl(
+				ClassLoaderUtil.getPortalClassLoader(), applicationContext);
+
+			PortalBeanLocatorUtil.setBeanLocator(beanLocator);
+
+			if (initModuleFramework) {
+				ModuleFrameworkUtilAdapter.registerContext(applicationContext);
+
+				ModuleFrameworkUtilAdapter.startRuntime();
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 
 		_initialized = true;
+	}
+
+	public static boolean isInitialized() {
+		return _initialized;
+	}
+
+	public synchronized static void stopModuleFramework() {
+		try {
+			ModuleFrameworkUtilAdapter.stopFramework(0);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public synchronized static void stopRuntime() {
+		try {
+			ModuleFrameworkUtilAdapter.stopRuntime();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static final boolean _PRINT_TIME = false;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -67,44 +67,50 @@ public class HypersonicDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith(ALTER_COLUMN_NAME)) {
-				String[] template = buildColumnNameTokens(line);
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith(ALTER_COLUMN_NAME)) {
+					String[] template = buildColumnNameTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ alter column @old-column@ rename to " +
-						"@new-column@;",
-					REWORD_TEMPLATE, template);
+					line = StringUtil.replace(
+						"alter table @table@ alter column @old-column@ rename" +
+							" to @new-column@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_COLUMN_TYPE)) {
+					String[] template = buildColumnTypeTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @table@ alter column @old-column@ " +
+							"@type@ @nullable@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_TABLE_NAME)) {
+					String[] template = buildTableNameTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @old-table@ rename to @new-table@;",
+						RENAME_TABLE_TEMPLATE, template);
+				}
+				else if (line.contains(DROP_INDEX)) {
+					String[] tokens = StringUtil.split(line, ' ');
+
+					line = StringUtil.replace(
+						"drop index @index@;", "@index@", tokens[2]);
+				}
+
+				sb.append(line);
+				sb.append("\n");
 			}
-			else if (line.startsWith(ALTER_COLUMN_TYPE)) {
-				String[] template = buildColumnTypeTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ alter column @old-column@ @type@ " +
-						"@nullable@;",
-					REWORD_TEMPLATE, template);
-			}
-			else if (line.indexOf(DROP_INDEX) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
-
-				line = StringUtil.replace(
-					"drop index @index@;", "@index@", tokens[2]);
-			}
-
-			sb.append(line);
-			sb.append("\n");
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	private static final String[] _HYPERSONIC = {
@@ -113,6 +119,6 @@ public class HypersonicDB extends BaseDB {
 		" longvarchar", " longvarchar", " varchar", "", "commit"
 	};
 
-	private static HypersonicDB _instance = new HypersonicDB();
+	private static final HypersonicDB _instance = new HypersonicDB();
 
 }

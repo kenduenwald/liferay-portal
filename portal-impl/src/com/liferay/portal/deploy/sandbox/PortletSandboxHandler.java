@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,6 +23,7 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.Namespace;
 import com.liferay.portal.kernel.xml.QName;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 
 import java.io.File;
 
@@ -47,7 +48,7 @@ public class PortletSandboxHandler extends BaseSandboxHandler {
 	protected void clonePlugin(File dir, PluginPackage pluginPackage)
 		throws Exception {
 
-		Map<String, String> filterMap = new HashMap<String, String>();
+		Map<String, String> filterMap = new HashMap<>();
 
 		filterMap.put(
 			"portlet_class", "com.liferay.util.bridges.alloy.AlloyPortlet");
@@ -104,7 +105,7 @@ public class PortletSandboxHandler extends BaseSandboxHandler {
 
 		String content = FileUtil.read(file);
 
-		Document document = SAXReaderUtil.read(content);
+		Document document = UnsecureSAXReaderUtil.read(content);
 
 		Element rootElement = document.getRootElement();
 
@@ -124,14 +125,14 @@ public class PortletSandboxHandler extends BaseSandboxHandler {
 
 		String content = FileUtil.read(file);
 
-		Document document = SAXReaderUtil.read(content);
+		Document document = UnsecureSAXReaderUtil.read(content);
 
 		Element rootElement = document.getRootElement();
 
 		List<Element> portletElements = rootElement.elements("portlet");
 
 		for (Element portletElement : portletElements) {
-			List<Element> elements = new ArrayList<Element>();
+			List<Element> elements = new ArrayList<>();
 
 			Element resourceBundleElement = SAXReaderUtil.createElement(
 				SAXReaderUtil.createQName(
@@ -166,6 +167,6 @@ public class PortletSandboxHandler extends BaseSandboxHandler {
 
 	private static final String _PLUGIN_TYPE = "portlet";
 
-	private Deployer _deployer;
+	private final Deployer _deployer;
 
 }

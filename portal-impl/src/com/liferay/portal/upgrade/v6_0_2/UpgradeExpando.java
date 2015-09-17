@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,10 +20,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.expando.model.ExpandoTableConstants;
-import com.liferay.portlet.journal.model.JournalArticle;
-import com.liferay.portlet.journal.model.impl.JournalArticleImpl;
-import com.liferay.portlet.wiki.model.WikiPage;
-import com.liferay.portlet.wiki.model.impl.WikiPageImpl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -42,7 +38,7 @@ public class UpgradeExpando extends UpgradeProcess {
 		PreparedStatement ps = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"insert into ExpandoRow (rowId_, companyId, tableId, " +
@@ -69,7 +65,7 @@ public class UpgradeExpando extends UpgradeProcess {
 		PreparedStatement ps = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"insert into ExpandoValue (valueId, companyId, tableId, " +
@@ -95,22 +91,21 @@ public class UpgradeExpando extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		updateTables(
-			JournalArticle.class.getName(), JournalArticleImpl.TABLE_NAME,
-			"id_");
+			"com.liferay.portlet.journal.model.JournalArticle",
+			"JournalArticle", "id_");
 
-		updateTables(
-			WikiPage.class.getName(), WikiPageImpl.TABLE_NAME, "pageId");
+		updateTables("com.liferay.wiki.model.WikiPage", "WikiPage", "pageId");
 	}
 
 	protected boolean hasRow(long companyId, long tableId, long classPK)
-		throws Exception{
+		throws Exception {
 
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select count(*) from ExpandoRow where companyId = ? and " +
@@ -123,7 +118,7 @@ public class UpgradeExpando extends UpgradeProcess {
 			rs = ps.executeQuery();
 
 			while (rs.next()) {
-				long count = rs.getLong(1);
+				int count = rs.getInt(1);
 
 				if (count > 0) {
 					return true;
@@ -139,14 +134,14 @@ public class UpgradeExpando extends UpgradeProcess {
 
 	protected boolean hasValue(
 			long companyId, long tableId, long columnId, long rowId)
-		throws Exception{
+		throws Exception {
 
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select count(*) from ExpandoValue where companyId = ? and " +
@@ -160,7 +155,7 @@ public class UpgradeExpando extends UpgradeProcess {
 			rs = ps.executeQuery();
 
 			while (rs.next()) {
-				long count = rs.getLong(1);
+				int count = rs.getInt(1);
 
 				if (count > 0) {
 					return true;
@@ -184,7 +179,7 @@ public class UpgradeExpando extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select " + columnName + " from " + tableName + " where " +
@@ -228,7 +223,7 @@ public class UpgradeExpando extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select * from ExpandoRow where tableId = ?");
@@ -266,7 +261,7 @@ public class UpgradeExpando extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select * from ExpandoTable where classNameId = ? and " +
@@ -298,7 +293,7 @@ public class UpgradeExpando extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"select * from ExpandoValue where tableId = ? and rowId_ = ? " +
@@ -330,6 +325,6 @@ public class UpgradeExpando extends UpgradeProcess {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(UpgradeExpando.class);
+	private static final Log _log = LogFactoryUtil.getLog(UpgradeExpando.class);
 
 }

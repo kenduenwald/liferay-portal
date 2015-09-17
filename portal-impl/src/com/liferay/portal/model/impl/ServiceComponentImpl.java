@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,24 +20,24 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class ServiceComponentImpl extends ServiceComponentBaseImpl {
 
-	public ServiceComponentImpl() {
-	}
-
+	@Override
 	public String getIndexesSQL() {
 		return _getData("indexes-sql");
 	}
 
+	@Override
 	public String getSequencesSQL() {
 		return _getData("sequences-sql");
 	}
 
+	@Override
 	public String getTablesSQL() {
 		return _getData("tables-sql");
 	}
@@ -62,7 +62,7 @@ public class ServiceComponentImpl extends ServiceComponentBaseImpl {
 
 	private Element _getDataEl() throws DocumentException {
 		if (_dataEl == null) {
-			Document doc = SAXReaderUtil.read(getData());
+			Document doc = UnsecureSAXReaderUtil.read(getData());
 
 			_dataEl = doc.getRootElement();
 		}
@@ -70,7 +70,8 @@ public class ServiceComponentImpl extends ServiceComponentBaseImpl {
 		return _dataEl;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ServiceComponentImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		ServiceComponentImpl.class);
 
 	private Element _dataEl;
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,16 +15,24 @@
 package com.liferay.portlet.documentlibrary.service;
 
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.test.EnvironmentExecutionTestListener;
-import com.liferay.portal.test.ExecutionTestListeners;
-import com.liferay.portal.test.LiferayIntegrationJUnitTestRunner;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.test.randomizerbumpers.TikaSafeRandomizerBumper;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.MainServletTestRule;
 import com.liferay.portlet.documentlibrary.DuplicateFileException;
 import com.liferay.portlet.documentlibrary.FileNameException;
 import com.liferay.portlet.documentlibrary.util.DLUtil;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * This JUnit test case takes into consideration all possible permutations of
@@ -32,175 +40,214 @@ import org.junit.runner.RunWith;
  * verifies that the correct validations occur and the correct title with
  * extension can be generated.
  *
+ * <p>
  * <table>
+ * <tr>
+ * <th>
+ * Source
+ * </th>
+ * <th>
+ * Title
+ * </th>
+ * <th>
+ * Extension
+ * </th>
+ * <th>
+ * Download Title
+ * </th>
+ * </tr>
  *
- * 	<tr>
- * 		<th>
- * 			Source
- * 		</th>
- * 		<th>
- * 			Title
- * 		</th>
- * 		<th>
- * 			Extension
- * 		</th>
- * 		<th>
- * 			Download Title
- * 		</th>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Text.txt
+ * </td>
+ * <td>
+ * Text.pdf
+ * </td>
+ * <td>
+ * txt
+ * </td>
+ * <td>
+ * Text.pdf.txt
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Text.txt
- * 		</td>
- * 		<td>
- * 			Text.pdf
- * 		</td>
- * 		<td>
- * 			txt
- * 		</td>
- * 		<td>
- * 			Text.pdf.txt
- * 		</td>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Test.txt
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * <td>
+ * txt
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 		<td>
- * 			txt
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Test.txt
+ * </td>
+ * <td>
+ * Test
+ * </td>
+ * <td>
+ * txt
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 		<td>
- * 			Test
- * 		</td>
- * 		<td>
- * 			txt
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Test.txt
+ * </td>
+ * <td>
+ * </td>
+ * <td>
+ * txt
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 		<td>
- * 		</td>
- * 		<td>
- * 			txt
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Test
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * <td>
+ * txt
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Test
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 		<td>
- * 			txt
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Test
+ * </td>
+ * <td>
+ * Test
+ * </td>
+ * <td>
+ * </td>
+ * <td>
+ * Test
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Test
- * 		</td>
- * 		<td>
- * 			Test
- * 		</td>
- * 		<td>
- * 		</td>
- * 		<td>
- * 			Test
- * 		</td>
- * 	</tr>
+ * <tr>
+ * <td>
+ * Test
+ * </td>
+ * <td>
+ * </td>
+ * <td>
+ * </td>
+ * <td>
+ * Test
+ * </td>
+ * </tr>
+ * <tr>
+ * <td>
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * <td>
+ * txt
+ * </td>
+ * <td>
+ * Test.txt
+ * </td>
+ * </tr>
  *
- * 	<tr>
- * 		<td>
- * 			Test
- * 		</td>
- * 		<td>
- * 		</td>
- * 		<td>
- * 		</td>
- * 		<td>
- * 			Test
- * 		</td>
- * 	</tr>
- * 	<tr>
- * 		<td>
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 		<td>
- * 			txt
- * 		</td>
- * 		<td>
- * 			Test.txt
- * 		</td>
- * 	</tr>
- *
- * 	<tr>
- * 		<td>
- * 		</td>
- * 		<td>
- * 			Test
- * 		</td>
- * 		<td>
- * 		</td>
- * 		<td>
- * 			Test
- * 		</td>
- * 	</tr>
- *
+ * <tr>
+ * <td>
+ * </td>
+ * <td>
+ * Test
+ * </td>
+ * <td>
+ * </td>
+ * <td>
+ * Test
+ * </td>
+ * </tr>
  * </table>
+ * </p>
  *
  * @author Alexander Chow
  */
-@ExecutionTestListeners(listeners = {EnvironmentExecutionTestListener.class})
-@RunWith(LiferayIntegrationJUnitTestRunner.class)
 public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(), MainServletTestRule.INSTANCE);
+
 	@Test
-	public void testAddFileEntryBasic() throws Exception {
+	public void testAddFileEntryBasic01() throws Exception {
 		testAddFileEntryBasic(_FILE_NAME, "Test.pdf", "txt", "Test.pdf.txt");
+	}
+
+	@Test
+	public void testAddFileEntryBasic02() throws Exception {
 		testAddFileEntryBasic(_FILE_NAME, _FILE_NAME, "txt", _FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic03() throws Exception {
 		testAddFileEntryBasic(
 			_FILE_NAME, _STRIPPED_FILE_NAME, "txt", _FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic04() throws Exception {
 		testAddFileEntryBasic(_FILE_NAME, "", "txt", _FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic05() throws Exception {
 		testAddFileEntryBasic(
 			_STRIPPED_FILE_NAME, _FILE_NAME, "txt", _FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic06() throws Exception {
 		testAddFileEntryBasic(
 			_STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME, "", _STRIPPED_FILE_NAME);
-		testAddFileEntryBasic(_STRIPPED_FILE_NAME, "", "", _STRIPPED_FILE_NAME);
-		testAddFileEntryBasic("", _FILE_NAME, "txt", _FILE_NAME);
-		testAddFileEntryBasic("", _STRIPPED_FILE_NAME, "", _STRIPPED_FILE_NAME);
+	}
 
+	@Test
+	public void testAddFileEntryBasic07() throws Exception {
+		testAddFileEntryBasic(_STRIPPED_FILE_NAME, "", "", _STRIPPED_FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic08() throws Exception {
+		testAddFileEntryBasic("", _FILE_NAME, "txt", _FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic09() throws Exception {
+		testAddFileEntryBasic("", _STRIPPED_FILE_NAME, "", _STRIPPED_FILE_NAME);
+	}
+
+	@Test
+	public void testAddFileEntryBasic10() throws Exception {
 		try {
-			addFileEntry(false, "", "");
+			addFileEntry("", "");
 
 			Assert.fail(
 				"Created document with blank source file name and blank title");
@@ -214,64 +261,57 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 
 		// "Test.txt" / "Test.txt" followed by "Test" / "Test"
 
-		FileEntry fileEntry = addFileEntry(false, _FILE_NAME, _FILE_NAME);
+		FileEntry fileEntry = addFileEntry(_FILE_NAME, _FILE_NAME);
 
-		try {
-			FileEntry tempFileEntry = addFileEntry(
-				false, _STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME);
+		FileEntry tempFileEntry = addFileEntry(
+			_STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME);
 
-			DLAppLocalServiceUtil.deleteFileEntry(
-				tempFileEntry.getFileEntryId());
-		}
-		catch (DuplicateFileException dfe) {
-			Assert.fail("Unable to create" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
-		}
+		DLAppLocalServiceUtil.deleteFileEntry(tempFileEntry.getFileEntryId());
 
 		DLAppLocalServiceUtil.deleteFileEntry(fileEntry.getFileEntryId());
 
 		// "Test" / "Test" followed by "Test.txt" / "Test.txt"
 
-		fileEntry = addFileEntry(
-			false, _STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME);
+		fileEntry = addFileEntry(_STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME);
 
-		try {
-			FileEntry tempFileEntry = addFileEntry(
-				false, _FILE_NAME, _FILE_NAME);
+		tempFileEntry = addFileEntry(_FILE_NAME, _FILE_NAME);
 
-			DLAppLocalServiceUtil.deleteFileEntry(
-				tempFileEntry.getFileEntryId());
-		}
-		catch (DuplicateFileException dfe) {
-			Assert.fail("Unable to create" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
-		}
+		DLAppLocalServiceUtil.deleteFileEntry(tempFileEntry.getFileEntryId());
 
 		DLAppLocalServiceUtil.deleteFileEntry(fileEntry.getFileEntryId());
 	}
 
 	@Test
 	public void testAddFileEntryWithExtension() throws Exception {
-		FileEntry fileEntry = addFileEntry(false, _FILE_NAME, _FILE_NAME);
+		FileEntry fileEntry = addFileEntry(_FILE_NAME, _FILE_NAME);
 
 		// "Test.txt" / "Test"
 
 		try {
-			addFileEntry(false, _FILE_NAME, _STRIPPED_FILE_NAME);
+			addFileEntry(_FILE_NAME, _STRIPPED_FILE_NAME);
 
 			Assert.fail("Created" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
 		catch (DuplicateFileException dfe) {
 		}
 
-		FileEntry tempFileEntry = addFileEntry(false, "Temp.txt", "Temp");
+		FileEntry tempFileEntry = addFileEntry("Temp.txt", "Temp");
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId());
 
 		try {
-			updateFileEntry(
+			DLAppServiceUtil.updateFileEntry(
 				tempFileEntry.getFileEntryId(), _FILE_NAME,
-				_STRIPPED_FILE_NAME);
+				ContentTypes.TEXT_PLAIN, _STRIPPED_FILE_NAME, StringPool.BLANK,
+				StringPool.BLANK, false,
+				RandomTestUtil.randomBytes(TikaSafeRandomizerBumper.INSTANCE),
+				serviceContext);
 
 			Assert.fail("Renamed" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
-		catch (DuplicateFileException dfe2) {
+		catch (DuplicateFileException dfe) {
 		}
 		finally {
 			DLAppLocalServiceUtil.deleteFileEntry(
@@ -281,17 +321,22 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 		// "Test.txt" / ""
 
 		try {
-			addFileEntry(false, _FILE_NAME, "");
+			addFileEntry(_FILE_NAME, "");
 
 			Assert.fail("Created" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
 		catch (DuplicateFileException dfe) {
 		}
 
-		tempFileEntry = addFileEntry(false, "Temp.txt", "");
+		tempFileEntry = addFileEntry("Temp.txt", "");
 
 		try {
-			updateFileEntry(tempFileEntry.getFileEntryId(), _FILE_NAME, "");
+			DLAppServiceUtil.updateFileEntry(
+				tempFileEntry.getFileEntryId(), _FILE_NAME,
+				ContentTypes.TEXT_PLAIN, StringPool.BLANK, StringPool.BLANK,
+				StringPool.BLANK, false,
+				RandomTestUtil.randomBytes(TikaSafeRandomizerBumper.INSTANCE),
+				serviceContext);
 
 			Assert.fail("Renamed" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
@@ -305,23 +350,26 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 		// "Test" / "Test.txt"
 
 		try {
-			addFileEntry(false, _STRIPPED_FILE_NAME, _FILE_NAME);
+			addFileEntry(_STRIPPED_FILE_NAME, _FILE_NAME);
 
 			Assert.fail("Created" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
 		catch (DuplicateFileException dfe) {
 		}
 
-		tempFileEntry = addFileEntry(false, "Temp", "Temp.txt");
+		tempFileEntry = addFileEntry( "Temp", "Temp.txt");
 
 		try {
-			updateFileEntry(
+			DLAppServiceUtil.updateFileEntry(
 				tempFileEntry.getFileEntryId(), _STRIPPED_FILE_NAME,
-				_FILE_NAME);
+				ContentTypes.TEXT_PLAIN, _FILE_NAME, StringPool.BLANK,
+				StringPool.BLANK, false,
+				RandomTestUtil.randomBytes(TikaSafeRandomizerBumper.INSTANCE),
+				serviceContext);
 
 			Assert.fail("Renamed" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
-		catch (DuplicateFileException dfe2) {
+		catch (DuplicateFileException dfe) {
 		}
 		finally {
 			DLAppLocalServiceUtil.deleteFileEntry(
@@ -331,21 +379,24 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 		// "" / "Test.txt"
 
 		try {
-			addFileEntry(false, "", _FILE_NAME);
+			addFileEntry("", _FILE_NAME);
 
 			Assert.fail("Created" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
 		catch (DuplicateFileException dfe) {
 		}
 
-		tempFileEntry = addFileEntry(false, "", "Temp.txt");
+		tempFileEntry = addFileEntry("", "Temp.txt");
 
 		try {
-			updateFileEntry(tempFileEntry.getFileEntryId(), "", _FILE_NAME);
+			DLAppServiceUtil.updateFileEntry(
+				tempFileEntry.getFileEntryId(), StringPool.BLANK,
+				ContentTypes.TEXT_PLAIN, _FILE_NAME, StringPool.BLANK,
+				StringPool.BLANK, false, (byte[])null, serviceContext);
 
 			Assert.fail("Renamed" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
-		catch (DuplicateFileException dfe2) {
+		catch (DuplicateFileException dfe) {
 		}
 		finally {
 			DLAppLocalServiceUtil.deleteFileEntry(
@@ -358,27 +409,35 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 	@Test
 	public void testAddFileEntryWithoutExtension() throws Exception {
 		FileEntry fileEntry = addFileEntry(
-			false, _STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME);
+			_STRIPPED_FILE_NAME, _STRIPPED_FILE_NAME);
 
 		// "Test" / ""
 
 		try {
-			addFileEntry(false, _STRIPPED_FILE_NAME, "");
+			addFileEntry(_STRIPPED_FILE_NAME, "");
 
 			Assert.fail("Created" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
 		catch (DuplicateFileException dfe) {
 		}
 
-		FileEntry tempFileEntry = addFileEntry(false, "Temp", "");
+		FileEntry tempFileEntry = addFileEntry("Temp", "");
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId());
 
 		try {
-			updateFileEntry(
-				tempFileEntry.getFileEntryId(), _STRIPPED_FILE_NAME, "");
+			DLAppServiceUtil.updateFileEntry(
+				tempFileEntry.getFileEntryId(), _STRIPPED_FILE_NAME,
+				ContentTypes.TEXT_PLAIN, StringPool.BLANK, StringPool.BLANK,
+				StringPool.BLANK, false,
+				RandomTestUtil.randomBytes(TikaSafeRandomizerBumper.INSTANCE),
+				serviceContext);
 
 			Assert.fail("Renamed" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
-		catch (DuplicateFileException dfe2) {
+		catch (DuplicateFileException dfe) {
 		}
 		finally {
 			DLAppLocalServiceUtil.deleteFileEntry(
@@ -388,18 +447,20 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 		// "" / "Test"
 
 		try {
-			addFileEntry(false, "", _STRIPPED_FILE_NAME);
+			addFileEntry("", _STRIPPED_FILE_NAME);
 
 			Assert.fail("Created" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
 		catch (DuplicateFileException dfe) {
 		}
 
-		tempFileEntry = addFileEntry(false, "", "Temp");
+		tempFileEntry = addFileEntry("", "Temp");
 
 		try {
-			updateFileEntry(
-				tempFileEntry.getFileEntryId(), "", _STRIPPED_FILE_NAME);
+			DLAppServiceUtil.updateFileEntry(
+				tempFileEntry.getFileEntryId(), StringPool.BLANK,
+				ContentTypes.TEXT_PLAIN, _STRIPPED_FILE_NAME, StringPool.BLANK,
+				StringPool.BLANK, false, (byte[])null, serviceContext);
 
 			Assert.fail("Renamed" + _FAIL_DUPLICATE_MESSAGE_SUFFIX);
 		}
@@ -413,12 +474,27 @@ public class DLFileEntryExtensionTest extends BaseDLAppTestCase {
 		DLAppLocalServiceUtil.deleteFileEntry(fileEntry.getFileEntryId());
 	}
 
+	protected FileEntry addFileEntry(String sourceFileName, String title)
+		throws Exception {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId());
+
+		return DLAppLocalServiceUtil.addFileEntry(
+			TestPropsValues.getUserId(), group.getGroupId(),
+			parentFolder.getFolderId(), sourceFileName, ContentTypes.TEXT_PLAIN,
+			title, StringPool.BLANK, StringPool.BLANK,
+			RandomTestUtil.randomBytes(TikaSafeRandomizerBumper.INSTANCE),
+			serviceContext);
+	}
+
 	protected void testAddFileEntryBasic(
 			String sourceFileName, String title, String extension,
 			String titleWithExtension)
 		throws Exception {
 
-		FileEntry fileEntry = addFileEntry(false, sourceFileName, title);
+		FileEntry fileEntry = addFileEntry(sourceFileName, title);
 
 		Assert.assertEquals(
 			"Invalid file extension", extension, fileEntry.getExtension());

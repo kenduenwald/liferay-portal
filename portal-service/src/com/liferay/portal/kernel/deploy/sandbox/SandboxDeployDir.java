@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -41,9 +41,8 @@ public class SandboxDeployDir {
 		_name = name;
 		_deployDir = deployDir;
 		_interval = interval;
-		_sandboxDeployListeners =
-			new CopyOnWriteArrayList<SandboxDeployListener>(
-				sandboxDeployListeners);
+		_sandboxDeployListeners = new CopyOnWriteArrayList<>(
+			sandboxDeployListeners);
 	}
 
 	public File getDeployDir() {
@@ -205,14 +204,15 @@ public class SandboxDeployDir {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(SandboxDeployDir.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		SandboxDeployDir.class);
 
-	private File _deployDir;
-	private DirectoryFilter _directoryFilter = new DirectoryFilter();
+	private final File _deployDir;
+	private final DirectoryFilter _directoryFilter = new DirectoryFilter();
 	private List<File> _existingDirs;
-	private long _interval;
-	private String _name;
-	private List<SandboxDeployListener> _sandboxDeployListeners;
+	private final long _interval;
+	private final String _name;
+	private final List<SandboxDeployListener> _sandboxDeployListeners;
 	private SandboxDeployScanner _sandboxDeployScanner;
 
 }

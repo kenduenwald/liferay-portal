@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,11 +19,13 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.WebKeys;
 
 import java.io.IOException;
@@ -40,6 +42,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.Globals;
 
 /**
  * @author Brian Wing Shun Chan
@@ -51,6 +56,8 @@ public class I18nServlet extends HttpServlet {
 	}
 
 	public static void setLanguageIds(Element root) {
+		_languageIds = new HashSet<>();
+
 		List<Element> rootElements = root.elements("servlet-mapping");
 
 		for (Element element : rootElements) {
@@ -88,9 +95,20 @@ public class I18nServlet extends HttpServlet {
 				String i18nLanguageId = i18nData[0];
 				String i18nPath = i18nData[1];
 				String redirect = i18nData[2];
+				String i18nLanguageCode = i18nData[3];
 
+				request.setAttribute(
+					WebKeys.I18N_LANGUAGE_CODE, i18nLanguageCode);
 				request.setAttribute(WebKeys.I18N_LANGUAGE_ID, i18nLanguageId);
 				request.setAttribute(WebKeys.I18N_PATH, i18nPath);
+
+				Locale locale = LocaleUtil.fromLanguageId(i18nLanguageId);
+
+				HttpSession session = request.getSession();
+
+				session.setAttribute(Globals.LOCALE_KEY, locale);
+
+				LanguageUtil.updateCookie(request, response, locale);
 
 				ServletContext servletContext = getServletContext();
 
@@ -110,18 +128,13 @@ public class I18nServlet extends HttpServlet {
 	}
 
 	protected String[] getI18nData(HttpServletRequest request) {
-		String path = request.getRequestURI();
-
-		String contextPath = request.getContextPath();
-		String servletPath = request.getServletPath();
-
-		path = path.substring(contextPath.length() + servletPath.length());
+		String path = GetterUtil.getString(request.getPathInfo());
 
 		if (Validator.isNull(path)) {
 			return null;
 		}
 
-		String i18nLanguageId = servletPath;
+		String i18nLanguageId = request.getServletPath();
 
 		int pos = i18nLanguageId.lastIndexOf(CharPool.SLASH);
 
@@ -137,7 +150,13 @@ public class I18nServlet extends HttpServlet {
 
 		String i18nPath = StringPool.SLASH + i18nLanguageId;
 
-		Locale locale = LocaleUtil.fromLanguageId(i18nLanguageId);
+		Locale locale = LocaleUtil.fromLanguageId(
+			i18nLanguageId, true,
+			PropsValues.LOCALE_USE_DEFAULT_IF_NOT_AVAILABLE);
+
+		if (locale == null) {
+			return null;
+		}
 
 		if (Validator.isNull(locale.getCountry())) {
 
@@ -154,11 +173,13 @@ public class I18nServlet extends HttpServlet {
 			_log.debug("Redirect " + redirect);
 		}
 
-		return new String[] {i18nLanguageId, i18nPath, redirect};
+		return new String[] {
+			i18nLanguageId, i18nPath, redirect, locale.getLanguage()
+		};
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(I18nServlet.class);
+	private static final Log _log = LogFactoryUtil.getLog(I18nServlet.class);
 
-	private static Set<String> _languageIds = new HashSet<String>();
+	private static Set<String> _languageIds;
 
 }

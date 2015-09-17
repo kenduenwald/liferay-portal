@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,15 @@
 package com.liferay.taglib.aui;
 
 import com.liferay.portal.kernel.servlet.taglib.aui.ValidatorTag;
+import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.ModelHintsUtil;
+import com.liferay.portal.util.PortalUtil;
+import com.liferay.taglib.BaseValidatorTagSupport;
 import com.liferay.taglib.aui.base.BaseValidatorTagImpl;
-import com.liferay.util.PwdGenerator;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.BodyContent;
 import javax.servlet.jsp.tagext.BodyTag;
 
@@ -65,25 +68,40 @@ public class ValidatorTagImpl
 
 	@Override
 	public int doEndTag() {
-		InputTag inputTag = (InputTag)findAncestorWithClass(
-			this, InputTag.class);
+		BaseValidatorTagSupport baseValidatorTagSupport =
+			(BaseValidatorTagSupport)findAncestorWithClass(
+				this, BaseValidatorTagSupport.class);
 
 		String name = getName();
 
 		_custom = ModelHintsUtil.isCustomValidator(name);
 
 		if (_custom) {
-			name = ModelHintsUtil.buildCustomValidatorName(name);
+			StringBundler sb = new StringBundler(3);
+
+			String namespace = baseValidatorTagSupport.getInputName();
+
+			sb.append(namespace);
+
+			sb.append(StringPool.UNDERLINE);
+
+			HttpServletRequest request =
+				(HttpServletRequest)pageContext.getRequest();
+
+			sb.append(PortalUtil.getUniqueElementId(request, namespace, name));
+
+			name = sb.toString();
 		}
 
 		ValidatorTag validatorTag = new ValidatorTagImpl(
 			name, getErrorMessage(), _body, _custom);
 
-		inputTag.addValidatorTag(name, validatorTag);
+		baseValidatorTagSupport.addValidatorTag(name, validatorTag);
 
 		return EVAL_BODY_BUFFERED;
 	}
 
+	@Override
 	public String getBody() {
 		if (Validator.isNull(_body)) {
 			return StringPool.DOUBLE_APOSTROPHE;
@@ -103,24 +121,13 @@ public class ValidatorTagImpl
 		return errorMessage;
 	}
 
+	@Override
 	public boolean isCustom() {
 		return _custom;
 	}
 
 	public void setBody(String body) {
 		_body = body;
-	}
-
-	protected String processCustom(String name) {
-		if (name.equals("custom")) {
-			_custom = true;
-
-			return name.concat(
-				StringPool.UNDERLINE).concat(
-					PwdGenerator.getPassword(PwdGenerator.KEY3, 4));
-		}
-
-		return name;
 	}
 
 	private String _body;

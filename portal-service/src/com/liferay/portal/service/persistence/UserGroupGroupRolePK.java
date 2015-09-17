@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,9 @@
 
 package com.liferay.portal.service.persistence;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 
@@ -21,7 +24,9 @@ import java.io.Serializable;
 
 /**
  * @author Brian Wing Shun Chan
+ * @generated
  */
+@ProviderType
 public class UserGroupGroupRolePK implements Comparable<UserGroupGroupRolePK>,
 	Serializable {
 	public long userGroupId;
@@ -61,6 +66,7 @@ public class UserGroupGroupRolePK implements Comparable<UserGroupGroupRolePK>,
 		this.roleId = roleId;
 	}
 
+	@Override
 	public int compareTo(UserGroupGroupRolePK pk) {
 		if (pk == null) {
 			return -1;
@@ -115,18 +121,15 @@ public class UserGroupGroupRolePK implements Comparable<UserGroupGroupRolePK>,
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof UserGroupGroupRolePK)) {
 			return false;
 		}
 
-		UserGroupGroupRolePK pk = null;
-
-		try {
-			pk = (UserGroupGroupRolePK)obj;
-		}
-		catch (ClassCastException cce) {
-			return false;
-		}
+		UserGroupGroupRolePK pk = (UserGroupGroupRolePK)obj;
 
 		if ((userGroupId == pk.userGroupId) && (groupId == pk.groupId) &&
 				(roleId == pk.roleId)) {
@@ -139,8 +142,13 @@ public class UserGroupGroupRolePK implements Comparable<UserGroupGroupRolePK>,
 
 	@Override
 	public int hashCode() {
-		return (String.valueOf(userGroupId) + String.valueOf(groupId) +
-		String.valueOf(roleId)).hashCode();
+		int hashCode = 0;
+
+		hashCode = HashUtil.hash(hashCode, userGroupId);
+		hashCode = HashUtil.hash(hashCode, groupId);
+		hashCode = HashUtil.hash(hashCode, roleId);
+
+		return hashCode;
 	}
 
 	@Override

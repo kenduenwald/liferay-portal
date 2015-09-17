@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -54,8 +54,9 @@ int weekNumber = 1;
 %>
 
 <div class="taglib-calendar">
-	<table class="lfr-table calendar-panel">
+	<table class="calendar-panel table table-bordered table-hover table-striped">
 
+	<thead class="table-columns">
 	<c:if test="<%= Validator.isNotNull(headerPattern) || (headerFormat != null) %>">
 
 		<%
@@ -67,30 +68,21 @@ int weekNumber = 1;
 		%>
 
 		<tr class="calendar-header">
-			<th colspan="7">
+			<th class="table-header" colspan="7">
 				<%= dateFormat.format(Time.getDate(selCal.getTime(), timeZone)) %>
 			</th>
 		</tr>
 	</c:if>
 
-	<tr class="portlet-section-header results-header">
+	<tr>
 
 		<%
 		for (int i = 0; i < 7; i++) {
 			int daysIndex = (selCal.getFirstDayOfWeek() + i - 1) % 7;
-
-			String className = StringPool.BLANK;
-
-			if (i == 0) {
-				className = "first";
-			}
-			else if (i == 6) {
-				className = "last";
-			}
 		%>
 
-			<th class="<%= className %>">
-				<%= LanguageUtil.get(pageContext, CalendarUtil.DAYS_ABBREVIATION[daysIndex]) %>
+			<th class="table-header">
+				<%= LanguageUtil.get(request, CalendarUtil.DAYS_ABBREVIATION[daysIndex]) %>
 			</th>
 
 		<%
@@ -98,6 +90,9 @@ int weekNumber = 1;
 		%>
 
 	</tr>
+	</thead>
+
+	<tbody class="table-data">
 	<tr>
 
 		<%
@@ -113,17 +108,17 @@ int weekNumber = 1;
 		maxDayOfPrevMonth = (maxDayOfPrevMonth - dayOfWeek) + 1;
 
 		for (int i = 1; i < dayOfWeek; i++) {
-			String className = "calendar-inactive calendar-previous-month";
+			String cssClass = "table-cell calendar-inactive calendar-previous-month";
 
 			if (i == 1) {
-				className += " first";
+				cssClass += " first";
 			}
 			else if (i == 7) {
-				className += " last";
+				cssClass += " last";
 			}
 		%>
 
-			<td class="<%= className %>"><%= maxDayOfPrevMonth + i %></td>
+			<td class="<%= cssClass %>"><%= maxDayOfPrevMonth + i %></td>
 
 		<%
 		}
@@ -146,29 +141,29 @@ int weekNumber = 1;
 			tempCal.set(Calendar.DATE, i);
 			tempCal.set(Calendar.YEAR, selYear);
 
-			boolean hasData = (data != null) && data.contains(new Integer(i));
+			boolean hasData = (data != null) && data.contains(Integer.valueOf(i));
 
-			String className = "";
+			String cssClass = "";
 
 			if (i == selDay) {
-				className = "calendar-current-day portlet-section-selected";
+				cssClass = "table-cell calendar-current-day portlet-section-selected";
 			}
 
 			if (hasData) {
-				className += " has-events";
+				cssClass += " has-events";
 			}
 
 			if (dayOfWeek == 1) {
-				className += " first";
+				cssClass += " first";
 			}
 			else if (dayOfWeek == 7) {
-				className += " last";
+				cssClass += " last";
 			}
 
 			dayOfWeek++;
 		%>
 
-			<td class="<%= className %>">
+			<td class="<%= cssClass %>">
 				<a href="javascript:<%= namespace %>updateCalendar(<%= selMonth %>, <%= i %>, <%= selYear %>);"><span><%= i %></span></a>
 			</td>
 
@@ -178,17 +173,17 @@ int weekNumber = 1;
 		int dayOfNextMonth = 1;
 
 		for (int i = 7; i >= dayOfWeek; i--) {
-			String className = "calendar-inactive calendar-next-month";
+			String cssClass = "table-cell calendar-inactive calendar-next-month";
 
 			if (dayOfWeek == 1) {
-				className += " first";
+				cssClass += " first";
 			}
 			else if (i == dayOfWeek) {
-				className += " last";
+				cssClass += " last";
 			}
 		%>
 
-			<td class="<%= className %>"><%= dayOfNextMonth++ %></td>
+			<td class="<%= cssClass %>"><%= dayOfNextMonth++ %></td>
 
 		<%
 		}
@@ -200,17 +195,17 @@ int weekNumber = 1;
 
 				<%
 				for (int i = 1; i <= 7; i++) {
-					String className = "calendar-inactive calendar-next-month";
+					String cssClass = "table-cell calendar-inactive calendar-next-month";
 
 					if (i == 1) {
-						className += " first";
+						cssClass += " first";
 					}
 					else if (i == 7) {
-						className += " last";
+						cssClass += " last";
 					}
 				%>
 
-					<td class="<%= className %>"><%= dayOfNextMonth++ %></td>
+					<td class="<%= cssClass %>"><%= dayOfNextMonth++ %></td>
 
 				<%
 				}
@@ -223,5 +218,6 @@ int weekNumber = 1;
 		%>
 
 	</tr>
+	</tbody>
 	</table>
 </div>

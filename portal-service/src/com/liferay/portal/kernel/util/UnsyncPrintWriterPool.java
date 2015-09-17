@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,6 +32,12 @@ public class UnsyncPrintWriterPool {
 
 	public static UnsyncPrintWriter borrow(OutputStream outputStream) {
 		return borrow(new OutputStreamWriter(outputStream));
+	}
+
+	public static UnsyncPrintWriter borrow(
+		OutputStream outputStream, String charsetName) {
+
+		return borrow(new OutputStreamWriter(outputStream, charsetName, true));
 	}
 
 	public static UnsyncPrintWriter borrow(Writer writer) {
@@ -69,24 +75,24 @@ public class UnsyncPrintWriterPool {
 		_enabledThreadLocal.set(enabled);
 	}
 
-	private static ThreadLocal<List<UnsyncPrintWriter>>
+	private static final ThreadLocal<List<UnsyncPrintWriter>>
 		_borrowedUnsyncPrintWritersThreadLocal =
 			new AutoResetThreadLocal<List<UnsyncPrintWriter>>(
 				UnsyncPrintWriterPool.class.getName() +
 					"._borrowedUnsyncPrintWritersThreadLocal",
 				new ArrayList<UnsyncPrintWriter>());
-	private static ThreadLocal<Boolean> _enabledThreadLocal =
+	private static final ThreadLocal<Boolean> _enabledThreadLocal =
 		new AutoResetThreadLocal<Boolean>(
 			UnsyncPrintWriterPool.class.getName() + "._enabledThreadLocal",
 			false);
-	private static SoftReferencePool<UnsyncPrintWriter, Writer>
-		_unsyncPrintWriterSoftReferencePool =
-			new SoftReferencePool<UnsyncPrintWriter, Writer>(
-				new UnsyncPrintWriterPoolAction(), 8192);
+	private static final SoftReferencePool<UnsyncPrintWriter, Writer>
+		_unsyncPrintWriterSoftReferencePool = new SoftReferencePool<>(
+			new UnsyncPrintWriterPoolAction(), 8192);
 
 	private static class UnsyncPrintWriterPoolAction
 		implements PoolAction<UnsyncPrintWriter, Writer> {
 
+		@Override
 		public UnsyncPrintWriter onBorrow(
 			UnsyncPrintWriter unsyncPrintWriter, Writer writer) {
 
@@ -95,10 +101,12 @@ public class UnsyncPrintWriterPool {
 			return unsyncPrintWriter;
 		}
 
+		@Override
 		public UnsyncPrintWriter onCreate(Writer writer) {
 			return new UnsyncPrintWriter(writer);
 		}
 
+		@Override
 		public void onReturn(UnsyncPrintWriter unsyncPrintWriter) {
 			unsyncPrintWriter.reset(null);
 		}

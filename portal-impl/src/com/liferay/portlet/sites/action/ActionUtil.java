@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,26 +14,24 @@
 
 package com.liferay.portlet.sites.action;
 
+import com.liferay.portal.kernel.portlet.PortletLayoutListener;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.Layout;
 import com.liferay.portal.model.LayoutTypePortlet;
-import com.liferay.portal.model.MembershipRequest;
+import com.liferay.portal.model.Portlet;
 import com.liferay.portal.model.PortletPreferencesIds;
-import com.liferay.portal.model.Team;
 import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutLocalServiceUtil;
-import com.liferay.portal.service.MembershipRequestLocalServiceUtil;
+import com.liferay.portal.service.LayoutServiceUtil;
+import com.liferay.portal.service.PortletLocalServiceUtil;
 import com.liferay.portal.service.PortletPreferencesLocalServiceUtil;
-import com.liferay.portal.service.TeamLocalServiceUtil;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PortletKeys;
 import com.liferay.portal.util.WebKeys;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portlet.sites.util.SitesUtil;
 
 import java.util.List;
 
@@ -45,15 +43,15 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * @author Brian Wing Shun Chan
  */
-public class ActionUtil
-	extends com.liferay.portlet.rolesadmin.action.ActionUtil {
+public class ActionUtil {
 
 	public static void copyPreferences(
 			HttpServletRequest request, Layout targetLayout,
 			Layout sourceLayout)
 		throws Exception {
 
-		long companyId = targetLayout.getCompanyId();
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		LayoutTypePortlet sourceLayoutTypePortlet =
 			(LayoutTypePortlet)sourceLayout.getLayoutType();
@@ -89,13 +87,15 @@ public class ActionUtil
 
 			PortletPreferences targetPreferences =
 				PortletPreferencesLocalServiceUtil.getPreferences(
-					companyId, PortletKeys.PREFS_OWNER_ID_DEFAULT,
+					themeDisplay.getCompanyId(),
+					PortletKeys.PREFS_OWNER_ID_DEFAULT,
 					PortletKeys.PREFS_OWNER_TYPE_LAYOUT, targetLayout.getPlid(),
 					sourcePortletId);
 
 			sourcePreferences =
 				PortletPreferencesLocalServiceUtil.getPreferences(
-					companyId, PortletKeys.PREFS_OWNER_ID_DEFAULT,
+					themeDisplay.getCompanyId(),
+					PortletKeys.PREFS_OWNER_ID_DEFAULT,
 					PortletKeys.PREFS_OWNER_TYPE_LAYOUT, sourceLayout.getPlid(),
 					sourcePortletId);
 
@@ -104,45 +104,20 @@ public class ActionUtil
 				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, targetLayout.getPlid(),
 				sourcePortletId, sourcePreferences);
 
-			String scopeType = GetterUtil.getString(
-				sourcePreferences.getValue("lfrScopeType", null));
+			SitesUtil.updateLayoutScopes(
+				themeDisplay.getUserId(), sourceLayout, targetLayout,
+				sourcePreferences, targetPreferences, sourcePortletId,
+				themeDisplay.getLanguageId());
 
-			if (Validator.isNotNull(scopeType) && scopeType.equals("layout")) {
-				ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-					WebKeys.THEME_DISPLAY);
+			Portlet sourcePortlet = PortletLocalServiceUtil.getPortletById(
+				sourceLayout.getCompanyId(), sourcePortletId);
 
-				Layout targetScopeLayout =
-					LayoutLocalServiceUtil.getLayoutByUuidAndGroupId(
-						targetLayout.getUuid(), targetLayout.getGroupId());
+			PortletLayoutListener sourcePortletLayoutListener =
+				sourcePortlet.getPortletLayoutListenerInstance();
 
-				String languageId = themeDisplay.getLanguageId();
-
-				if (!targetScopeLayout.hasScopeGroup()) {
-					GroupLocalServiceUtil.addGroup(
-						themeDisplay.getUserId(), Layout.class.getName(),
-						targetLayout.getPlid(),
-						targetLayout.getName(languageId), null, 0, null, false,
-						true, null);
-				}
-
-				String portletTitle = PortalUtil.getPortletTitle(
-					sourcePortletId, languageId);
-
-				String newPortletTitle = PortalUtil.getNewPortletTitle(
-					portletTitle, String.valueOf(sourceLayout.getLayoutId()),
-					targetLayout.getName(languageId));
-
-				targetPreferences.setValue(
-					"groupId", String.valueOf(targetLayout.getGroupId()));
-				targetPreferences.setValue("lfrScopeType", "layout");
-				targetPreferences.setValue(
-					"lfrScopeLayoutUuid", targetLayout.getUuid());
-				targetPreferences.setValue(
-					"portletSetupTitle_" + languageId, newPortletTitle);
-				targetPreferences.setValue(
-					"portletSetupUseCustomTitle", Boolean.TRUE.toString());
-
-				targetPreferences.store();
+			if (sourcePortletLayoutListener != null) {
+				sourcePortletLayoutListener.onAddToLayout(
+					sourcePortletId, targetLayout.getPlid());
 			}
 		}
 	}
@@ -172,7 +147,7 @@ public class ActionUtil
 			group = GroupLocalServiceUtil.getGroup(groupId);
 		}
 		else if (!cmd.equals(Constants.ADD)) {
-			group = themeDisplay.getScopeGroup();
+			group = themeDisplay.getSiteGroup();
 		}
 
 		request.setAttribute(WebKeys.GROUP, group);
@@ -189,49 +164,36 @@ public class ActionUtil
 		return getGroup(request);
 	}
 
-	public static void getMembershipRequest(HttpServletRequest request)
+	public static void removePortletIds(
+			HttpServletRequest request, Layout layout)
 		throws Exception {
 
-		long membershipRequestId = ParamUtil.getLong(
-			request, "membershipRequestId");
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-		MembershipRequest membershipRequest = null;
+		LayoutTypePortlet layoutTypePortlet =
+			(LayoutTypePortlet)layout.getLayoutType();
 
-		if (membershipRequestId > 0) {
-			membershipRequest =
-				MembershipRequestLocalServiceUtil.getMembershipRequest(
-					membershipRequestId);
+		List<String> portletIds = layoutTypePortlet.getPortletIds();
+
+		for (String portletId : portletIds) {
+			layoutTypePortlet.removePortletId(
+				themeDisplay.getUserId(), portletId);
 		}
 
-		request.setAttribute(WebKeys.MEMBERSHIP_REQUEST, membershipRequest);
+		LayoutServiceUtil.updateLayout(
+			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
+			layout.getTypeSettings());
 	}
 
-	public static void getMembershipRequest(PortletRequest portletRequest)
+	public static void removePortletIds(
+			PortletRequest portletRequest, Layout layout)
 		throws Exception {
 
 		HttpServletRequest request = PortalUtil.getHttpServletRequest(
 			portletRequest);
 
-		getMembershipRequest(request);
-	}
-
-	public static void getTeam(HttpServletRequest request) throws Exception {
-		long teamId = ParamUtil.getLong(request, "teamId");
-
-		Team team = null;
-
-		if (teamId > 0) {
-			team = TeamLocalServiceUtil.getTeam(teamId);
-		}
-
-		request.setAttribute(WebKeys.TEAM, team);
-	}
-
-	public static void getTeam(PortletRequest portletRequest) throws Exception {
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			portletRequest);
-
-		getTeam(request);
+		removePortletIds(request, layout);
 	}
 
 }

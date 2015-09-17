@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -55,8 +55,7 @@ public class ReportRequestContext implements Serializable {
 		_attributes.put(key, value);
 	}
 
-	private Map<String, Serializable> _attributes =
-		new HashMap<String, Serializable>();
-	private ReportDataSourceType _reportDataSourceType;
+	private final Map<String, Serializable> _attributes = new HashMap<>();
+	private final ReportDataSourceType _reportDataSourceType;
 
 }

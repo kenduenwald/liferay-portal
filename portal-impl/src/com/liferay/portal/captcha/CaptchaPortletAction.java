@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -33,8 +33,9 @@ public class CaptchaPortletAction extends PortletAction {
 
 	@Override
 	public void serveResource(
-			ActionMapping mapping, ActionForm form, PortletConfig portletConfig,
-			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
+			ActionMapping actionMapping, ActionForm actionForm,
+			PortletConfig portletConfig, ResourceRequest resourceRequest,
+			ResourceResponse resourceResponse)
 		throws Exception {
 
 		try {
@@ -52,6 +53,7 @@ public class CaptchaPortletAction extends PortletAction {
 
 	private static final boolean _CHECK_METHOD_ON_PROCESS_ACTION = false;
 
-	private static Log _log = LogFactoryUtil.getLog(CaptchaPortletAction.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		CaptchaPortletAction.class);
 
 }

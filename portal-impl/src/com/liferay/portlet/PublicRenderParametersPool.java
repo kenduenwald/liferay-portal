@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -49,8 +49,7 @@ public class PublicRenderParametersPool {
 				WebKeys.PUBLIC_RENDER_PARAMETERS_POOL);
 
 		if (publicRenderParametersPool == null) {
-			publicRenderParametersPool =
-				new ConcurrentHashMap<Long, Map<String, String[]>>();
+			publicRenderParametersPool = new ConcurrentHashMap<>();
 
 			session.setAttribute(
 				WebKeys.PUBLIC_RENDER_PARAMETERS_POOL,
@@ -66,7 +65,7 @@ public class PublicRenderParametersPool {
 				publicRenderParametersPool.get(layoutSet.getLayoutSetId());
 
 			if (publicRenderParameters == null) {
-				publicRenderParameters = new HashMap<String, String[]>();
+				publicRenderParameters = new HashMap<>();
 
 				publicRenderParametersPool.put(
 					layoutSet.getLayoutSetId(), publicRenderParameters);
@@ -79,14 +78,14 @@ public class PublicRenderParametersPool {
 				_log.warn(e, e);
 			}
 
-			return new HashMap<String, String[]>();
+			return new HashMap<>();
 		}
 	}
 
 	private static final String _PUBLIC_RENDER_PARAMETERS =
 		"PUBLIC_RENDER_PARAMETERS";
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		PublicRenderParametersPool.class);
 
 }

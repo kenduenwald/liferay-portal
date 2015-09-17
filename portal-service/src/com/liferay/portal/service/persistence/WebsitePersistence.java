@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.service.persistence;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.model.Website;
 
 /**
@@ -24,10 +26,11 @@ import com.liferay.portal.model.Website;
  * </p>
  *
  * @author Brian Wing Shun Chan
- * @see WebsitePersistenceImpl
+ * @see com.liferay.portal.service.persistence.impl.WebsitePersistenceImpl
  * @see WebsiteUtil
  * @generated
  */
+@ProviderType
 public interface WebsitePersistence extends BasePersistence<Website> {
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -36,99 +39,270 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	 */
 
 	/**
-	* Caches the website in the entity cache if it is enabled.
+	* Returns all the websites where uuid = &#63;.
 	*
-	* @param website the website
+	* @param uuid the uuid
+	* @return the matching websites
 	*/
-	public void cacheResult(com.liferay.portal.model.Website website);
+	public java.util.List<Website> findByUuid(java.lang.String uuid);
 
 	/**
-	* Caches the websites in the entity cache if it is enabled.
+	* Returns a range of all the websites where uuid = &#63;.
 	*
-	* @param websites the websites
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param uuid the uuid
+	* @param start the lower bound of the range of websites
+	* @param end the upper bound of the range of websites (not inclusive)
+	* @return the range of matching websites
 	*/
-	public void cacheResult(
-		java.util.List<com.liferay.portal.model.Website> websites);
+	public java.util.List<Website> findByUuid(java.lang.String uuid, int start,
+		int end);
 
 	/**
-	* Creates a new website with the primary key. Does not add the website to the database.
+	* Returns an ordered range of all the websites where uuid = &#63;.
 	*
-	* @param websiteId the primary key for the new website
-	* @return the new website
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param uuid the uuid
+	* @param start the lower bound of the range of websites
+	* @param end the upper bound of the range of websites (not inclusive)
+	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	* @return the ordered range of matching websites
 	*/
-	public com.liferay.portal.model.Website create(long websiteId);
+	public java.util.List<Website> findByUuid(java.lang.String uuid, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
-	* Removes the website with the primary key from the database. Also notifies the appropriate model listeners.
+	* Returns the first website in the ordered set where uuid = &#63;.
 	*
-	* @param websiteId the primary key of the website
-	* @return the website that was removed
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @param uuid the uuid
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website remove(long websiteId)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
-
-	public com.liferay.portal.model.Website updateImpl(
-		com.liferay.portal.model.Website website, boolean merge)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public Website findByUuid_First(java.lang.String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
 
 	/**
-	* Returns the website with the primary key or throws a {@link com.liferay.portal.NoSuchWebsiteException} if it could not be found.
+	* Returns the first website in the ordered set where uuid = &#63;.
 	*
-	* @param websiteId the primary key of the website
-	* @return the website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @param uuid the uuid
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByPrimaryKey(long websiteId)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website fetchByUuid_First(java.lang.String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
-	* Returns the website with the primary key or returns <code>null</code> if it could not be found.
+	* Returns the last website in the ordered set where uuid = &#63;.
 	*
-	* @param websiteId the primary key of the website
-	* @return the website, or <code>null</code> if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @param uuid the uuid
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website fetchByPrimaryKey(long websiteId)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public Website findByUuid_Last(java.lang.String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where uuid = &#63;.
+	*
+	* @param uuid the uuid
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByUuid_Last(java.lang.String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
+
+	/**
+	* Returns the websites before and after the current website in the ordered set where uuid = &#63;.
+	*
+	* @param websiteId the primary key of the current website
+	* @param uuid the uuid
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the previous, current, and next website
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
+	*/
+	public Website[] findByUuid_PrevAndNext(long websiteId,
+		java.lang.String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Removes all the websites where uuid = &#63; from the database.
+	*
+	* @param uuid the uuid
+	*/
+	public void removeByUuid(java.lang.String uuid);
+
+	/**
+	* Returns the number of websites where uuid = &#63;.
+	*
+	* @param uuid the uuid
+	* @return the number of matching websites
+	*/
+	public int countByUuid(java.lang.String uuid);
+
+	/**
+	* Returns all the websites where uuid = &#63; and companyId = &#63;.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @return the matching websites
+	*/
+	public java.util.List<Website> findByUuid_C(java.lang.String uuid,
+		long companyId);
+
+	/**
+	* Returns a range of all the websites where uuid = &#63; and companyId = &#63;.
+	*
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param start the lower bound of the range of websites
+	* @param end the upper bound of the range of websites (not inclusive)
+	* @return the range of matching websites
+	*/
+	public java.util.List<Website> findByUuid_C(java.lang.String uuid,
+		long companyId, int start, int end);
+
+	/**
+	* Returns an ordered range of all the websites where uuid = &#63; and companyId = &#63;.
+	*
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param start the lower bound of the range of websites
+	* @param end the upper bound of the range of websites (not inclusive)
+	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	* @return the ordered range of matching websites
+	*/
+	public java.util.List<Website> findByUuid_C(java.lang.String uuid,
+		long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
+
+	/**
+	* Returns the first website in the ordered set where uuid = &#63; and companyId = &#63;.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website
+	* @throws NoSuchWebsiteException if a matching website could not be found
+	*/
+	public Website findByUuid_C_First(java.lang.String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the first website in the ordered set where uuid = &#63; and companyId = &#63;.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByUuid_C_First(java.lang.String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
+
+	/**
+	* Returns the last website in the ordered set where uuid = &#63; and companyId = &#63;.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website
+	* @throws NoSuchWebsiteException if a matching website could not be found
+	*/
+	public Website findByUuid_C_Last(java.lang.String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where uuid = &#63; and companyId = &#63;.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByUuid_C_Last(java.lang.String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
+
+	/**
+	* Returns the websites before and after the current website in the ordered set where uuid = &#63; and companyId = &#63;.
+	*
+	* @param websiteId the primary key of the current website
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the previous, current, and next website
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
+	*/
+	public Website[] findByUuid_C_PrevAndNext(long websiteId,
+		java.lang.String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Removes all the websites where uuid = &#63; and companyId = &#63; from the database.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	*/
+	public void removeByUuid_C(java.lang.String uuid, long companyId);
+
+	/**
+	* Returns the number of websites where uuid = &#63; and companyId = &#63;.
+	*
+	* @param uuid the uuid
+	* @param companyId the company ID
+	* @return the number of matching websites
+	*/
+	public int countByUuid_C(java.lang.String uuid, long companyId);
 
 	/**
 	* Returns all the websites where companyId = &#63;.
 	*
 	* @param companyId the company ID
 	* @return the matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByCompanyId(
-		long companyId)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByCompanyId(long companyId);
 
 	/**
 	* Returns a range of all the websites where companyId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
 	* @param start the lower bound of the range of websites
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @return the range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByCompanyId(
-		long companyId, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByCompanyId(long companyId, int start,
+		int end);
 
 	/**
 	* Returns an ordered range of all the websites where companyId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -136,103 +310,111 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByCompanyId(
-		long companyId, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByCompanyId(long companyId, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the first website in the ordered set where companyId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param companyId the company ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByCompanyId_First(
-		long companyId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByCompanyId_First(long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the first website in the ordered set where companyId = &#63;.
+	*
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByCompanyId_First(long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the last website in the ordered set where companyId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param companyId the company ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByCompanyId_Last(
-		long companyId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByCompanyId_Last(long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where companyId = &#63;.
+	*
+	* @param companyId the company ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByCompanyId_Last(long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the websites before and after the current website in the ordered set where companyId = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param websiteId the primary key of the current website
 	* @param companyId the company ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
 	*/
-	public com.liferay.portal.model.Website[] findByCompanyId_PrevAndNext(
-		long websiteId, long companyId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website[] findByCompanyId_PrevAndNext(long websiteId,
+		long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Removes all the websites where companyId = &#63; from the database.
+	*
+	* @param companyId the company ID
+	*/
+	public void removeByCompanyId(long companyId);
+
+	/**
+	* Returns the number of websites where companyId = &#63;.
+	*
+	* @param companyId the company ID
+	* @return the number of matching websites
+	*/
+	public int countByCompanyId(long companyId);
 
 	/**
 	* Returns all the websites where userId = &#63;.
 	*
 	* @param userId the user ID
 	* @return the matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByUserId(
-		long userId) throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByUserId(long userId);
 
 	/**
 	* Returns a range of all the websites where userId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param userId the user ID
 	* @param start the lower bound of the range of websites
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @return the range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByUserId(
-		long userId, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByUserId(long userId, int start, int end);
 
 	/**
 	* Returns an ordered range of all the websites where userId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param userId the user ID
@@ -240,68 +422,82 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByUserId(
-		long userId, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByUserId(long userId, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the first website in the ordered set where userId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param userId the user ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByUserId_First(long userId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByUserId_First(long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the first website in the ordered set where userId = &#63;.
+	*
+	* @param userId the user ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByUserId_First(long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the last website in the ordered set where userId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param userId the user ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByUserId_Last(long userId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByUserId_Last(long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where userId = &#63;.
+	*
+	* @param userId the user ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByUserId_Last(long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the websites before and after the current website in the ordered set where userId = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param websiteId the primary key of the current website
 	* @param userId the user ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
 	*/
-	public com.liferay.portal.model.Website[] findByUserId_PrevAndNext(
-		long websiteId, long userId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website[] findByUserId_PrevAndNext(long websiteId, long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Removes all the websites where userId = &#63; from the database.
+	*
+	* @param userId the user ID
+	*/
+	public void removeByUserId(long userId);
+
+	/**
+	* Returns the number of websites where userId = &#63;.
+	*
+	* @param userId the user ID
+	* @return the number of matching websites
+	*/
+	public int countByUserId(long userId);
 
 	/**
 	* Returns all the websites where companyId = &#63; and classNameId = &#63;.
@@ -309,17 +505,14 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param companyId the company ID
 	* @param classNameId the class name ID
 	* @return the matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C(
-		long companyId, long classNameId)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C(long companyId, long classNameId);
 
 	/**
 	* Returns a range of all the websites where companyId = &#63; and classNameId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -327,17 +520,15 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param start the lower bound of the range of websites
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @return the range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C(
-		long companyId, long classNameId, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C(long companyId, long classNameId,
+		int start, int end);
 
 	/**
 	* Returns an ordered range of all the websites where companyId = &#63; and classNameId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -346,73 +537,90 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C(
-		long companyId, long classNameId, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C(long companyId, long classNameId,
+		int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the first website in the ordered set where companyId = &#63; and classNameId = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param companyId the company ID
 	* @param classNameId the class name ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByC_C_First(long companyId,
-		long classNameId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByC_C_First(long companyId, long classNameId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the first website in the ordered set where companyId = &#63; and classNameId = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByC_C_First(long companyId, long classNameId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the last website in the ordered set where companyId = &#63; and classNameId = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param companyId the company ID
 	* @param classNameId the class name ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByC_C_Last(long companyId,
-		long classNameId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByC_C_Last(long companyId, long classNameId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where companyId = &#63; and classNameId = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByC_C_Last(long companyId, long classNameId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the websites before and after the current website in the ordered set where companyId = &#63; and classNameId = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param websiteId the primary key of the current website
 	* @param companyId the company ID
 	* @param classNameId the class name ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
 	*/
-	public com.liferay.portal.model.Website[] findByC_C_PrevAndNext(
-		long websiteId, long companyId, long classNameId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website[] findByC_C_PrevAndNext(long websiteId, long companyId,
+		long classNameId,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Removes all the websites where companyId = &#63; and classNameId = &#63; from the database.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	*/
+	public void removeByC_C(long companyId, long classNameId);
+
+	/**
+	* Returns the number of websites where companyId = &#63; and classNameId = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @return the number of matching websites
+	*/
+	public int countByC_C(long companyId, long classNameId);
 
 	/**
 	* Returns all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
@@ -421,17 +629,15 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param classNameId the class name ID
 	* @param classPK the class p k
 	* @return the matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C_C(
-		long companyId, long classNameId, long classPK)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C_C(long companyId,
+		long classNameId, long classPK);
 
 	/**
 	* Returns a range of all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -440,17 +646,15 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param start the lower bound of the range of websites
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @return the range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C_C(
-		long companyId, long classNameId, long classPK, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C_C(long companyId,
+		long classNameId, long classPK, int start, int end);
 
 	/**
 	* Returns an ordered range of all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -460,61 +664,69 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C_C(
-		long companyId, long classNameId, long classPK, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C_C(long companyId,
+		long classNameId, long classPK, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the first website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param companyId the company ID
 	* @param classNameId the class name ID
 	* @param classPK the class p k
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByC_C_C_First(long companyId,
-		long classNameId, long classPK,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByC_C_C_First(long companyId, long classNameId,
+		long classPK,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the first website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param classPK the class p k
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByC_C_C_First(long companyId, long classNameId,
+		long classPK,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the last website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param companyId the company ID
 	* @param classNameId the class name ID
 	* @param classPK the class p k
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByC_C_C_Last(long companyId,
-		long classNameId, long classPK,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByC_C_C_Last(long companyId, long classNameId,
+		long classPK,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param classPK the class p k
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByC_C_C_Last(long companyId, long classNameId,
+		long classPK,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the websites before and after the current website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param websiteId the primary key of the current website
 	* @param companyId the company ID
@@ -522,14 +734,31 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param classPK the class p k
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
 	*/
-	public com.liferay.portal.model.Website[] findByC_C_C_PrevAndNext(
-		long websiteId, long companyId, long classNameId, long classPK,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website[] findByC_C_C_PrevAndNext(long websiteId, long companyId,
+		long classNameId, long classPK,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Removes all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; from the database.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param classPK the class p k
+	*/
+	public void removeByC_C_C(long companyId, long classNameId, long classPK);
+
+	/**
+	* Returns the number of websites where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param classPK the class p k
+	* @return the number of matching websites
+	*/
+	public int countByC_C_C(long companyId, long classNameId, long classPK);
 
 	/**
 	* Returns all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
@@ -539,17 +768,15 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param classPK the class p k
 	* @param primary the primary
 	* @return the matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C_C_P(
-		long companyId, long classNameId, long classPK, boolean primary)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C_C_P(long companyId,
+		long classNameId, long classPK, boolean primary);
 
 	/**
 	* Returns a range of all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -559,18 +786,15 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param start the lower bound of the range of websites
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @return the range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C_C_P(
-		long companyId, long classNameId, long classPK, boolean primary,
-		int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C_C_P(long companyId,
+		long classNameId, long classPK, boolean primary, int start, int end);
 
 	/**
 	* Returns an ordered range of all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param companyId the company ID
@@ -581,20 +805,13 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param end the upper bound of the range of websites (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public java.util.List<com.liferay.portal.model.Website> findByC_C_C_P(
-		long companyId, long classNameId, long classPK, boolean primary,
-		int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public java.util.List<Website> findByC_C_C_P(long companyId,
+		long classNameId, long classPK, boolean primary, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the first website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param companyId the company ID
 	* @param classNameId the class name ID
@@ -602,21 +819,29 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param primary the primary
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByC_C_C_P_First(
-		long companyId, long classNameId, long classPK, boolean primary,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByC_C_C_P_First(long companyId, long classNameId,
+		long classPK, boolean primary,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the first website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param classPK the class p k
+	* @param primary the primary
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByC_C_C_P_First(long companyId, long classNameId,
+		long classPK, boolean primary,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the last website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param companyId the company ID
 	* @param classNameId the class name ID
@@ -624,21 +849,29 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param primary the primary
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a matching website could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a matching website could not be found
 	*/
-	public com.liferay.portal.model.Website findByC_C_C_P_Last(long companyId,
-		long classNameId, long classPK, boolean primary,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
+	public Website findByC_C_C_P_Last(long companyId, long classNameId,
+		long classPK, boolean primary,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the last website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
+	*
+	* @param companyId the company ID
+	* @param classNameId the class name ID
+	* @param classPK the class p k
+	* @param primary the primary
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching website, or <code>null</code> if a matching website could not be found
+	*/
+	public Website fetchByC_C_C_P_Last(long companyId, long classNameId,
+		long classPK, boolean primary,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
 
 	/**
 	* Returns the websites before and after the current website in the ordered set where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
 	*
 	* @param websiteId the primary key of the current website
 	* @param companyId the company ID
@@ -647,96 +880,12 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param primary the primary
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next website
-	* @throws com.liferay.portal.NoSuchWebsiteException if a website with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
 	*/
-	public com.liferay.portal.model.Website[] findByC_C_C_P_PrevAndNext(
-		long websiteId, long companyId, long classNameId, long classPK,
-		boolean primary,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.NoSuchWebsiteException,
-			com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns all the websites.
-	*
-	* @return the websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.util.List<com.liferay.portal.model.Website> findAll()
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns a range of all the websites.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
-	* @param start the lower bound of the range of websites
-	* @param end the upper bound of the range of websites (not inclusive)
-	* @return the range of websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.util.List<com.liferay.portal.model.Website> findAll(int start,
-		int end) throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns an ordered range of all the websites.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
-	* @param start the lower bound of the range of websites
-	* @param end the upper bound of the range of websites (not inclusive)
-	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	* @return the ordered range of websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.util.List<com.liferay.portal.model.Website> findAll(int start,
-		int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Removes all the websites where companyId = &#63; from the database.
-	*
-	* @param companyId the company ID
-	* @throws SystemException if a system exception occurred
-	*/
-	public void removeByCompanyId(long companyId)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Removes all the websites where userId = &#63; from the database.
-	*
-	* @param userId the user ID
-	* @throws SystemException if a system exception occurred
-	*/
-	public void removeByUserId(long userId)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Removes all the websites where companyId = &#63; and classNameId = &#63; from the database.
-	*
-	* @param companyId the company ID
-	* @param classNameId the class name ID
-	* @throws SystemException if a system exception occurred
-	*/
-	public void removeByC_C(long companyId, long classNameId)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Removes all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; from the database.
-	*
-	* @param companyId the company ID
-	* @param classNameId the class name ID
-	* @param classPK the class p k
-	* @throws SystemException if a system exception occurred
-	*/
-	public void removeByC_C_C(long companyId, long classNameId, long classPK)
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public Website[] findByC_C_C_P_PrevAndNext(long websiteId, long companyId,
+		long classNameId, long classPK, boolean primary,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator)
+		throws com.liferay.portal.NoSuchWebsiteException;
 
 	/**
 	* Removes all the websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63; from the database.
@@ -745,62 +894,9 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param classNameId the class name ID
 	* @param classPK the class p k
 	* @param primary the primary
-	* @throws SystemException if a system exception occurred
 	*/
 	public void removeByC_C_C_P(long companyId, long classNameId, long classPK,
-		boolean primary)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Removes all the websites from the database.
-	*
-	* @throws SystemException if a system exception occurred
-	*/
-	public void removeAll()
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns the number of websites where companyId = &#63;.
-	*
-	* @param companyId the company ID
-	* @return the number of matching websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public int countByCompanyId(long companyId)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns the number of websites where userId = &#63;.
-	*
-	* @param userId the user ID
-	* @return the number of matching websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public int countByUserId(long userId)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns the number of websites where companyId = &#63; and classNameId = &#63;.
-	*
-	* @param companyId the company ID
-	* @param classNameId the class name ID
-	* @return the number of matching websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public int countByC_C(long companyId, long classNameId)
-		throws com.liferay.portal.kernel.exception.SystemException;
-
-	/**
-	* Returns the number of websites where companyId = &#63; and classNameId = &#63; and classPK = &#63;.
-	*
-	* @param companyId the company ID
-	* @param classNameId the class name ID
-	* @param classPK the class p k
-	* @return the number of matching websites
-	* @throws SystemException if a system exception occurred
-	*/
-	public int countByC_C_C(long companyId, long classNameId, long classPK)
-		throws com.liferay.portal.kernel.exception.SystemException;
+		boolean primary);
 
 	/**
 	* Returns the number of websites where companyId = &#63; and classNameId = &#63; and classPK = &#63; and primary = &#63;.
@@ -810,18 +906,110 @@ public interface WebsitePersistence extends BasePersistence<Website> {
 	* @param classPK the class p k
 	* @param primary the primary
 	* @return the number of matching websites
-	* @throws SystemException if a system exception occurred
 	*/
 	public int countByC_C_C_P(long companyId, long classNameId, long classPK,
-		boolean primary)
-		throws com.liferay.portal.kernel.exception.SystemException;
+		boolean primary);
+
+	/**
+	* Caches the website in the entity cache if it is enabled.
+	*
+	* @param website the website
+	*/
+	public void cacheResult(Website website);
+
+	/**
+	* Caches the websites in the entity cache if it is enabled.
+	*
+	* @param websites the websites
+	*/
+	public void cacheResult(java.util.List<Website> websites);
+
+	/**
+	* Creates a new website with the primary key. Does not add the website to the database.
+	*
+	* @param websiteId the primary key for the new website
+	* @return the new website
+	*/
+	public Website create(long websiteId);
+
+	/**
+	* Removes the website with the primary key from the database. Also notifies the appropriate model listeners.
+	*
+	* @param websiteId the primary key of the website
+	* @return the website that was removed
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
+	*/
+	public Website remove(long websiteId)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	public Website updateImpl(Website website);
+
+	/**
+	* Returns the website with the primary key or throws a {@link NoSuchWebsiteException} if it could not be found.
+	*
+	* @param websiteId the primary key of the website
+	* @return the website
+	* @throws NoSuchWebsiteException if a website with the primary key could not be found
+	*/
+	public Website findByPrimaryKey(long websiteId)
+		throws com.liferay.portal.NoSuchWebsiteException;
+
+	/**
+	* Returns the website with the primary key or returns <code>null</code> if it could not be found.
+	*
+	* @param websiteId the primary key of the website
+	* @return the website, or <code>null</code> if a website with the primary key could not be found
+	*/
+	public Website fetchByPrimaryKey(long websiteId);
+
+	@Override
+	public java.util.Map<java.io.Serializable, Website> fetchByPrimaryKeys(
+		java.util.Set<java.io.Serializable> primaryKeys);
+
+	/**
+	* Returns all the websites.
+	*
+	* @return the websites
+	*/
+	public java.util.List<Website> findAll();
+
+	/**
+	* Returns a range of all the websites.
+	*
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param start the lower bound of the range of websites
+	* @param end the upper bound of the range of websites (not inclusive)
+	* @return the range of websites
+	*/
+	public java.util.List<Website> findAll(int start, int end);
+
+	/**
+	* Returns an ordered range of all the websites.
+	*
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link WebsiteModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param start the lower bound of the range of websites
+	* @param end the upper bound of the range of websites (not inclusive)
+	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	* @return the ordered range of websites
+	*/
+	public java.util.List<Website> findAll(int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Website> orderByComparator);
+
+	/**
+	* Removes all the websites from the database.
+	*/
+	public void removeAll();
 
 	/**
 	* Returns the number of websites.
 	*
 	* @return the number of websites
-	* @throws SystemException if a system exception occurred
 	*/
-	public int countAll()
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public int countAll();
 }

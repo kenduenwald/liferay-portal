@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,7 +32,7 @@ public class ElementIdentifier {
 		return _identifierName;
 	}
 
-	private String _elementName;
-	private String _identifierName;
+	private final String _elementName;
+	private final String _identifierName;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 /**
  * The extended model interface for the LayoutSet service. Represents a row in the &quot;LayoutSet&quot; database table, with each column mapped to a property of this class.
  *
@@ -23,50 +25,102 @@ package com.liferay.portal.model;
  * @see com.liferay.portal.model.impl.LayoutSetModelImpl
  * @generated
  */
+@ProviderType
 public interface LayoutSet extends LayoutSetModel, PersistedModel {
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never modify this interface directly. Add methods to {@link com.liferay.portal.model.impl.LayoutSetImpl} and rerun ServiceBuilder to automatically copy the method declarations to this interface.
 	 */
-	public com.liferay.portal.model.ColorScheme getColorScheme()
-		throws com.liferay.portal.kernel.exception.SystemException;
 
+	/**
+	* Returns the layout set's color scheme.
+	*
+	* <p>
+	* Just like themes, color schemes can be configured on the layout set
+	* level. The layout set's color scheme can be overridden on the layout
+	* level.
+	* </p>
+	*
+	* @return the layout set's color scheme
+	*/
+	public com.liferay.portal.model.ColorScheme getColorScheme();
+
+	public java.lang.String getCompanyFallbackVirtualHostname();
+
+	/**
+	* Returns the layout set's group.
+	*
+	* @return the layout set's group
+	* @throws PortalException if a group with the primary key could not be
+	found
+	*/
 	public com.liferay.portal.model.Group getGroup()
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException;
+		throws com.liferay.portal.kernel.exception.PortalException;
 
+	/**
+	* Returns the layout set prototype's ID, or <code>0</code> if it has no
+	* layout set prototype.
+	*
+	* <p>
+	* Prototype is Liferay's technical name for a site template.
+	* </p>
+	*
+	* @return the layout set prototype's ID, or <code>0</code> if it has no
+	layout set prototype
+	* @throws PortalException if a matching layout set prototype could not be
+	found
+	*/
 	public long getLayoutSetPrototypeId()
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException;
+		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public long getLiveLogoId();
 
-	public java.lang.String getSettings();
+	public boolean getLogo();
 
 	public com.liferay.portal.kernel.util.UnicodeProperties getSettingsProperties();
 
 	public java.lang.String getSettingsProperty(java.lang.String key);
 
-	public com.liferay.portal.model.Theme getTheme()
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public com.liferay.portal.model.Theme getTheme();
 
 	public java.lang.String getThemeSetting(java.lang.String key,
-		java.lang.String device)
-		throws com.liferay.portal.kernel.exception.SystemException;
+		java.lang.String device);
 
+	/**
+	* Returns the name of the layout set's virtual host.
+	*
+	* <p>
+	* When accessing a layout set that has a the virtual host, the URL elements
+	* "/web/sitename" or "/group/sitename" can be omitted.
+	* </p>
+	*
+	* @return the layout set's virtual host name, or an empty string if the
+	layout set has no virtual host configured
+	*/
 	public java.lang.String getVirtualHostname();
 
-	public com.liferay.portal.model.ColorScheme getWapColorScheme()
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public com.liferay.portal.model.ColorScheme getWapColorScheme();
 
-	public com.liferay.portal.model.Theme getWapTheme()
-		throws com.liferay.portal.kernel.exception.SystemException;
+	public com.liferay.portal.model.Theme getWapTheme();
+
+	public boolean hasSetModifiedDate();
 
 	public boolean isLayoutSetPrototypeLinkActive();
 
-	public void setSettings(java.lang.String settings);
+	public boolean isLogo();
+
+	public void setCompanyFallbackVirtualHostname(
+		java.lang.String companyFallbackVirtualHostname);
 
 	public void setSettingsProperties(
 		com.liferay.portal.kernel.util.UnicodeProperties settingsProperties);
+
+	/**
+	* Sets the name of the layout set's virtual host.
+	*
+	* @param virtualHostname the name of the layout set's virtual host
+	* @see #getVirtualHostname()
+	*/
+	public void setVirtualHostname(java.lang.String virtualHostname);
 }

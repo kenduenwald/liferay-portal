@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,16 @@
 package com.liferay.portal.metadata;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.metadata.RawMetadataProcessor;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portlet.dynamicdatamapping.storage.Fields;
+import com.liferay.portlet.dynamicdatamapping.DDMForm;
+import com.liferay.portlet.dynamicdatamapping.DDMFormField;
+import com.liferay.portlet.dynamicdatamapping.DDMFormFieldValue;
+import com.liferay.portlet.dynamicdatamapping.DDMFormValues;
+import com.liferay.portlet.dynamicdatamapping.UnlocalizedValue;
 
 import java.io.File;
 import java.io.InputStream;
@@ -30,6 +34,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,36 +50,58 @@ import org.apache.tika.metadata.Property;
 import org.apache.tika.metadata.TIFF;
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.metadata.TikaMimeKeys;
+import org.apache.tika.metadata.XMPDM;
 
 /**
  * @author Alexander Chow
  */
 public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 
+	@Override
 	public Map<String, Field[]> getFields() {
 		return _fields;
 	}
 
-	public Map<String, Fields> getRawMetadataMap(
+	@Override
+	public Map<String, DDMFormValues> getRawMetadataMap(
 			String extension, String mimeType, File file)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Metadata metadata = extractMetadata(extension, mimeType, file);
 
-		return createDDMFieldsMap(metadata, getFields());
+		return createDDMFormValuesMap(metadata, getFields());
 	}
 
-	public Map<String, Fields> getRawMetadataMap(
+	@Override
+	public Map<String, DDMFormValues> getRawMetadataMap(
 			String extension, String mimeType, InputStream inputStream)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Metadata metadata = extractMetadata(extension, mimeType, inputStream);
 
-		return createDDMFieldsMap(metadata, getFields());
+		return createDDMFormValuesMap(metadata, getFields());
 	}
 
-	protected Fields createDDMFields(Metadata metadata, Field[] fields) {
-		Fields ddmFields = new Fields();
+	protected DDMForm createDDMForm(Locale defaultLocale) {
+		DDMForm ddmForm = new DDMForm();
+
+		ddmForm.addAvailableLocale(defaultLocale);
+		ddmForm.setDefaultLocale(defaultLocale);
+
+		return ddmForm;
+	}
+
+	protected DDMFormValues createDDMFormValues(
+		Metadata metadata, Field[] fields) {
+
+		Locale defaultLocale = LocaleUtil.getDefault();
+
+		DDMForm ddmForm = createDDMForm(defaultLocale);
+
+		DDMFormValues ddmFormValues = new DDMFormValues(ddmForm);
+
+		ddmFormValues.addAvailableLocale(defaultLocale);
+		ddmFormValues.setDefaultLocale(defaultLocale);
 
 		for (Field field : fields) {
 			Class<?> fieldClass = field.getDeclaringClass();
@@ -90,49 +117,65 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 				continue;
 			}
 
-			com.liferay.portlet.dynamicdatamapping.storage.Field ddmField =
-				new com.liferay.portlet.dynamicdatamapping.storage.Field(
-					name, value);
+			DDMFormField ddmFormField = createTextDDMFormField(name);
 
-			ddmFields.put(ddmField);
+			ddmForm.addDDMFormField(ddmFormField);
+
+			DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
+
+			ddmFormFieldValue.setName(name);
+			ddmFormFieldValue.setValue(new UnlocalizedValue(value));
+
+			ddmFormValues.addDDMFormFieldValue(ddmFormFieldValue);
 		}
 
-		return ddmFields;
+		return ddmFormValues;
 	}
 
-	protected Map<String, Fields> createDDMFieldsMap(
+	protected Map<String, DDMFormValues> createDDMFormValuesMap(
 		Metadata metadata, Map<String, Field[]> fieldsMap) {
 
-		Map<String, Fields> ddmFieldsMap = new HashMap<String, Fields>();
+		Map<String, DDMFormValues> ddmFormValuesMap = new HashMap<>();
 
 		if (metadata == null) {
-			return ddmFieldsMap;
+			return ddmFormValuesMap;
 		}
 
 		for (String key : fieldsMap.keySet()) {
 			Field[] fields = fieldsMap.get(key);
 
-			Fields ddmFields = createDDMFields(metadata, fields);
+			DDMFormValues ddmFormValues = createDDMFormValues(metadata, fields);
 
-			Set<String> names = ddmFields.getNames();
+			Map<String, List<DDMFormFieldValue>> ddmFormFieldsValuesMap =
+				ddmFormValues.getDDMFormFieldValuesMap();
+
+			Set<String> names = ddmFormFieldsValuesMap.keySet();
 
 			if (names.isEmpty()) {
 				continue;
 			}
 
-			ddmFieldsMap.put(key, ddmFields);
+			ddmFormValuesMap.put(key, ddmFormValues);
 		}
 
-		return ddmFieldsMap;
+		return ddmFormValuesMap;
+	}
+
+	protected DDMFormField createTextDDMFormField(String name) {
+		DDMFormField ddmFormField = new DDMFormField(name, "text");
+
+		ddmFormField.setDataType("string");
+
+		return ddmFormField;
 	}
 
 	protected abstract Metadata extractMetadata(
 			String extension, String mimeType, File file)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	protected abstract Metadata extractMetadata(
 			String extension, String mimeType, InputStream inputStream)
-		throws PortalException, SystemException;
+		throws PortalException;
 
 	protected Object getFieldValue(Metadata metadata, Field field) {
 		Object fieldValue = null;
@@ -157,11 +200,10 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 		if (fieldValue instanceof String) {
 			return metadata.get((String)fieldValue);
 		}
-		else {
-			Property property = (Property)fieldValue;
 
-			return metadata.get(property.getName());
-		}
+		Property property = (Property)fieldValue;
+
+		return metadata.get(property.getName());
 	}
 
 	private static void _addFields(Class<?> clazz, List<Field> fields) {
@@ -170,14 +212,13 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		BaseRawMetadataProcessor.class);
 
-	private static Map<String, Field[]> _fields =
-		new HashMap<String, Field[]>();
+	private static final Map<String, Field[]> _fields = new HashMap<>();
 
 	static {
-		List<Field> fields = new ArrayList<Field>();
+		List<Field> fields = new ArrayList<>();
 
 		_addFields(ClimateForcast.class, fields);
 		_addFields(CreativeCommons.class, fields);
@@ -192,7 +233,7 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 		_addFields(XMPDM.class, fields);
 
 		_fields.put(
-			"TikaRawMetadata", fields.toArray(new Field[fields.size()]));
+			TIKA_RAW_METADATA, fields.toArray(new Field[fields.size()]));
 	}
 
 }

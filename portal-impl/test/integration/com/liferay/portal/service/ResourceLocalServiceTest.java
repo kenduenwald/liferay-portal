@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,37 +15,48 @@
 package com.liferay.portal.service;
 
 import com.liferay.portal.NoSuchResourceException;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.model.Group;
 import com.liferay.portal.model.Layout;
 import com.liferay.portal.model.ResourceConstants;
 import com.liferay.portal.model.User;
 import com.liferay.portal.security.permission.DoAsUserThread;
-import com.liferay.portal.test.EnvironmentExecutionTestListener;
-import com.liferay.portal.test.ExecutionTestListeners;
-import com.liferay.portal.test.LiferayIntegrationJUnitTestRunner;
-import com.liferay.portal.util.TestPropsValues;
+import com.liferay.portal.service.test.ServiceTestUtil;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.MainServletTestRule;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * @author Brian Wing Shun Chan
  */
-@ExecutionTestListeners(listeners = {EnvironmentExecutionTestListener.class})
-@RunWith(LiferayIntegrationJUnitTestRunner.class)
 public class ResourceLocalServiceTest {
+
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(), MainServletTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
-		_userIds = new long[ServiceTestUtil.THREAD_COUNT];
+		_group = GroupTestUtil.addGroup();
 
-		for (int i = 0 ; i < ServiceTestUtil.THREAD_COUNT; i++) {
-			User user = ServiceTestUtil.addUser(
-				"ResourceLocalServiceTest" + (i + 1), false,
-				new long[] {TestPropsValues.getGroupId()});
+		_users = new User[ServiceTestUtil.THREAD_COUNT];
 
-			_userIds[i] = user.getUserId();
+		for (int i = 0; i < ServiceTestUtil.THREAD_COUNT; i++) {
+			User user = UserTestUtil.addUser(
+				"ResourceLocalServiceTest" + (i + 1), _group.getGroupId());
+
+			_users[i] = user;
 		}
 	}
 
@@ -55,7 +66,7 @@ public class ResourceLocalServiceTest {
 			new DoAsUserThread[ServiceTestUtil.THREAD_COUNT];
 
 		for (int i = 0; i < doAsUserThreads.length; i++) {
-			doAsUserThreads[i] = new AddResources(_userIds[i]);
+			doAsUserThreads[i] = new AddResources(_users[i].getUserId());
 		}
 
 		for (DoAsUserThread doAsUserThread : doAsUserThreads) {
@@ -80,7 +91,11 @@ public class ResourceLocalServiceTest {
 			successCount == ServiceTestUtil.THREAD_COUNT);
 	}
 
-	private long[] _userIds;
+	@DeleteAfterTestRun
+	private Group _group;
+
+	@DeleteAfterTestRun
+	private User[] _users;
 
 	private class AddResources extends DoAsUserThread {
 
@@ -89,27 +104,23 @@ public class ResourceLocalServiceTest {
 		}
 
 		@Override
-		public boolean isSuccess() {
-			return true;
-		}
-
-		@Override
 		protected void doRun() throws Exception {
 			try {
 				ResourceLocalServiceUtil.getResource(
 					TestPropsValues.getCompanyId(), Layout.class.getName(),
 					ResourceConstants.SCOPE_INDIVIDUAL,
-					String.valueOf(TestPropsValues.getPlid()));
+					String.valueOf(
+						TestPropsValues.getPlid(_group.getGroupId())));
 			}
 			catch (NoSuchResourceException nsre) {
 				boolean addGroupPermission = true;
 				boolean addGuestPermission = true;
 
 				ResourceLocalServiceUtil.addResources(
-					TestPropsValues.getCompanyId(),
-					TestPropsValues.getGroupId(), 0, Layout.class.getName(),
-					TestPropsValues.getPlid(), false, addGroupPermission,
-					addGuestPermission);
+					TestPropsValues.getCompanyId(), _group.getGroupId(), 0,
+					Layout.class.getName(),
+					TestPropsValues.getPlid(_group.getGroupId()), false,
+					addGroupPermission, addGuestPermission);
 			}
 		}
 

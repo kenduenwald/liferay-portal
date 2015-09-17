@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,15 +28,15 @@ import org.apache.jasper.Constants;
 
 /**
  * <p>
- * See http://issues.liferay.com/browse/LPS-19130.
+ * See https://issues.liferay.com/browse/LPS-19130.
  * </p>
  *
  * @author Shuyang Zhou
  */
 public class TagHandlerPool extends org.apache.jasper.runtime.TagHandlerPool {
 
-	@SuppressWarnings("rawtypes")
 	@Override
+	@SuppressWarnings("rawtypes")
 	public Tag get(Class tagClass) throws JspException {
 		Tag tag = _tags.poll();
 
@@ -79,8 +79,8 @@ public class TagHandlerPool extends org.apache.jasper.runtime.TagHandlerPool {
 			getOption(config, OPTION_MAXSIZE, null), Constants.MAX_POOL_SIZE);
 	}
 
-	private AtomicInteger _counter = new AtomicInteger();
+	private final AtomicInteger _counter = new AtomicInteger();
 	private int _maxSize;
-	private Queue<Tag> _tags = new ConcurrentLinkedQueue<Tag>();
+	private final Queue<Tag> _tags = new ConcurrentLinkedQueue<>();
 
 }

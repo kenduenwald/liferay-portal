@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,16 @@
 
 package com.liferay.portal.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 /**
- * <p>
- * This class is a wrapper for {@link ContactService}.
- * </p>
+ * Provides a wrapper for {@link ContactService}.
  *
- * @author    Brian Wing Shun Chan
- * @see       ContactService
+ * @author Brian Wing Shun Chan
+ * @see ContactService
  * @generated
  */
+@ProviderType
 public class ContactServiceWrapper implements ContactService,
 	ServiceWrapper<ContactService> {
 	public ContactServiceWrapper(ContactService contactService) {
@@ -30,23 +31,68 @@ public class ContactServiceWrapper implements ContactService,
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedService}
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	@Override
+	public java.lang.String getBeanIdentifier() {
+		return _contactService.getBeanIdentifier();
+	}
+
+	@Override
+	public com.liferay.portal.model.Contact getContact(long contactId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return _contactService.getContact(contactId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.portal.model.Contact> getContacts(
+		long classNameId, long classPK, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<com.liferay.portal.model.Contact> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return _contactService.getContacts(classNameId, classPK, start, end,
+			orderByComparator);
+	}
+
+	@Override
+	public int getContactsCount(long classNameId, long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return _contactService.getContactsCount(classNameId, classPK);
+	}
+
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	@Override
+	public void setBeanIdentifier(java.lang.String beanIdentifier) {
+		_contactService.setBeanIdentifier(beanIdentifier);
+	}
+
+	/**
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedService}
 	 */
+	@Deprecated
 	public ContactService getWrappedContactService() {
 		return _contactService;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #setWrappedService}
+	 * @deprecated As of 6.1.0, replaced by {@link #setWrappedService}
 	 */
+	@Deprecated
 	public void setWrappedContactService(ContactService contactService) {
 		_contactService = contactService;
 	}
 
+	@Override
 	public ContactService getWrappedService() {
 		return _contactService;
 	}
 
+	@Override
 	public void setWrappedService(ContactService contactService) {
 		_contactService = contactService;
 	}

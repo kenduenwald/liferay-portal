@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,9 @@
 
 package com.liferay.portal.kernel.search;
 
-import java.util.Locale;
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
 
-import javax.portlet.PortletURL;
+import java.util.Locale;
 
 /**
  * @author Brian Wing Shun Chan
@@ -24,28 +24,57 @@ import javax.portlet.PortletURL;
  */
 public class BaseIndexerPostProcessor implements IndexerPostProcessor {
 
+	@Override
+	public void postProcessContextBooleanFilter(
+			BooleanFilter booleanFilter, SearchContext searchContext)
+		throws Exception {
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #postProcessContextBooleanFilter(BooleanFilter,
+	 *             SearchContext)}
+	 */
+	@Deprecated
+	@Override
 	public void postProcessContextQuery(
 			BooleanQuery contextQuery, SearchContext searchContext)
 		throws Exception {
 	}
 
+	@Override
 	public void postProcessDocument(Document document, Object obj)
 		throws Exception {
 	}
 
+	@Override
 	public void postProcessFullQuery(
 			BooleanQuery fullQuery, SearchContext searchContext)
 		throws Exception {
 	}
 
+	@Override
+	public void postProcessSearchQuery(
+			BooleanQuery searchQuery, BooleanFilter booleanFilter,
+			SearchContext searchContext)
+		throws Exception {
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #postProcessSearchQuery(BooleanQuery, BooleanFilter,
+	 *             SearchContext)}
+	 */
+	@Deprecated
+	@Override
 	public void postProcessSearchQuery(
 			BooleanQuery searchQuery, SearchContext searchContext)
 		throws Exception {
 	}
 
+	@Override
 	public void postProcessSummary(
-		Summary summary, Document document, Locale locale, String snippet,
-		PortletURL portletURL) {
+		Summary summary, Document document, Locale locale, String snippet) {
 	}
 
 }

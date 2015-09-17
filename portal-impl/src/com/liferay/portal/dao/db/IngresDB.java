@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -84,7 +84,7 @@ public class IngresDB extends BaseDB {
 			if (TEMPLATE[i].equals("##") ||
 				TEMPLATE[i].equals("'01/01/1970'")) {
 
-				template = template.replaceAll(TEMPLATE[i], actual[i]);
+				template = StringUtil.replace(template, TEMPLATE[i], actual[i]);
 			}
 			else if (TEMPLATE[i].equals("COMMIT_TRANSACTION")) {
 				template = StringUtil.replace(
@@ -101,62 +101,69 @@ public class IngresDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith(ALTER_COLUMN_NAME)) {
-				line = "-- " + line;
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith(ALTER_COLUMN_NAME)) {
+					line = "-- " + line;
 
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"This statement is not supported by Ingres: " + line);
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"This statement is not supported by Ingres: " +
+								line);
+					}
 				}
-			}
-			else if (line.startsWith(ALTER_COLUMN_TYPE)) {
-				String[] template = buildColumnTypeTokens(line);
+				else if (line.startsWith(ALTER_COLUMN_TYPE)) {
+					String[] template = buildColumnTypeTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ alter @old-column@ @type@;",
-					REWORD_TEMPLATE, template);
-			}
-			else if (line.indexOf(DROP_INDEX) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
+					line = StringUtil.replace(
+						"alter table @table@ alter @old-column@ @type@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_TABLE_NAME)) {
+					String[] template = buildTableNameTokens(line);
 
-				line = StringUtil.replace(
-					"drop index @index@;", "@index@", tokens[2]);
-			}
-			else if (line.indexOf(DROP_PRIMARY_KEY) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
+					line = StringUtil.replace(
+						"alter table @old-table@ rename to @new-table@;",
+						RENAME_TABLE_TEMPLATE, template);
+				}
+				else if (line.contains(DROP_INDEX)) {
+					String[] tokens = StringUtil.split(line, ' ');
 
-				line = StringUtil.replace(
-					"alter table @table@ drop constraint @table@_pkey;",
-					"@table@", tokens[2]);
+					line = StringUtil.replace(
+						"drop index @index@;", "@index@", tokens[2]);
+				}
+				else if (line.contains(DROP_PRIMARY_KEY)) {
+					String[] tokens = StringUtil.split(line, ' ');
+
+					line = StringUtil.replace(
+						"alter table @table@ drop constraint @table@_pkey;",
+						"@table@", tokens[2]);
+				}
+
+				sb.append(line);
+				sb.append("\n");
 			}
 
-			sb.append(line);
-			sb.append("\n");
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	private static final String[] _INGRES = {
-		"--", "1", "0", "'1970-01-01'", "date('now')", " blob", " blob",
+		"--", "TRUE", "FALSE", "'1970-01-01'", "date('now')", " blob", " blob",
 		" tinyint", " timestamp", " float", " integer", " bigint",
 		" varchar(1000)", " long varchar", " varchar", "", "commit;\\g"
 	};
 
 	private static final boolean _SUPPORTS_ALTER_COLUMN_NAME = false;
 
-	private static Log _log = LogFactoryUtil.getLog(IngresDB.class);
+	private static final Log _log = LogFactoryUtil.getLog(IngresDB.class);
 
-	private static IngresDB _instance = new IngresDB();
+	private static final IngresDB _instance = new IngresDB();
 
 }

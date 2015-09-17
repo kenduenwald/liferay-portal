@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -30,17 +30,19 @@ public class WebXML24Descriptor extends SimpleXMLDescriptor {
 
 	public WebXML24Descriptor() {
 		_orderedChildren.put(
+			"servlet",
+			new String[] {
+				"icon", "servlet-name", "display-name", "description",
+				"servlet-class", "jsp-file", "init-param", "load-on-startup",
+				"run-as", "security-role-ref"
+			});
+		_orderedChildren.put(
 			"jsp-config", new String[] {"taglib", "jsp-property-group"});
 	}
 
 	@Override
 	public boolean canHandleType(String doctype, Document root) {
-		if (doctype.indexOf("web-app") != -1) {
-			return true;
-		}
-		else {
-			return false;
-		}
+		return doctype.contains("web-app");
 	}
 
 	@Override
@@ -81,8 +83,7 @@ public class WebXML24Descriptor extends SimpleXMLDescriptor {
 		return _UNIQUE_ELEMENTS;
 	}
 
-	private static final ElementIdentifier[] _ELEMENTS_IDENTIFIED_BY_ATTR = {
-	};
+	private static final ElementIdentifier[] _ELEMENTS_IDENTIFIED_BY_ATTR = {};
 
 	private static final ElementIdentifier[] _ELEMENTS_IDENTIFIED_BY_CHILD = {
 		new ElementIdentifier("context-param", "param-name"),
@@ -114,7 +115,6 @@ public class WebXML24Descriptor extends SimpleXMLDescriptor {
 		"session-config", "welcome-file-list", "jsp-config", "login-config"
 	};
 
-	private Map<String, String[]> _orderedChildren =
-		new HashMap<String, String[]>();
+	private final Map<String, String[]> _orderedChildren = new HashMap<>();
 
 }

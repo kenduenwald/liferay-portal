@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -55,7 +55,7 @@ public class PostgreSQLDB extends BaseDB {
 
 	@Override
 	public List<Index> getIndexes(Connection con) throws SQLException {
-		List<Index> indexes = new ArrayList<Index>();
+		List<Index> indexes = new ArrayList<>();
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -76,7 +76,8 @@ public class PostgreSQLDB extends BaseDB {
 			while (rs.next()) {
 				String indexName = rs.getString("indexname");
 				String tableName = rs.getString("tablename");
-				String indexSQL = rs.getString("indexdef").toLowerCase().trim();
+				String indexSQL = StringUtil.toLowerCase(
+					rs.getString("indexdef").trim());
 
 				boolean unique = true;
 
@@ -92,6 +93,11 @@ public class PostgreSQLDB extends BaseDB {
 		}
 
 		return indexes;
+	}
+
+	@Override
+	public boolean isSupportsQueryingAfterException() {
+		return _SUPPORTS_QUERYING_AFTER_EXCEPTION;
 	}
 
 	protected PostgreSQLDB() {
@@ -113,17 +119,17 @@ public class PostgreSQLDB extends BaseDB {
 		sb.append("create database ");
 		sb.append(databaseName);
 		sb.append(" encoding = 'UNICODE';\n");
-		sb.append("\\c ");
-		sb.append(databaseName);
-		sb.append(";\n\n");
-		sb.append(
-			readFile(
-				sqlDir + "/portal" + suffix + "/portal" + suffix +
-					"-postgresql.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/indexes/indexes-postgresql.sql"));
-		sb.append("\n\n");
-		sb.append(readFile(sqlDir + "/sequences/sequences-postgresql.sql"));
+
+		if (population != BARE) {
+			sb.append("\\c ");
+			sb.append(databaseName);
+			sb.append(";\n\n");
+			sb.append(getCreateTablesContent(sqlDir, suffix));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/indexes/indexes-postgresql.sql"));
+			sb.append("\n\n");
+			sb.append(readFile(sqlDir + "/sequences/sequences-postgresql.sql"));
+		}
 
 		return sb.toString();
 	}
@@ -140,53 +146,60 @@ public class PostgreSQLDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (line.startsWith(ALTER_COLUMN_NAME)) {
-				String[] template = buildColumnNameTokens(line);
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith(ALTER_COLUMN_NAME)) {
+					String[] template = buildColumnNameTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ rename @old-column@ to @new-column@;",
-					REWORD_TEMPLATE, template);
+					line = StringUtil.replace(
+						"alter table @table@ rename @old-column@ to " +
+							"@new-column@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_COLUMN_TYPE)) {
+					String[] template = buildColumnTypeTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @table@ alter @old-column@ type @type@ " +
+							"using @old-column@::@type@;",
+						REWORD_TEMPLATE, template);
+				}
+				else if (line.startsWith(ALTER_TABLE_NAME)) {
+					String[] template = buildTableNameTokens(line);
+
+					line = StringUtil.replace(
+						"alter table @old-table@ rename to @new-table@;",
+						RENAME_TABLE_TEMPLATE, template);
+				}
+				else if (line.contains(DROP_INDEX)) {
+					String[] tokens = StringUtil.split(line, ' ');
+
+					line = StringUtil.replace(
+						"drop index @index@;", "@index@", tokens[2]);
+				}
+				else if (line.contains(DROP_PRIMARY_KEY)) {
+					String[] tokens = StringUtil.split(line, ' ');
+
+					line = StringUtil.replace(
+						"alter table @table@ drop constraint @table@_pkey;",
+						"@table@", tokens[2]);
+				}
+				else if (line.contains("\\\'")) {
+					line = StringUtil.replace(line, "\\\'", "\'\'");
+				}
+
+				sb.append(line);
+				sb.append("\n");
 			}
-			else if (line.startsWith(ALTER_COLUMN_TYPE)) {
-				String[] template = buildColumnTypeTokens(line);
 
-				line = StringUtil.replace(
-					"alter table @table@ alter @old-column@ type @type@ " +
-						"using @old-column@::@type@;",
-					REWORD_TEMPLATE, template);
-			}
-			else if (line.indexOf(DROP_INDEX) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
-
-				line = StringUtil.replace(
-					"drop index @index@;", "@index@", tokens[2]);
-			}
-			else if (line.indexOf(DROP_PRIMARY_KEY) != -1) {
-				String[] tokens = StringUtil.split(line, ' ');
-
-				line = StringUtil.replace(
-					"alter table @table@ drop constraint @table@_pkey;",
-					"@table@", tokens[2]);
-			}
-			else if (line.indexOf("\\\'") != -1) {
-				line = StringUtil.replace(line, "\\\'", "\'\'");
-			}
-
-			sb.append(line);
-			sb.append("\n");
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	private static final String[] _POSTGRESQL = {
@@ -195,6 +208,8 @@ public class PostgreSQLDB extends BaseDB {
 		" bigint", " text", " text", " varchar", "", "commit"
 	};
 
-	private static PostgreSQLDB _instance = new PostgreSQLDB();
+	private static final boolean _SUPPORTS_QUERYING_AFTER_EXCEPTION = false;
+
+	private static final PostgreSQLDB _instance = new PostgreSQLDB();
 
 }

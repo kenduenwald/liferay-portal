@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,17 +25,20 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class ReleaseSoap implements Serializable {
 	public static ReleaseSoap toSoapModel(Release model) {
 		ReleaseSoap soapModel = new ReleaseSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setReleaseId(model.getReleaseId());
 		soapModel.setCreateDate(model.getCreateDate());
 		soapModel.setModifiedDate(model.getModifiedDate());
 		soapModel.setServletContextName(model.getServletContextName());
+		soapModel.setSchemaVersion(model.getSchemaVersion());
 		soapModel.setBuildNumber(model.getBuildNumber());
 		soapModel.setBuildDate(model.getBuildDate());
 		soapModel.setVerified(model.getVerified());
@@ -91,6 +96,14 @@ public class ReleaseSoap implements Serializable {
 		setReleaseId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
 	public long getReleaseId() {
 		return _releaseId;
 	}
@@ -121,6 +134,14 @@ public class ReleaseSoap implements Serializable {
 
 	public void setServletContextName(String servletContextName) {
 		_servletContextName = servletContextName;
+	}
+
+	public String getSchemaVersion() {
+		return _schemaVersion;
+	}
+
+	public void setSchemaVersion(String schemaVersion) {
+		_schemaVersion = schemaVersion;
 	}
 
 	public int getBuildNumber() {
@@ -167,10 +188,12 @@ public class ReleaseSoap implements Serializable {
 		_testString = testString;
 	}
 
+	private long _mvccVersion;
 	private long _releaseId;
 	private Date _createDate;
 	private Date _modifiedDate;
 	private String _servletContextName;
+	private String _schemaVersion;
 	private int _buildNumber;
 	private Date _buildDate;
 	private boolean _verified;

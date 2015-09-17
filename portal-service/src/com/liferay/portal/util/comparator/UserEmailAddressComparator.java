@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,11 +20,11 @@ import com.liferay.portal.model.User;
 /**
  * @author Brian Wing Shun Chan
  */
-public class UserEmailAddressComparator extends OrderByComparator {
+public class UserEmailAddressComparator extends OrderByComparator<User> {
 
-	public static final String ORDER_BY_ASC = "User_.emailAddress ASC";
+	public static final String ORDER_BY_ASC = "emailAddress ASC";
 
-	public static final String ORDER_BY_DESC = "User_.emailAddress DESC";
+	public static final String ORDER_BY_DESC = "emailAddress DESC";
 
 	public static final String[] ORDER_BY_FIELDS = {"emailAddress"};
 
@@ -37,11 +37,11 @@ public class UserEmailAddressComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		User user1 = (User)obj1;
-		User user2 = (User)obj2;
+	public int compare(User user1, User user2) {
+		String emailAddress1 = user1.getEmailAddress();
+		String emailAddress2 = user2.getEmailAddress();
 
-		int value = user1.getEmailAddress().compareTo(user2.getEmailAddress());
+		int value = emailAddress1.compareTo(emailAddress2);
 
 		if (_ascending) {
 			return value;
@@ -71,6 +71,6 @@ public class UserEmailAddressComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

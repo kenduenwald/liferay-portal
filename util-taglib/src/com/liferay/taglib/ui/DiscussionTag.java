@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,9 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.theme.PortletDisplay;
+import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.taglib.util.IncludeTag;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,14 +50,6 @@ public class DiscussionTag extends IncludeTag {
 		_hideControls = hideControls;
 	}
 
-	public void setPermissionClassName(String permissionClassName) {
-		_permissionClassName = permissionClassName;
-	}
-
-	public void setPermissionClassPK(long permissionClassPK) {
-		_permissionClassPK = permissionClassPK;
-	}
-
 	public void setRatingsEnabled(boolean ratingsEnabled) {
 		_ratingsEnabled = ratingsEnabled;
 	}
@@ -64,8 +58,11 @@ public class DiscussionTag extends IncludeTag {
 		_redirect = redirect;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0, with no direct replacement
+	 */
+	@Deprecated
 	public void setSubject(String subject) {
-		_subject = subject;
 	}
 
 	public void setUserId(long userId) {
@@ -80,12 +77,20 @@ public class DiscussionTag extends IncludeTag {
 		_formAction = null;
 		_formName = "fm";
 		_hideControls = false;
-		_permissionClassName = null;
-		_permissionClassPK = 0;
 		_ratingsEnabled = true;
 		_redirect = null;
-		_subject = null;
 		_userId = 0;
+	}
+
+	protected String getFormAction(HttpServletRequest request) {
+		if (_formAction != null) {
+			return _formAction;
+		}
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		return themeDisplay.getPathMain() + "/portal/comment/edit_discussion";
 	}
 
 	@Override
@@ -93,41 +98,39 @@ public class DiscussionTag extends IncludeTag {
 		return _PAGE;
 	}
 
+	protected String getPaginationURL(HttpServletRequest request) {
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+
+		String portletId = portletDisplay.getId();
+
+		return themeDisplay.getPathMain() +
+			"/portal/comment/get_comments?p_p_isolated=1&portletId=" +
+				portletId;
+	}
+
 	@Override
 	protected void setAttributes(HttpServletRequest request) {
-		String permissionClassName = _permissionClassName;
-
-		if (Validator.isNull(permissionClassName)) {
-			permissionClassName = _className;
-		}
-
-		long permissionClassPK = _permissionClassPK;
-
-		if (permissionClassPK == 0) {
-			permissionClassPK = _classPK;
-		}
-
 		request.setAttribute(
 			"liferay-ui:discussion:assetEntryVisible",
 			String.valueOf(_assetEntryVisible));
 		request.setAttribute("liferay-ui:discussion:className", _className);
 		request.setAttribute(
 			"liferay-ui:discussion:classPK", String.valueOf(_classPK));
-		request.setAttribute("liferay-ui:discussion:formAction", _formAction);
+		request.setAttribute(
+			"liferay-ui:discussion:formAction", getFormAction(request));
 		request.setAttribute("liferay-ui:discussion:formName", _formName);
 		request.setAttribute(
 			"liferay-ui:discussion:hideControls",
 			String.valueOf(_hideControls));
 		request.setAttribute(
-			"liferay-ui:discussion:permissionClassName", permissionClassName);
-		request.setAttribute(
-			"liferay-ui:discussion:permissionClassPK",
-			String.valueOf(permissionClassPK));
+			"liferay-ui:discussion:paginationURL", getPaginationURL(request));
 		request.setAttribute(
 			"liferay-ui:discussion:ratingsEnabled",
 			String.valueOf(_ratingsEnabled));
 		request.setAttribute("liferay-ui:discussion:redirect", _redirect);
-		request.setAttribute("liferay-ui:discussion:subject", _subject);
 		request.setAttribute(
 			"liferay-ui:discussion:userId", String.valueOf(_userId));
 	}
@@ -140,11 +143,8 @@ public class DiscussionTag extends IncludeTag {
 	private String _formAction;
 	private String _formName = "fm";
 	private boolean _hideControls;
-	private String _permissionClassName;
-	private long _permissionClassPK;
 	private boolean _ratingsEnabled = true;
 	private String _redirect;
-	private String _subject;
 	private long _userId;
 
 }

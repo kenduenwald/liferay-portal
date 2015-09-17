@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.portlet.PortletRequest;
+
 import javax.servlet.http.HttpServletRequestWrapper;
 
 /**
@@ -42,18 +44,22 @@ public class UploadPortletRequestImpl
 	extends HttpServletRequestWrapper implements UploadPortletRequest {
 
 	public UploadPortletRequestImpl(
-		UploadServletRequest uploadServletRequest, String namespace) {
+		UploadServletRequest uploadServletRequest,
+		PortletRequest portletRequest, String namespace) {
 
 		super(uploadServletRequest);
 
 		_uploadServletRequest = uploadServletRequest;
+		_portletRequest = portletRequest;
 		_namespace = namespace;
 	}
 
+	@Override
 	public void cleanUp() {
 		_uploadServletRequest.cleanUp();
 	}
 
+	@Override
 	public String getContentType(String name) {
 		String contentType = _uploadServletRequest.getContentType(
 			_namespace.concat(name));
@@ -65,16 +71,22 @@ public class UploadPortletRequestImpl
 		if (Validator.isNull(contentType) ||
 			contentType.equals(ContentTypes.APPLICATION_OCTET_STREAM)) {
 
-			contentType = MimeTypesUtil.getContentType(getFile(name));
+			File file = getFile(name);
+
+			if (file != null) {
+				contentType = MimeTypesUtil.getContentType(file);
+			}
 		}
 
 		return contentType;
 	}
 
+	@Override
 	public File getFile(String name) {
 		return getFile(name, false);
 	}
 
+	@Override
 	public File getFile(String name, boolean forceCreate) {
 		File file = _uploadServletRequest.getFile(
 			_namespace.concat(name), forceCreate);
@@ -86,10 +98,12 @@ public class UploadPortletRequestImpl
 		return file;
 	}
 
+	@Override
 	public InputStream getFileAsStream(String name) throws IOException {
 		return getFileAsStream(name, true);
 	}
 
+	@Override
 	public InputStream getFileAsStream(String name, boolean deleteOnClose)
 		throws IOException {
 
@@ -104,6 +118,7 @@ public class UploadPortletRequestImpl
 		return inputStream;
 	}
 
+	@Override
 	public String getFileName(String name) {
 		String fileName = _uploadServletRequest.getFileName(
 			_namespace.concat(name));
@@ -115,6 +130,7 @@ public class UploadPortletRequestImpl
 		return fileName;
 	}
 
+	@Override
 	public String[] getFileNames(String name) {
 		String[] fileNames = _uploadServletRequest.getFileNames(
 			_namespace.concat(name));
@@ -126,6 +142,7 @@ public class UploadPortletRequestImpl
 		return fileNames;
 	}
 
+	@Override
 	public File[] getFiles(String name) {
 		File[] files = _uploadServletRequest.getFiles(_namespace.concat(name));
 
@@ -136,10 +153,12 @@ public class UploadPortletRequestImpl
 		return files;
 	}
 
+	@Override
 	public InputStream[] getFilesAsStream(String name) throws IOException {
 		return getFilesAsStream(name, true);
 	}
 
+	@Override
 	public InputStream[] getFilesAsStream(String name, boolean deleteOnClose)
 		throws IOException {
 
@@ -154,6 +173,7 @@ public class UploadPortletRequestImpl
 		return inputStreams;
 	}
 
+	@Override
 	public String getFullFileName(String name) {
 		String fullFileName = _uploadServletRequest.getFullFileName(
 			_namespace.concat(name));
@@ -165,12 +185,13 @@ public class UploadPortletRequestImpl
 		return fullFileName;
 	}
 
+	@Override
 	public Map<String, FileItem[]> getMultipartParameterMap() {
-		Map<String, FileItem[]> map = new HashMap<String, FileItem[]>();
-
 		if (!(_uploadServletRequest instanceof UploadServletRequestImpl)) {
-			return map;
+			return Collections.emptyMap();
 		}
+
+		Map<String, FileItem[]> map = new HashMap<>();
 
 		UploadServletRequestImpl uploadServletRequestImpl =
 			(UploadServletRequestImpl)_uploadServletRequest;
@@ -206,7 +227,7 @@ public class UploadPortletRequestImpl
 
 	@Override
 	public Map<String, String[]> getParameterMap() {
-		Map<String, String[]> map = new HashMap<String, String[]>();
+		Map<String, String[]> map = new HashMap<>();
 
 		Enumeration<String> enu = getParameterNames();
 
@@ -221,7 +242,7 @@ public class UploadPortletRequestImpl
 
 	@Override
 	public Enumeration<String> getParameterNames() {
-		List<String> parameterNames = new ArrayList<String>();
+		List<String> parameterNames = new ArrayList<>();
 
 		Enumeration<String> enu = _uploadServletRequest.getParameterNames();
 
@@ -251,6 +272,40 @@ public class UploadPortletRequestImpl
 		return parameterValues;
 	}
 
+	@Override
+	public PortletRequest getPortletRequest() {
+		return _portletRequest;
+	}
+
+	@Override
+	public Map<String, List<String>> getRegularParameterMap() {
+		if (!(_uploadServletRequest instanceof UploadServletRequestImpl)) {
+			return Collections.emptyMap();
+		}
+
+		Map<String, List<String>> map = new HashMap<>();
+
+		UploadServletRequestImpl uploadServletRequestImpl =
+			(UploadServletRequestImpl)_uploadServletRequest;
+
+		Map<String, List<String>> regularParameterMap =
+			uploadServletRequestImpl.getRegularParameterMap();
+
+		for (String name : regularParameterMap.keySet()) {
+			if (name.startsWith(_namespace)) {
+				map.put(
+					name.substring(_namespace.length(), name.length()),
+					regularParameterMap.get(name));
+			}
+			else {
+				map.put(name, regularParameterMap.get(name));
+			}
+		}
+
+		return map;
+	}
+
+	@Override
 	public Long getSize(String name) {
 		Long size = _uploadServletRequest.getSize(_namespace.concat(name));
 
@@ -265,6 +320,7 @@ public class UploadPortletRequestImpl
 		return size;
 	}
 
+	@Override
 	public Boolean isFormField(String name) {
 		Boolean formField = _uploadServletRequest.isFormField(
 			_namespace.concat(name));
@@ -281,7 +337,8 @@ public class UploadPortletRequestImpl
 		}
 	}
 
-	private String _namespace;
-	private UploadServletRequest _uploadServletRequest;
+	private final String _namespace;
+	private final PortletRequest _portletRequest;
+	private final UploadServletRequest _uploadServletRequest;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.ratings.service.http;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
@@ -24,13 +26,11 @@ import com.liferay.portal.service.http.TunnelUtil;
 import com.liferay.portlet.ratings.service.RatingsEntryServiceUtil;
 
 /**
- * <p>
- * This class provides a HTTP utility for the
- * {@link com.liferay.portlet.ratings.service.RatingsEntryServiceUtil} service utility. The
+ * Provides the HTTP utility for the
+ * {@link RatingsEntryServiceUtil} service utility. The
  * static methods of this class calls the same methods of the service utility.
  * However, the signatures are different because it requires an additional
- * {@link com.liferay.portal.security.auth.HttpPrincipal} parameter.
- * </p>
+ * {@link HttpPrincipal} parameter.
  *
  * <p>
  * The benefits of using the HTTP utility is that it is fast and allows for
@@ -47,19 +47,19 @@ import com.liferay.portlet.ratings.service.RatingsEntryServiceUtil;
  * The HTTP utility is only generated for remote services.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       RatingsEntryServiceSoap
- * @see       com.liferay.portal.security.auth.HttpPrincipal
- * @see       com.liferay.portlet.ratings.service.RatingsEntryServiceUtil
+ * @author Brian Wing Shun Chan
+ * @see RatingsEntryServiceSoap
+ * @see HttpPrincipal
+ * @see RatingsEntryServiceUtil
  * @generated
  */
+@ProviderType
 public class RatingsEntryServiceHttp {
 	public static void deleteEntry(HttpPrincipal httpPrincipal,
 		java.lang.String className, long classPK)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		try {
-			MethodKey methodKey = new MethodKey(RatingsEntryServiceUtil.class.getName(),
+			MethodKey methodKey = new MethodKey(RatingsEntryServiceUtil.class,
 					"deleteEntry", _deleteEntryParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
@@ -71,10 +71,6 @@ public class RatingsEntryServiceHttp {
 			catch (Exception e) {
 				if (e instanceof com.liferay.portal.kernel.exception.PortalException) {
 					throw (com.liferay.portal.kernel.exception.PortalException)e;
-				}
-
-				if (e instanceof com.liferay.portal.kernel.exception.SystemException) {
-					throw (com.liferay.portal.kernel.exception.SystemException)e;
 				}
 
 				throw new com.liferay.portal.kernel.exception.SystemException(e);
@@ -90,10 +86,9 @@ public class RatingsEntryServiceHttp {
 	public static com.liferay.portlet.ratings.model.RatingsEntry updateEntry(
 		HttpPrincipal httpPrincipal, java.lang.String className, long classPK,
 		double score)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		try {
-			MethodKey methodKey = new MethodKey(RatingsEntryServiceUtil.class.getName(),
+			MethodKey methodKey = new MethodKey(RatingsEntryServiceUtil.class,
 					"updateEntry", _updateEntryParameterTypes1);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
@@ -107,10 +102,6 @@ public class RatingsEntryServiceHttp {
 			catch (Exception e) {
 				if (e instanceof com.liferay.portal.kernel.exception.PortalException) {
 					throw (com.liferay.portal.kernel.exception.PortalException)e;
-				}
-
-				if (e instanceof com.liferay.portal.kernel.exception.SystemException) {
-					throw (com.liferay.portal.kernel.exception.SystemException)e;
 				}
 
 				throw new com.liferay.portal.kernel.exception.SystemException(e);

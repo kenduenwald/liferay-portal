@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -29,11 +29,15 @@ public class Domain implements Serializable {
 
 	public Domain(String domainName) {
 		_domainName = domainName;
+
+		_loaded = false;
+		_mBeans = null;
 	}
 
 	public Domain(String domainName, List<MBean> mBeans) {
 		_domainName = domainName;
 		_mBeans = mBeans;
+
 		_loaded = true;
 	}
 
@@ -50,7 +54,6 @@ public class Domain implements Serializable {
 		Domain domain = (Domain)obj;
 
 		if (Validator.equals(_domainName, domain._domainName)) {
-
 			return true;
 		}
 
@@ -78,8 +81,8 @@ public class Domain implements Serializable {
 		return _loaded;
 	}
 
-	private String _domainName;
-	private boolean _loaded;
-	private List<MBean> _mBeans;
+	private final String _domainName;
+	private final boolean _loaded;
+	private final List<MBean> _mBeans;
 
 }

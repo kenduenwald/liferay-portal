@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,23 +15,29 @@
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.taglib.util.IncludeTag;
+import com.liferay.taglib.BaseValidatorTagSupport;
 
 import java.util.Calendar;
+import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
  */
-public class InputDateTag extends IncludeTag {
+public class InputDateTag extends BaseValidatorTagSupport {
+
+	@Override
+	public String getInputName() {
+		return _name;
+	}
+
+	public void setAutoFocus(boolean autoFocus) {
+		_autoFocus = autoFocus;
+	}
 
 	public void setCssClass(String cssClass) {
 		_cssClass = cssClass;
-	}
-
-	public void setDayNullable(boolean dayNullable) {
-		_dayNullable = dayNullable;
 	}
 
 	public void setDayParam(String dayParam) {
@@ -54,24 +60,20 @@ public class InputDateTag extends IncludeTag {
 		_firstDayOfWeek = firstDayOfWeek;
 	}
 
+	public void setFirstEnabledDate(Date firstEnabledDate) {
+		_firstEnabledDate = firstEnabledDate;
+	}
+
 	public void setFormName(String formName) {
 		_formName = formName;
 	}
 
-	public void setImageInputId(String imageInputId) {
-		_imageInputId = imageInputId;
-	}
-
-	public void setMonthAndYearNullable(boolean monthAndYearNullable) {
-		_monthAndYearNullable = monthAndYearNullable;
+	public void setLastEnabledDate(Date lastEnabledDate) {
+		_lastEnabledDate = lastEnabledDate;
 	}
 
 	public void setMonthAndYearParam(String monthAndYearParam) {
 		_monthAndYearParam = monthAndYearParam;
-	}
-
-	public void setMonthNullable(boolean monthNullable) {
-		_monthNullable = monthNullable;
 	}
 
 	public void setMonthParam(String monthParam) {
@@ -82,20 +84,16 @@ public class InputDateTag extends IncludeTag {
 		_monthValue = monthValue;
 	}
 
-	public void setYearNullable(boolean yearNullable) {
-		_yearNullable = yearNullable;
+	public void setName(String name) {
+		_name = name;
+	}
+
+	public void setNullable(boolean nullable) {
+		_nullable = nullable;
 	}
 
 	public void setYearParam(String yearParam) {
 		_yearParam = yearParam;
-	}
-
-	public void setYearRangeEnd(int yearRangeEnd) {
-		_yearRangeEnd = yearRangeEnd;
-	}
-
-	public void setYearRangeStart(int yearRangeStart) {
-		_yearRangeStart = yearRangeStart;
 	}
 
 	public void setYearValue(int yearValue) {
@@ -104,24 +102,21 @@ public class InputDateTag extends IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		_autoFocus = false;
 		_cssClass = null;
-		_dayNullable = false;
 		_dayParam = null;
 		_dayValue = 0;
 		_disabled = false;
 		_disableNamespace = false;
-		_firstDayOfWeek = Calendar.SUNDAY - 1;
+		_firstDayOfWeek = Calendar.SUNDAY - 2;
+		_firstEnabledDate = null;
 		_formName = "fm";
-		_imageInputId = null;
-		_monthAndYearNullable = false;
+		_lastEnabledDate = null;
 		_monthAndYearParam = StringPool.BLANK;
-		_monthNullable = false;
 		_monthParam = null;
 		_monthValue = -1;
-		_yearNullable = false;
+		_nullable = false;
 		_yearParam = null;
-		_yearRangeEnd = 0;
-		_yearRangeStart = 0;
 		_yearValue = 0;
 	}
 
@@ -132,9 +127,9 @@ public class InputDateTag extends IncludeTag {
 
 	@Override
 	protected void setAttributes(HttpServletRequest request) {
-		request.setAttribute("liferay-ui:input-date:cssClass",_cssClass);
 		request.setAttribute(
-			"liferay-ui:input-date:dayNullable", String.valueOf(_dayNullable));
+			"liferay-ui:input-date:autoFocus", String.valueOf(_autoFocus));
+		request.setAttribute("liferay-ui:input-date:cssClass", _cssClass);
 		request.setAttribute("liferay-ui:input-date:dayParam", _dayParam);
 		request.setAttribute(
 			"liferay-ui:input-date:dayValue", String.valueOf(_dayValue));
@@ -146,54 +141,42 @@ public class InputDateTag extends IncludeTag {
 		request.setAttribute(
 			"liferay-ui:input-date:firstDayOfWeek",
 			String.valueOf(_firstDayOfWeek));
+		request.setAttribute(
+			"liferay-ui:input-date:firstEnabledDate", _firstEnabledDate);
 		request.setAttribute("liferay-ui:input-date:formName", _formName);
 		request.setAttribute(
-			"liferay-ui:input-date:imageInputId", _imageInputId);
-		request.setAttribute(
-			"liferay-ui:input-date:monthAndYearNullable",
-			String.valueOf(_monthAndYearNullable));
+			"liferay-ui:input-date:lastEnabledDate", _lastEnabledDate);
 		request.setAttribute(
 			"liferay-ui:input-date:monthAndYearParam", _monthAndYearParam);
-		request.setAttribute(
-			"liferay-ui:input-date:monthNullable",
-			String.valueOf(_monthNullable));
 		request.setAttribute("liferay-ui:input-date:monthParam", _monthParam);
 		request.setAttribute(
 			"liferay-ui:input-date:monthValue", String.valueOf(_monthValue));
+		request.setAttribute("liferay-ui:input-date:name", _name);
 		request.setAttribute(
-			"liferay-ui:input-date:yearNullable",
-			String.valueOf(_yearNullable));
+			"liferay-ui:input-date:nullable", String.valueOf(_nullable));
 		request.setAttribute("liferay-ui:input-date:yearParam", _yearParam);
-		request.setAttribute(
-			"liferay-ui:input-date:yearRangeEnd",
-			String.valueOf(_yearRangeEnd));
-		request.setAttribute(
-			"liferay-ui:input-date:yearRangeStart",
-			String.valueOf(_yearRangeStart));
 		request.setAttribute(
 			"liferay-ui:input-date:yearValue", String.valueOf(_yearValue));
 	}
 
 	private static final String _PAGE = "/html/taglib/ui/input_date/page.jsp";
 
+	private boolean _autoFocus;
 	private String _cssClass;
-	private boolean _dayNullable;
 	private String _dayParam;
 	private int _dayValue;
 	private boolean _disabled;
 	private boolean _disableNamespace;
-	private int _firstDayOfWeek = Calendar.SUNDAY - 1;
+	private int _firstDayOfWeek = Calendar.SUNDAY - 2;
+	private Date _firstEnabledDate;
 	private String _formName = "fm";
-	private String _imageInputId;
-	private boolean _monthAndYearNullable;
+	private Date _lastEnabledDate;
 	private String _monthAndYearParam = StringPool.BLANK;
-	private boolean _monthNullable;
 	private String _monthParam;
 	private int _monthValue = -1;
-	private boolean _yearNullable;
+	private String _name;
+	private boolean _nullable;
 	private String _yearParam;
-	private int _yearRangeEnd;
-	private int _yearRangeStart;
 	private int _yearValue;
 
 }

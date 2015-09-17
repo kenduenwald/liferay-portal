@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.social.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.model.PersistedModel;
 
 /**
@@ -25,6 +27,7 @@ import com.liferay.portal.model.PersistedModel;
  * @see com.liferay.portlet.social.model.impl.SocialActivityLimitModelImpl
  * @generated
  */
+@ProviderType
 public interface SocialActivityLimit extends SocialActivityLimitModel,
 	PersistedModel {
 	/*
@@ -32,6 +35,8 @@ public interface SocialActivityLimit extends SocialActivityLimitModel,
 	 *
 	 * Never modify this interface directly. Add methods to {@link com.liferay.portlet.social.model.impl.SocialActivityLimitImpl} and rerun ServiceBuilder to automatically copy the method declarations to this interface.
 	 */
+	public int getCount();
+
 	public int getCount(int limitPeriod);
 
 	public void setCount(int limitPeriod, int count);

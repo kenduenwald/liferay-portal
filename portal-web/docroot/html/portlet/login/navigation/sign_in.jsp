@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,11 +17,11 @@
 <%@ include file="/html/portlet/login/init.jsp" %>
 
 <%
-String strutsAction = ParamUtil.getString(request, "struts_action");
+String mvcRenderCommandName = ParamUtil.getString(request, "mvcRenderCommandName");
 
 boolean showSignInIcon = false;
 
-if (Validator.isNotNull(strutsAction) && !strutsAction.equals("/login/login")) {
+if (Validator.isNotNull(mvcRenderCommandName) && !mvcRenderCommandName.equals("/login/login")) {
 	showSignInIcon = true;
 }
 %>
@@ -32,12 +32,19 @@ if (Validator.isNotNull(strutsAction) && !strutsAction.equals("/login/login")) {
 	String signInURL = themeDisplay.getURLSignIn();
 
 	if (portletName.equals(PortletKeys.FAST_LOGIN)) {
-		signInURL = HttpUtil.addParameter(signInURL, "windowState", LiferayWindowState.POP_UP.toString());
+		PortletURL fastLoginURL = PortletURLFactoryUtil.create(request, PortletKeys.FAST_LOGIN, themeDisplay.getPlid(), PortletRequest.RENDER_PHASE);
+
+		fastLoginURL.setParameter("saveLastPath", Boolean.FALSE.toString());
+		fastLoginURL.setParameter("mvcRenderCommandName", "/login/login");
+		fastLoginURL.setPortletMode(PortletMode.VIEW);
+		fastLoginURL.setWindowState(LiferayWindowState.POP_UP);
+
+		signInURL = fastLoginURL.toString();
 	}
 	%>
 
 	<liferay-ui:icon
-		image="status_online"
+		iconCssClass="icon-signin"
 		message="sign-in"
 		url="<%= signInURL %>"
 	/>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -25,10 +25,12 @@ import java.util.Date;
 /**
  * @author Brian Wing Shun Chan
  */
-public class ThreadLastPostDateComparator extends OrderByComparator {
+public class ThreadLastPostDateComparator extends OrderByComparator<MBThread> {
 
 	public static final String ORDER_BY_ASC =
 		"MBThread.lastPostDate ASC, MBThread.threadId ASC";
+
+	public static final String[] ORDER_BY_CONDITION_FIELDS = {"lastPostDate"};
 
 	public static final String ORDER_BY_DESC =
 		"MBThread.lastPostDate DESC, MBThread.threadId DESC";
@@ -44,10 +46,7 @@ public class ThreadLastPostDateComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		MBThread thread1 = (MBThread)obj1;
-		MBThread thread2 = (MBThread)obj2;
-
+	public int compare(MBThread thread1, MBThread thread2) {
 		Date lastPostDate1 = thread1.getLastPostDate();
 		Date lastPostDate2 = thread2.getLastPostDate();
 
@@ -90,6 +89,11 @@ public class ThreadLastPostDateComparator extends OrderByComparator {
 	}
 
 	@Override
+	public String[] getOrderByConditionFields() {
+		return ORDER_BY_CONDITION_FIELDS;
+	}
+
+	@Override
 	public String[] getOrderByFields() {
 		return ORDER_BY_FIELDS;
 	}
@@ -99,6 +103,6 @@ public class ThreadLastPostDateComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

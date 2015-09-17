@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,16 +24,20 @@ import com.liferay.portal.security.permission.PermissionChecker;
 public class LayoutPrototypePermissionImpl
 	implements LayoutPrototypePermission {
 
+	@Override
 	public void check(
 			PermissionChecker permissionChecker, long layoutPrototypeId,
 			String actionId)
 		throws PrincipalException {
 
 		if (!contains(permissionChecker, layoutPrototypeId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, LayoutPrototype.class.getName(),
+				layoutPrototypeId, actionId);
 		}
 	}
 
+	@Override
 	public boolean contains(
 		PermissionChecker permissionChecker, long layoutPrototypeId,
 		String actionId) {

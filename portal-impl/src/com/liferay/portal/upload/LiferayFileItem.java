@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,21 @@
 
 package com.liferay.portal.upload;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.memory.DeleteFileFinalizeAction;
 import com.liferay.portal.kernel.memory.FinalizeManager;
 import com.liferay.portal.kernel.upload.FileItem;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.util.PropsUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import org.apache.commons.fileupload.disk.DiskFileItem;
 
@@ -33,7 +39,7 @@ import org.apache.commons.fileupload.disk.DiskFileItem;
  */
 public class LiferayFileItem extends DiskFileItem implements FileItem {
 
-	public static final int THRESHOLD_SIZE = GetterUtil.getInteger(
+	public static final long THRESHOLD_SIZE = GetterUtil.getLong(
 		PropsUtil.get(LiferayFileItem.class.getName() + ".threshold.size"));
 
 	public LiferayFileItem(
@@ -49,10 +55,23 @@ public class LiferayFileItem extends DiskFileItem implements FileItem {
 		_repository = repository;
 	}
 
+	@Override
+	public String getContentType() {
+		try {
+			return MimeTypesUtil.getContentType(
+				getInputStream(), getFileName());
+		}
+		catch (IOException ioe) {
+			return ContentTypes.APPLICATION_OCTET_STREAM;
+		}
+	}
+
+	@Override
 	public String getEncodedString() {
 		return _encodedString;
 	}
 
+	@Override
 	public String getFileName() {
 		if (_fileName == null) {
 			return null;
@@ -72,14 +91,17 @@ public class LiferayFileItem extends DiskFileItem implements FileItem {
 		}
 	}
 
+	@Override
 	public String getFileNameExtension() {
 		return FileUtil.getExtension(_fileName);
 	}
 
+	@Override
 	public String getFullFileName() {
 		return _fileName;
 	}
 
+	@Override
 	public int getSizeThreshold() {
 		return _sizeThreshold;
 	}
@@ -101,11 +123,13 @@ public class LiferayFileItem extends DiskFileItem implements FileItem {
 		}
 	}
 
+	@Override
 	public void setString(String encode) {
 		try {
 			_encodedString = getString(encode);
 		}
-		catch (Exception e) {
+		catch (UnsupportedEncodingException uee) {
+			_log.error(uee, uee);
 		}
 	}
 
@@ -122,13 +146,14 @@ public class LiferayFileItem extends DiskFileItem implements FileItem {
 		File tempFile = new File(_repository, tempFileName);
 
 		FinalizeManager.register(
-			tempFile, new DeleteFileFinalizeAction(tempFile.getAbsolutePath()));
+			tempFile, new DeleteFileFinalizeAction(tempFile.getAbsolutePath()),
+			FinalizeManager.PHANTOM_REFERENCE_FACTORY);
 
 		return tempFile;
 	}
 
 	private static String _getUniqueId() {
-		int current;
+		int current = 0;
 
 		synchronized (LiferayFileItem.class) {
 			current = _counter++;
@@ -143,11 +168,14 @@ public class LiferayFileItem extends DiskFileItem implements FileItem {
 		return id;
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		LiferayFileItem.class);
+
 	private static int _counter;
 
 	private String _encodedString;
 	private String _fileName;
-	private File _repository;
-	private int _sizeThreshold;
+	private final File _repository;
+	private final int _sizeThreshold;
 
 }

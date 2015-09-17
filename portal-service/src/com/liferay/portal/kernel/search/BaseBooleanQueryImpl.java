@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,10 +20,10 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * @author Brian Wing Shun Chan
@@ -32,114 +32,71 @@ import java.util.regex.Pattern;
 public abstract class BaseBooleanQueryImpl
 	extends BaseQueryImpl implements BooleanQuery {
 
-	public void addTerms(String[] fields, String values) throws ParseException {
+	@Override
+	public Map<String, Query> addTerms(String[] fields, String values)
+		throws ParseException {
+
 		if (Validator.isNull(values)) {
-			return;
+			return Collections.emptyMap();
 		}
 
 		if (fields == null) {
 			fields = new String[0];
 		}
 
+		Map<String, Query> queries = new HashMap<>((int)(fields.length / .75));
+
 		for (String field : fields) {
-			addTerm(field, values);
+			Query query = addTerm(field, values);
+
+			queries.put(field, query);
 		}
+
+		return queries;
 	}
 
-	public void addTerms(String[] fields, String value, boolean like)
+	@Override
+	public Map<String, Query> addTerms(
+			String[] fields, String value, boolean like)
 		throws ParseException {
 
 		if (Validator.isNull(value)) {
-			return;
+			return Collections.emptyMap();
 		}
+
+		Map<String, Query> queries = new HashMap<>((int)(fields.length / .75));
 
 		for (String field : fields) {
-			addTerm(field, value, like);
+			Query query = addTerm(field, value, like);
+
+			queries.put(field, query);
 		}
+
+		return queries;
 	}
 
-	protected void addTerms(
+	protected Map<String, List<Query>> addTerms(
 			String[] fields, Map<String, List<String>> termFieldsValuesMap)
 		throws ParseException {
+
+		Map<String, List<Query>> queries = new HashMap<>(
+			(int)(fields.length / .75));
 
 		for (String field : fields) {
 			List<String> valuesList = termFieldsValuesMap.get(field);
 
+			List<Query> queriesList = new ArrayList<>(valuesList.size());
+
+			queries.put(field, queriesList);
+
 			for (String value : valuesList) {
-				addTerm(field, value);
+				Query query = addTerm(field, value);
+
+				queriesList.add(query);
 			}
 		}
-	}
 
-	protected String getTermFieldRemainderValues(
-		String field, String values, List<String> valuesList, String pattern,
-		String replacement) {
-
-		if (Validator.isNull(values)) {
-			return values;
-		}
-
-		if (Validator.isNull(pattern) || Validator.isNull(replacement)) {
-			return values;
-		}
-
-		if (Validator.isNotNull(field)) {
-			field += ":";
-		}
-		else {
-			field = StringPool.BLANK;
-		}
-
-		while (values.matches(pattern)) {
-			String value = values.replaceAll(pattern, replacement);
-
-			valuesList.add(value);
-
-			String duplicate =
-				"(?i)\\s*" + Pattern.quote(field + value) + "\\s*";
-
-			values = values.replaceAll(duplicate, StringPool.SPACE);
-			values = values.trim();
-		}
-
-		return values;
-	}
-
-	protected Map<String, List<String>> getTermFieldsValuesMap(
-		String[] fields, String values) {
-
-		Map<String, List<String>> termFieldsValuesMap =
-			new HashMap<String, List<String>>();
-
-		for (String field : fields) {
-			List<String> valuesList = new ArrayList<String>();
-
-			values = getTermFieldRemainderValues(
-				field, values, valuesList,
-				"(?i)^.*" + field + ":([\"\'])(.+?)(\\1).*$", "$1$2$3");
-
-			values = getTermFieldRemainderValues(
-				field, values, valuesList,
-				"(?i)^.*" + field + ":([^\\s\"']*).*$", "$1");
-
-			termFieldsValuesMap.put(field, valuesList);
-		}
-
-		values = values.trim();
-
-		List<String> valuesList = new ArrayList<String>();
-
-		if (Validator.isNotNull(values)) {
-			values = getTermFieldRemainderValues(
-				null, values, valuesList,
-				"^[^\"\']*([\"\'])(.+?)(\\1)[^\"\']*$", "$1$2$3");
-
-			valuesList.add(values);
-		}
-
-		termFieldsValuesMap.put("no_field", valuesList);
-
-		return termFieldsValuesMap;
+		return queries;
 	}
 
 	protected String[] parseKeywords(String values) {
@@ -147,7 +104,7 @@ public abstract class BaseBooleanQueryImpl
 			return StringUtil.split(values, CharPool.SPACE);
 		}
 
-		List<String> keywords = new ArrayList<String>();
+		List<String> keywords = new ArrayList<>();
 
 		while (values.length() > 0) {
 			if (values.startsWith(StringPool.QUOTE)) {

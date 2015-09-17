@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.deploy.auto.exploded.tomcat;
 
 import com.liferay.portal.kernel.deploy.auto.AutoDeployException;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployListener;
+import com.liferay.portal.kernel.deploy.auto.context.AutoDeploymentContext;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -23,7 +24,7 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 
@@ -57,8 +58,13 @@ public abstract class BaseExplodedTomcatListener implements AutoDeployListener {
 		}
 	}
 
-	public void deploy(File file, String context) throws AutoDeployException {
-		deploy(file);
+	@Override
+	public int deploy(AutoDeploymentContext autoDeploymentContext)
+		throws AutoDeployException {
+
+		File file = autoDeploymentContext.getFile();
+
+		return deploy(file);
 	}
 
 	public File getDocBaseDir(File file, String checkXmlFile)
@@ -73,7 +79,7 @@ public abstract class BaseExplodedTomcatListener implements AutoDeployListener {
 		try {
 			String content = FileUtil.read(file);
 
-			Document document = SAXReaderUtil.read(content);
+			Document document = UnsecureSAXReaderUtil.read(content);
 
 			Element rootElement = document.getRootElement();
 
@@ -131,22 +137,20 @@ public abstract class BaseExplodedTomcatListener implements AutoDeployListener {
 
 			return true;
 		}
-		else {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					file.getPath() + " does not have a matching extension");
-			}
 
-			return false;
+		if (_log.isDebugEnabled()) {
+			_log.debug(file.getPath() + " does not have a matching extension");
 		}
+
+		return false;
 	}
 
-	protected abstract void deploy(File file) throws AutoDeployException;
+	protected abstract int deploy(File file) throws AutoDeployException;
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		BaseExplodedTomcatListener.class);
 
-	private static SystemConfiguration _systemConfiguration =
+	private static final SystemConfiguration _systemConfiguration =
 		new SystemConfiguration();
 
 }

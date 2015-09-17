@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,14 @@
 
 package com.liferay.portlet.messageboards.util;
 
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.mail.Account;
 import com.liferay.portal.kernel.mail.SMTPAccount;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.util.SubscriptionSender;
-import com.liferay.portlet.messageboards.NoSuchMailingListException;
+import com.liferay.portal.model.User;
+import com.liferay.portal.util.GroupSubscriptionCheckSubscriptionSender;
 import com.liferay.portlet.messageboards.model.MBMailingList;
 import com.liferay.portlet.messageboards.service.MBMailingListLocalServiceUtil;
 
@@ -29,32 +29,30 @@ import com.liferay.portlet.messageboards.service.MBMailingListLocalServiceUtil;
  * @author Brian Wing Shun Chan
  * @author Thiago Moreira
  */
-public class MBSubscriptionSender extends SubscriptionSender {
+public class MBSubscriptionSender
+	extends GroupSubscriptionCheckSubscriptionSender {
 
-	public void addMailingListSubscriber(long groupId, long categoryId)
-		throws PortalException, SystemException {
+	public MBSubscriptionSender(String resourceName) {
+		super(resourceName);
+	}
 
+	public void addMailingListSubscriber(long groupId, long categoryId) {
 		if (_calledAddMailingListSubscriber) {
-			throw new IllegalArgumentException();
+			throw new IllegalStateException();
 		}
 
 		_calledAddMailingListSubscriber = true;
 
-		MBMailingList mailingList = null;
-
-		try {
-			mailingList = MBMailingListLocalServiceUtil.getCategoryMailingList(
+		MBMailingList mailingList =
+			MBMailingListLocalServiceUtil.fetchCategoryMailingList(
 				groupId, categoryId);
-		}
-		catch (NoSuchMailingListException nsmle) {
-			return;
-		}
 
-		if (!mailingList.isActive()) {
+		if ((mailingList == null) || !mailingList.isActive()) {
 			return;
 		}
 
 		setFrom(mailingList.getOutEmailAddress(), null);
+		setReplyToAddress(mailingList.getEmailAddress());
 
 		if (mailingList.isOutCustom()) {
 			String protocol = Account.PROTOCOL_SMTP;
@@ -85,6 +83,24 @@ public class MBSubscriptionSender extends SubscriptionSender {
 
 		return subject.concat(StringPool.SPACE).concat(mailId);
 	}
+
+	@Override
+	protected void sendNotification(User user) throws Exception {
+		sendEmailNotification(user);
+
+		if (currentUserId == user.getUserId() ) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Skip notification for user " + currentUserId);
+			}
+
+			return;
+		}
+
+		sendUserNotification(user);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		MBSubscriptionSender.class);
 
 	private boolean _calledAddMailingListSubscriber;
 

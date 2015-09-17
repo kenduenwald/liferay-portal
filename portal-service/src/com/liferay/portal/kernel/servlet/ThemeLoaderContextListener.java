@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,38 +14,22 @@
 
 package com.liferay.portal.kernel.servlet;
 
-import com.liferay.portal.kernel.deploy.hot.HotDeployEvent;
-import com.liferay.portal.kernel.deploy.hot.HotDeployUtil;
-
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 /**
- * @author Brian Wing Shun Chan
+ * @author     Brian Wing Shun Chan
+ * @deprecated As of 6.2.0
  */
+@Deprecated
 public class ThemeLoaderContextListener implements ServletContextListener {
 
+	@Override
 	public void contextDestroyed(ServletContextEvent servletContextEvent) {
-		ServletContext servletContext = servletContextEvent.getServletContext();
-
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		HotDeployUtil.fireUndeployEvent(
-			new HotDeployEvent(servletContext, contextClassLoader));
 	}
 
+	@Override
 	public void contextInitialized(ServletContextEvent servletContextEvent) {
-		ServletContext servletContext = servletContextEvent.getServletContext();
-
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		HotDeployUtil.fireDeployEvent(
-			new HotDeployEvent(servletContext, contextClassLoader));
 	}
 
 }

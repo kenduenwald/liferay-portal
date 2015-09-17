@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,9 +17,9 @@
 <%@ include file="/html/portlet/directory/init.jsp" %>
 
 <%
-Organization organization = (Organization)request.getAttribute(WebKeys.ORGANIZATION);
+long organizationId = ParamUtil.getLong(request, "organizationId");
 
-long organizationId = (organization != null) ? organization.getOrganizationId() : 0;
+Organization organization = OrganizationServiceUtil.fetchOrganization(organizationId);
 
 List<OrgLabor> orgLabors = OrgLaborServiceUtil.getOrgLabors(organizationId);
 
@@ -27,7 +27,7 @@ Format timeFormat = FastDateFormatFactoryUtil.getSimpleDateFormat("HH:mm", local
 %>
 
 <c:if test="<%= !orgLabors.isEmpty() %>">
-	<h3><liferay-ui:message key="services" /></h3>
+	<h3 class="icon-cogs"><liferay-ui:message key="services" /></h3>
 
 	<%
 	Calendar cal = CalendarFactoryUtil.getCalendar();
@@ -52,7 +52,7 @@ Format timeFormat = FastDateFormatFactoryUtil.getSimpleDateFormat("HH:mm", local
 
 		<ul class="property-list">
 			<li>
-				<h4><%= LanguageUtil.get(pageContext,ListTypeServiceUtil.getListType(orgLabor.getTypeId()).getName()) %></h4>
+				<h4><%= LanguageUtil.get(request,ListTypeServiceUtil.getListType(orgLabor.getTypeId()).getName()) %></h4>
 
 				<table border="1" class="org-labor-table">
 				<tr>
@@ -102,7 +102,6 @@ Format timeFormat = FastDateFormatFactoryUtil.getSimpleDateFormat("HH:mm", local
 
 					<%
 					for (int j = 0; j < days.length; j++) {
-						String curParam = paramPrefixes[j];
 						int curClose = closeArray[j];
 
 						cal.set(Calendar.HOUR_OF_DAY, curClose / 100);

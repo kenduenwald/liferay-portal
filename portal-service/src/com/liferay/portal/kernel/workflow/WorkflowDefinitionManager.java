@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,8 +18,6 @@ import com.liferay.portal.kernel.messaging.proxy.MessagingProxy;
 import com.liferay.portal.kernel.messaging.proxy.ProxyMode;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
-import java.io.InputStream;
-
 import java.util.List;
 
 /**
@@ -33,7 +31,7 @@ import java.util.List;
 public interface WorkflowDefinitionManager {
 
 	public WorkflowDefinition deployWorkflowDefinition(
-			long companyId, long userId, String title, InputStream inputStream)
+			long companyId, long userId, String title, byte[] bytes)
 		throws WorkflowException;
 
 	public int getActiveWorkflowDefinitionCount(long companyId)
@@ -44,12 +42,12 @@ public interface WorkflowDefinitionManager {
 
 	public List<WorkflowDefinition> getActiveWorkflowDefinitions(
 			long companyId, int start, int end,
-			OrderByComparator orderByComparator)
+			OrderByComparator<WorkflowDefinition> orderByComparator)
 		throws WorkflowException;
 
 	public List<WorkflowDefinition> getActiveWorkflowDefinitions(
 			long companyId, String name, int start, int end,
-			OrderByComparator orderByComparator)
+			OrderByComparator<WorkflowDefinition> orderByComparator)
 		throws WorkflowException;
 
 	public WorkflowDefinition getLatestKaleoDefinition(
@@ -68,12 +66,12 @@ public interface WorkflowDefinitionManager {
 
 	public List<WorkflowDefinition> getWorkflowDefinitions(
 			long companyId, int start, int end,
-			OrderByComparator orderByComparator)
+			OrderByComparator<WorkflowDefinition> orderByComparator)
 		throws WorkflowException;
 
 	public List<WorkflowDefinition> getWorkflowDefinitions(
 			long companyId, String name, int start, int end,
-			OrderByComparator orderByComparator)
+			OrderByComparator<WorkflowDefinition> orderByComparator)
 		throws WorkflowException;
 
 	public void undeployWorkflowDefinition(
@@ -89,7 +87,7 @@ public interface WorkflowDefinitionManager {
 			long companyId, long userId, String name, int version, String title)
 		throws WorkflowException;
 
-	public void validateWorkflowDefinition(InputStream inputStream)
+	public void validateWorkflowDefinition(byte[] bytes)
 		throws WorkflowException;
 
 }

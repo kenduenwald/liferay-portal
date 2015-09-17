@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,14 +15,11 @@
 package com.liferay.portal.security.auth;
 
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.InstancePool;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.registry.collections.ServiceTrackerCollections;
+import com.liferay.registry.collections.ServiceTrackerMap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -117,91 +114,16 @@ public class AuthPipeline {
 		onFailureByUserId(key, companyId, userId, headerMap, parameterMap);
 	}
 
-	public static void registerAuthenticator(
-		String key, Authenticator authenticator) {
-
-		_instance._registerAuthenticator(key, authenticator);
-	}
-
-	public static void registerAuthFailure(
-		String key, AuthFailure authFailure) {
-
-		_instance._registerAuthFailure(key, authFailure);
-	}
-
-	public static void unregisterAuthenticator(
-		String key, Authenticator authenticator) {
-
-		_instance._unregisterAuthenticator(key, authenticator);
-	}
-
-	public static void unregisterAuthFailure(
-		String key, AuthFailure authFailure) {
-
-		_instance._unregisterAuthFailure(key, authFailure);
-	}
-
 	private AuthPipeline() {
+		_authFailures = ServiceTrackerCollections.multiValueMap(
+			AuthFailure.class, "key");
 
-		// auth.pipeline.pre
+		_authFailures.open();
 
-		List<Authenticator> authenticators = new ArrayList<Authenticator>();
+		_authenticators = ServiceTrackerCollections.multiValueMap(
+			Authenticator.class, "key");
 
-		for (String authenticatorClassName : PropsValues.AUTH_PIPELINE_PRE) {
-			Authenticator authenticator = (Authenticator)InstancePool.get(
-				authenticatorClassName);
-
-			authenticators.add(authenticator);
-		}
-
-		_authenticators.put(
-			PropsKeys.AUTH_PIPELINE_PRE,
-			authenticators.toArray(new Authenticator[authenticators.size()]));
-
-		// auth.pipeline.post
-
-		authenticators.clear();
-
-		for (String authenticatorClassName : PropsValues.AUTH_PIPELINE_POST) {
-			Authenticator authenticator = (Authenticator)InstancePool.get(
-				authenticatorClassName);
-
-			authenticators.add(authenticator);
-		}
-
-		_authenticators.put(
-			PropsKeys.AUTH_PIPELINE_POST,
-			authenticators.toArray(new Authenticator[authenticators.size()]));
-
-		// auth.failure
-
-		List<AuthFailure> authFailures = new ArrayList<AuthFailure>();
-
-		for (String authFailureClassName : PropsValues.AUTH_FAILURE) {
-			AuthFailure authFailure = (AuthFailure)InstancePool.get(
-				authFailureClassName);
-
-			authFailures.add(authFailure);
-		}
-
-		_authFailures.put(
-			PropsKeys.AUTH_FAILURE,
-			authFailures.toArray(new AuthFailure[authFailures.size()]));
-
-		// auth.max.failures
-
-		authFailures.clear();
-
-		for (String authFailureClassName : PropsValues.AUTH_MAX_FAILURES) {
-			AuthFailure authFailure = (AuthFailure)InstancePool.get(
-				authFailureClassName);
-
-			authFailures.add(authFailure);
-		}
-
-		_authFailures.put(
-			PropsKeys.AUTH_MAX_FAILURES,
-			authFailures.toArray(new AuthFailure[authFailures.size()]));
+		_authenticators.open();
 	}
 
 	private int _authenticate(
@@ -210,10 +132,12 @@ public class AuthPipeline {
 			Map<String, String[]> parameterMap)
 		throws AuthException {
 
-		Authenticator[] authenticators = _authenticators.get(key);
+		boolean skipLiferayCheck = false;
 
-		if ((authenticators == null) || (authenticators.length == 0)) {
-			return 1;
+		List<Authenticator> authenticators = _authenticators.getService(key);
+
+		if (ListUtil.isEmpty(authenticators)) {
+			return Authenticator.SUCCESS;
 		}
 
 		for (Authenticator authenticator : authenticators) {
@@ -235,7 +159,10 @@ public class AuthPipeline {
 						companyId, userId, password, headerMap, parameterMap);
 				}
 
-				if (authResult != Authenticator.SUCCESS) {
+				if (authResult == Authenticator.SKIP_LIFERAY_CHECK) {
+					skipLiferayCheck = true;
+				}
+				else if (authResult != Authenticator.SUCCESS) {
 					return authResult;
 				}
 			}
@@ -247,6 +174,10 @@ public class AuthPipeline {
 			}
 		}
 
+		if (skipLiferayCheck) {
+			return Authenticator.SKIP_LIFERAY_CHECK;
+		}
+
 		return Authenticator.SUCCESS;
 	}
 
@@ -255,9 +186,9 @@ public class AuthPipeline {
 			Map<String, String[]> headerMap, Map<String, String[]> parameterMap)
 		throws AuthException {
 
-		AuthFailure[] authFailures = _authFailures.get(key);
+		List<AuthFailure> authFailures = _authFailures.getService(key);
 
-		if ((authFailures == null) || (authFailures.length == 0)) {
+		if (authFailures.isEmpty()) {
 			return;
 		}
 
@@ -287,59 +218,10 @@ public class AuthPipeline {
 		}
 	}
 
-	private void _registerAuthenticator(
-		String key, Authenticator authenticator) {
+	private static final AuthPipeline _instance = new AuthPipeline();
 
-		List<Authenticator> authenticators = ListUtil.fromArray(
-			_authenticators.get(key));
-
-		authenticators.add(authenticator);
-
-		_authenticators.put(
-			key,
-			authenticators.toArray(new Authenticator[authenticators.size()]));
-	}
-
-	private void _registerAuthFailure(String key, AuthFailure authFailure) {
-		List<AuthFailure> authFailures = ListUtil.fromArray(
-			_authFailures.get(key));
-
-		authFailures.add(authFailure);
-
-		_authFailures.put(
-			key, authFailures.toArray(new AuthFailure[authFailures.size()]));
-	}
-
-	private void _unregisterAuthenticator(
-		String key, Authenticator authenticator) {
-
-		List<Authenticator> authenticators = ListUtil.fromArray(
-			_authenticators.get(key));
-
-		if (authenticators.remove(authenticator)) {
-			_authenticators.put(
-				key,
-				authenticators.toArray(
-					new Authenticator[authenticators.size()]));
-		}
-	}
-
-	private void _unregisterAuthFailure(String key, AuthFailure authFailure) {
-		List<AuthFailure> authFailures = ListUtil.fromArray(
-			_authFailures.get(key));
-
-		if (authFailures.remove(authFailure)) {
-			_authFailures.put(
-				key,
-				authFailures.toArray(new AuthFailure[authFailures.size()]));
-		}
-	}
-
-	private static AuthPipeline _instance = new AuthPipeline();
-
-	private Map<String, Authenticator[]> _authenticators =
-		new HashMap<String, Authenticator[]>();
-	private Map<String, AuthFailure[]> _authFailures =
-		new HashMap<String, AuthFailure[]>();
+	private final ServiceTrackerMap<String, List<Authenticator>>
+		_authenticators;
+	private final ServiceTrackerMap<String, List<AuthFailure>> _authFailures;
 
 }

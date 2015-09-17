@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -21,13 +21,17 @@ import com.liferay.portal.model.User;
 /**
  * @author Brian Wing Shun Chan
  */
-public class UserLoginDateComparator extends OrderByComparator {
+public class UserLoginDateComparator extends OrderByComparator<User> {
 
-	public static final String ORDER_BY_ASC = "User_.loginDate ASC";
+	public static final String ORDER_BY_ASC =
+		"loginDate ASC, lastName ASC, firstName ASC, middleName ASC";
 
-	public static final String ORDER_BY_DESC = "User_.loginDate DESC";
+	public static final String ORDER_BY_DESC =
+		"loginDate DESC, lastName DESC, firstName DESC, middleName DESC";
 
-	public static final String[] ORDER_BY_FIELDS = {"loginDate"};
+	public static final String[] ORDER_BY_FIELDS = {
+		"loginDate", "lastName", "firstName", "middleName"
+	};
 
 	public UserLoginDateComparator() {
 		this(false);
@@ -38,12 +42,30 @@ public class UserLoginDateComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		User user1 = (User)obj1;
-		User user2 = (User)obj2;
-
+	public int compare(User user1, User user2) {
 		int value = DateUtil.compareTo(
 			user1.getLoginDate(), user2.getLoginDate());
+
+		if (value == 0) {
+			String lastName1 = user1.getLastName();
+			String lastName2 = user2.getLastName();
+
+			value = lastName1.compareTo(lastName2);
+		}
+
+		if (value == 0) {
+			String firstName1 = user1.getFirstName();
+			String firstName2 = user2.getFirstName();
+
+			value = firstName1.compareTo(firstName2);
+		}
+
+		if (value == 0) {
+			String middleName1 = user1.getMiddleName();
+			String middleName2 = user2.getMiddleName();
+
+			value = middleName1.compareTo(middleName2);
+		}
 
 		if (_ascending) {
 			return value;
@@ -73,6 +95,6 @@ public class UserLoginDateComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

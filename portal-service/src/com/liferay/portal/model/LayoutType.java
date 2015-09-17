@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,21 +14,53 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
 import java.io.Serializable;
 
+import java.util.Map;
+
 /**
  * @author Brian Wing Shun Chan
+ * @author Raymond Augé
  */
+@ProviderType
 public interface LayoutType extends Serializable {
 
+	public String[] getConfigurationActionDelete();
+
+	public String[] getConfigurationActionUpdate();
+
 	public Layout getLayout();
+
+	public LayoutTypeAccessPolicy getLayoutTypeAccessPolicy();
+
+	public LayoutTypeController getLayoutTypeController();
 
 	public UnicodeProperties getTypeSettingsProperties();
 
 	public String getTypeSettingsProperty(String key);
 
+	public String getTypeSettingsProperty(String key, String defaultValue);
+
+	public String getURL(Map<String, String> variables);
+
+	public boolean isBrowsable();
+
+	public boolean isFirstPageable();
+
+	public boolean isParentable();
+
+	public boolean isSitemapable();
+
+	public boolean isURLFriendliable();
+
+	/**
+	 * @deprecated As of 7.0.0, with no direct replacement
+	 */
+	@Deprecated
 	public void setLayout(Layout layout);
 
 	public void setTypeSettingsProperty(String key, String value);

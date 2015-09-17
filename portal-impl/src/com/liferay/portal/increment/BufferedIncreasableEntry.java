@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,7 +17,6 @@ package com.liferay.portal.increment;
 import com.liferay.portal.kernel.concurrent.IncreasableEntry;
 import com.liferay.portal.kernel.increment.Increment;
 
-import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
 /**
@@ -27,20 +26,18 @@ public class BufferedIncreasableEntry<K, T>
 	extends IncreasableEntry<K, Increment<T>> {
 
 	public BufferedIncreasableEntry(
-		MethodInterceptor nextInterceptor, MethodInvocation methodInvocation,
-		K key, Increment<T> value) {
+		MethodInvocation methodInvocation, K key, Increment<T> value) {
 
 		super(key, value);
 
 		_methodInvocation = methodInvocation;
-		_nextInterceptor = nextInterceptor;
 	}
 
 	@Override
-	public Increment<T> doIncrease(
-		Increment<T> originalValue, Increment<T> deltaValue) {
-
-		return originalValue.increaseForNew(deltaValue.getValue());
+	public BufferedIncreasableEntry<K, T> increase(Increment<T> deltaValue) {
+		return new BufferedIncreasableEntry<K, T>(
+			_methodInvocation, key,
+			value.increaseForNew(deltaValue.getValue()));
 	}
 
 	public void proceed() throws Throwable {
@@ -48,7 +45,7 @@ public class BufferedIncreasableEntry<K, T>
 
 		arguments[arguments.length - 1] = getValue().getValue();
 
-		_nextInterceptor.invoke(_methodInvocation);
+		_methodInvocation.proceed();
 	}
 
 	@Override
@@ -56,7 +53,6 @@ public class BufferedIncreasableEntry<K, T>
 		return _methodInvocation.toString();
 	}
 
-	private MethodInvocation _methodInvocation;
-	private MethodInterceptor _nextInterceptor;
+	private final MethodInvocation _methodInvocation;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MimeTypes;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -40,6 +41,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.tika.detect.DefaultDetector;
 import org.apache.tika.detect.Detector;
+import org.apache.tika.io.CloseShieldInputStream;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
@@ -63,6 +65,11 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 		_detector = new DefaultDetector(
 			org.apache.tika.mime.MimeTypes.getDefaultMimeTypes());
 
+		_webImageMimeTypes = SetUtil.fromArray(
+			PropsValues.MIME_TYPES_WEB_IMAGES);
+	}
+
+	public void afterPropertiesSet() {
 		URL url = org.apache.tika.mime.MimeTypes.class.getResource(
 			"tika-mimetypes.xml");
 
@@ -74,10 +81,12 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 		}
 	}
 
+	@Override
 	public String getContentType(File file) {
 		return getContentType(file, file.getName());
 	}
 
+	@Override
 	public String getContentType(File file, String fileName) {
 		if ((file == null) || !file.exists()) {
 			return getContentType(fileName);
@@ -98,6 +107,7 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 		}
 	}
 
+	@Override
 	public String getContentType(InputStream inputStream, String fileName) {
 		if (inputStream == null) {
 			return getContentType(fileName);
@@ -105,13 +115,17 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 
 		String contentType = null;
 
+		TikaInputStream tikaInputStream = null;
+
 		try {
+			tikaInputStream = TikaInputStream.get(
+				new CloseShieldInputStream(inputStream));
+
 			Metadata metadata = new Metadata();
 
 			metadata.set(Metadata.RESOURCE_NAME_KEY, fileName);
 
-			MediaType mediaType = _detector.detect(
-				TikaInputStream.get(inputStream), metadata);
+			MediaType mediaType = _detector.detect(tikaInputStream, metadata);
 
 			contentType = mediaType.toString();
 
@@ -136,10 +150,14 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 
 			contentType = ContentTypes.APPLICATION_OCTET_STREAM;
 		}
+		finally {
+			StreamUtil.cleanUp(tikaInputStream);
+		}
 
 		return contentType;
 	}
 
+	@Override
 	public String getContentType(String fileName) {
 		if (Validator.isNull(fileName)) {
 			return ContentTypes.APPLICATION_OCTET_STREAM;
@@ -168,6 +186,16 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 		return ContentTypes.APPLICATION_OCTET_STREAM;
 	}
 
+	@Override
+	public String getExtensionContentType(String extension) {
+		if (Validator.isNull(extension)) {
+			return ContentTypes.APPLICATION_OCTET_STREAM;
+		}
+
+		return getContentType("A.".concat(extension));
+	}
+
+	@Override
 	public Set<String> getExtensions(String contentType) {
 		Set<String> extensions = _extensionsMap.get(contentType);
 
@@ -176,6 +204,11 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 		}
 
 		return extensions;
+	}
+
+	@Override
+	public boolean isWebImage(String mimeType) {
+		return _webImageMimeTypes.contains(mimeType);
 	}
 
 	protected void read(InputStream stream) throws Exception {
@@ -211,9 +244,9 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 	}
 
 	protected void readMimeType(Element element) {
-		Set<String> mimeTypes = new HashSet<String>();
+		Set<String> mimeTypes = new HashSet<>();
 
-		Set<String> extensions = new HashSet<String>();
+		Set<String> extensions = new HashSet<>();
 
 		String name = element.getAttribute(MIME_TYPE_TYPE_ATTR);
 
@@ -264,10 +297,10 @@ public class MimeTypesImpl implements MimeTypes, MimeTypesReaderMetKeys {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(MimeTypesImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(MimeTypesImpl.class);
 
-	private Detector _detector;
-	private Map<String, Set<String>> _extensionsMap =
-		new HashMap<String, Set<String>>();
+	private final Detector _detector;
+	private final Map<String, Set<String>> _extensionsMap = new HashMap<>();
+	private final Set<String> _webImageMimeTypes;
 
 }

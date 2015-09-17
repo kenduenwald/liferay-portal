@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.util.log4j;
 
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.log.LogFactory;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -26,17 +27,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
 
 import java.net.URL;
 
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Level;
@@ -48,15 +45,34 @@ import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+
 /**
  * @author Brian Wing Shun Chan
+ * @author Tomas Polesovsky
  */
 public class Log4JUtil {
 
 	public static void configureLog4J(ClassLoader classLoader) {
 		configureLog4J(classLoader.getResource("META-INF/portal-log4j.xml"));
-		configureLog4J(
-			classLoader.getResource("META-INF/portal-log4j-ext.xml"));
+
+		try {
+			Enumeration<URL> enu = classLoader.getResources(
+				"META-INF/portal-log4j-ext.xml");
+
+			while (enu.hasMoreElements()) {
+				configureLog4J(enu.nextElement());
+			}
+		}
+		catch (IOException ioe) {
+			java.util.logging.Logger logger =
+				java.util.logging.Logger.getLogger(Log4JUtil.class.getName());
+
+			logger.log(
+				java.util.logging.Level.WARNING,
+				"Unable to load portal-log4j-ext.xml", ioe);
+		}
 	}
 
 	public static void configureLog4J(URL url) {
@@ -74,27 +90,33 @@ public class Log4JUtil {
 
 		DOMConfigurator domConfigurator = new DOMConfigurator();
 
-		Reader urlReader = new StringReader(urlContent);
-
 		domConfigurator.doConfigure(
-			urlReader, LogManager.getLoggerRepository());
-
-		Set<String> currentLoggerNames = new HashSet<String>();
-
-		Enumeration<Logger> enu = LogManager.getCurrentLoggers();
-
-		while (enu.hasMoreElements()) {
-			Logger logger = enu.nextElement();
-
-			currentLoggerNames.add(logger.getName());
-		}
+			new UnsyncStringReader(urlContent),
+			LogManager.getLoggerRepository());
 
 		try {
 			SAXReader saxReader = new SAXReader();
 
-			Reader reader = new StringReader(urlContent);
+			saxReader.setEntityResolver(
+				new EntityResolver() {
 
-			Document document = saxReader.read(reader, url.toExternalForm());
+					@Override
+					public InputSource resolveEntity(
+						String publicId, String systemId) {
+
+						if (systemId.endsWith("log4j.dtd")) {
+							return new InputSource(
+								DOMConfigurator.class.getResourceAsStream(
+									"log4j.dtd"));
+						}
+
+						return null;
+					}
+
+				});
+
+			Document document = saxReader.read(
+				new UnsyncStringReader(urlContent), url.toExternalForm());
 
 			Element rootElement = document.getRootElement();
 
@@ -107,16 +129,37 @@ public class Log4JUtil {
 
 				String priority = priorityElement.attributeValue("value");
 
-				setLevel(name, priority, false);
+				java.util.logging.Logger jdkLogger =
+					java.util.logging.Logger.getLogger(name);
+
+				jdkLogger.setLevel(_getJdkLevel(priority));
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			_logger.error(e, e);
 		}
 	}
 
 	public static Map<String, String> getCustomLogSettings() {
-		return new HashMap<String, String>(_customLogSettings);
+		return new HashMap<>(_customLogSettings);
+	}
+
+	public static String getOriginalLevel(String className) {
+		Level level = Level.ALL;
+
+		Enumeration<Logger> enu = LogManager.getCurrentLoggers();
+
+		while (enu.hasMoreElements()) {
+			Logger logger = enu.nextElement();
+
+			if (className.equals(logger.getName())) {
+				level = logger.getLevel();
+
+				break;
+			}
+		}
+
+		return level.toString();
 	}
 
 	public static void initLog4J(
@@ -133,7 +176,7 @@ public class Log4JUtil {
 			LogFactoryUtil.setLogFactory(logFactory);
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			_logger.error(e, e);
 		}
 
 		for (String name : customLogSettings.keySet()) {
@@ -159,8 +202,7 @@ public class Log4JUtil {
 	}
 
 	/**
-	 * @see {@link com.liferay.portal.util.FileImpl#getBytes(InputStream, int,
-	 *      boolean)}
+	 * @see com.liferay.portal.util.FileImpl#getBytes(InputStream, int, boolean)
 	 */
 	private static byte[] _getBytes(InputStream inputStream)
 		throws IOException {
@@ -174,13 +216,15 @@ public class Log4JUtil {
 	}
 
 	private static java.util.logging.Level _getJdkLevel(String priority) {
-		if (priority.equalsIgnoreCase(Level.DEBUG.toString())) {
+		if (StringUtil.equalsIgnoreCase(priority, Level.DEBUG.toString())) {
 			return java.util.logging.Level.FINE;
 		}
-		else if (priority.equalsIgnoreCase(Level.ERROR.toString())) {
+		else if (StringUtil.equalsIgnoreCase(
+					priority, Level.ERROR.toString())) {
+
 			return java.util.logging.Level.SEVERE;
 		}
-		else if (priority.equalsIgnoreCase(Level.WARN.toString())) {
+		else if (StringUtil.equalsIgnoreCase(priority, Level.WARN.toString())) {
 			return java.util.logging.Level.WARNING;
 		}
 		else {
@@ -195,10 +239,19 @@ public class Log4JUtil {
 
 		return _liferayHome;
 	}
-	private static String _getURLContent(URL url) {
-		Map<String, String> variables = new HashMap<String, String>();
 
-		variables.put("liferay.home", _getLiferayHome());
+	private static String _getURLContent(URL url) {
+		Map<String, String> variables = new HashMap<>();
+
+		variables.put("@liferay.home@", _getLiferayHome());
+
+		String spiId = System.getProperty("spi.id");
+
+		if (spiId == null) {
+			spiId = StringPool.BLANK;
+		}
+
+		variables.put("@spi.id@", spiId);
 
 		String urlContent = null;
 
@@ -212,7 +265,7 @@ public class Log4JUtil {
 			urlContent = new String(bytes, StringPool.UTF8);
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			_logger.error(e, e);
 
 			return null;
 		}
@@ -221,34 +274,41 @@ public class Log4JUtil {
 		}
 
 		for (Map.Entry<String, String> variable : variables.entrySet()) {
-			urlContent = urlContent.replaceAll(
-				"@" + variable.getKey() + "@", variable.getValue());
+			urlContent = StringUtil.replace(
+				urlContent, variable.getKey(), variable.getValue());
 		}
 
 		if (ServerDetector.getServerId() != null) {
 			return urlContent;
 		}
 
-		int x = urlContent.indexOf("<appender name=\"FILE\"");
+		urlContent = _removeAppender(urlContent, "TEXT_FILE");
 
-		int y = urlContent.indexOf("</appender>", x);
+		return _removeAppender(urlContent, "XML_FILE");
+	}
+
+	private static String _removeAppender(String content, String appenderName) {
+		int x = content.indexOf("<appender name=\"" + appenderName + "\"");
+
+		int y = content.indexOf("</appender>", x);
 
 		if (y != -1) {
-			y = urlContent.indexOf("<", y + 1);
+			y = content.indexOf("<", y + 1);
 		}
 
 		if ((x != -1) && (y != -1)) {
-			urlContent = urlContent.substring(0, x) + urlContent.substring(y);
+			content = content.substring(0, x) + content.substring(y);
 		}
 
-		urlContent = StringUtil.replace(
-			urlContent, "<appender-ref ref=\"FILE\" />", StringPool.BLANK);
-
-		return urlContent;
+		return StringUtil.replace(
+			content, "<appender-ref ref=\"" + appenderName + "\" />",
+			StringPool.BLANK);
 	}
 
-	private static Map<String, String> _customLogSettings =
-		new ConcurrentHashMap<String, String>();
+	private static final Logger _logger = Logger.getRootLogger();
+
+	private static final Map<String, String> _customLogSettings =
+		new ConcurrentHashMap<>();
 	private static String _liferayHome;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.documentlibrary.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.documentlibrary.service.http.DLFileShortcutServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.documentlibrary.service.http.DLFileShortcutServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.documentlibrary.service.http.DLFileShortcutServiceSoap
  * @generated
  */
+@ProviderType
 public class DLFileShortcutSoap implements Serializable {
 	public static DLFileShortcutSoap toSoapModel(DLFileShortcut model) {
 		DLFileShortcutSoap soapModel = new DLFileShortcutSoap();
@@ -42,6 +45,9 @@ public class DLFileShortcutSoap implements Serializable {
 		soapModel.setRepositoryId(model.getRepositoryId());
 		soapModel.setFolderId(model.getFolderId());
 		soapModel.setToFileEntryId(model.getToFileEntryId());
+		soapModel.setTreePath(model.getTreePath());
+		soapModel.setActive(model.getActive());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 		soapModel.setStatus(model.getStatus());
 		soapModel.setStatusByUserId(model.getStatusByUserId());
 		soapModel.setStatusByUserName(model.getStatusByUserName());
@@ -186,6 +192,34 @@ public class DLFileShortcutSoap implements Serializable {
 		_toFileEntryId = toFileEntryId;
 	}
 
+	public String getTreePath() {
+		return _treePath;
+	}
+
+	public void setTreePath(String treePath) {
+		_treePath = treePath;
+	}
+
+	public boolean getActive() {
+		return _active;
+	}
+
+	public boolean isActive() {
+		return _active;
+	}
+
+	public void setActive(boolean active) {
+		_active = active;
+	}
+
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
 	public int getStatus() {
 		return _status;
 	}
@@ -229,6 +263,9 @@ public class DLFileShortcutSoap implements Serializable {
 	private long _repositoryId;
 	private long _folderId;
 	private long _toFileEntryId;
+	private String _treePath;
+	private boolean _active;
+	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
 	private String _statusByUserName;

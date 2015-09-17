@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,8 @@
 
 package com.liferay.portal.tools.deploy;
 
-import com.liferay.portal.kernel.servlet.LayoutTemplateContextListener;
 import com.liferay.portal.model.Plugin;
-import com.liferay.portal.util.InitUtil;
+import com.liferay.portal.tools.ToolDependencies;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +26,10 @@ import java.util.List;
 public class LayoutTemplateDeployer extends BaseDeployer {
 
 	public static void main(String[] args) {
-		InitUtil.initWithSpring();
+		ToolDependencies.wireDeployers();
 
-		List<String> wars = new ArrayList<String>();
-		List<String> jars = new ArrayList<String>();
+		List<String> wars = new ArrayList<>();
+		List<String> jars = new ArrayList<>();
 
 		for (String arg : args) {
 			if (arg.endsWith(".war")) {
@@ -49,11 +48,6 @@ public class LayoutTemplateDeployer extends BaseDeployer {
 
 	public LayoutTemplateDeployer(List<String> wars, List<String> jars) {
 		super(wars, jars);
-	}
-
-	@Override
-	public Class<?> getPluginContextListenerClass() {
-		return LayoutTemplateContextListener.class;
 	}
 
 	@Override

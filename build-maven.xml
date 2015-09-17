@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 
 <project name="portal-maven" default="zip-maven" xmlns:antelope="antlib:ise.antelope.tasks">
-	<property name="project.dir" value="." />
-
 	<import file="build-common.xml" />
 
 	<taskdef classname="com.oopsconsultancy.xmltask.ant.XmlTask" classpathref="lib.classpath" name="xmltask" />
@@ -72,6 +70,7 @@ for GPG setup instructions.
 		<antcall target="prepare-maven">
 			<param name="lp.maven.repository.id" value="" />
 			<param name="lp.maven.repository.url" value="" />
+			<param name="lp.maven.version" value="${lp.maven.version}" />
 			<param name="tstamp.value" value="${tstamp.value}" />
 		</antcall>
 
@@ -99,6 +98,7 @@ for GPG setup instructions.
 		<ant dir="support-tomcat" target="jar-javadoc" inheritAll="false" />
 		<ant dir="util-bridges" target="jar-javadoc" inheritAll="false" />
 		<ant dir="util-java" target="jar-javadoc" inheritAll="false" />
+		<ant dir="util-slf4j" target="jar-javadoc" inheritAll="false" />
 		<ant dir="util-taglib" target="jar-javadoc" inheritAll="false" />
 	</target>
 
@@ -109,6 +109,7 @@ for GPG setup instructions.
 		<ant dir="support-tomcat" target="jar-sources" inheritAll="false" />
 		<ant dir="util-bridges" target="jar-sources" inheritAll="false" />
 		<ant dir="util-java" target="jar-sources" inheritAll="false" />
+		<ant dir="util-slf4j" target="jar-sources" inheritAll="false" />
 		<ant dir="util-taglib" target="jar-sources" inheritAll="false" />
 	</target>
 
@@ -182,6 +183,10 @@ Run "ant -f build-dist.xml all zip-portal-war" to generate that file.
 			<fileset
 				dir="util-java"
 				includes="util-java.jar,util-java-javadoc.jar,util-java-sources.jar"
+			/>
+			<fileset
+				dir="util-slf4j"
+				includes="util-slf4j.jar,util-slf4j-javadoc.jar,util-slf4j-sources.jar"
 			/>
 			<fileset
 				dir="util-taglib"

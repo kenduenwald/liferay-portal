@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -31,13 +31,19 @@ public class ReferenceRegistry {
 		Class<?> clazz, Object object, String fieldName) {
 
 		try {
-			Field field = clazz.getDeclaredField(fieldName);
+			ReferenceEntry referenceEntry = _pacl.getReferenceEntry(
+				clazz, object, fieldName);
 
-			_referenceEntries.add(new ReferenceEntry(object, field));
+			_referenceEntries.add(referenceEntry);
+		}
+		catch (SecurityException se) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Not allowed to get field " + fieldName + " for " + clazz);
+			}
 		}
 		catch (Exception e) {
-			_log.error(
-				"Failed the get field " + fieldName + " for class " + clazz, e);
+			_log.error("Unable to get field " + fieldName + " for " + clazz);
 		}
 	}
 
@@ -46,11 +52,15 @@ public class ReferenceRegistry {
 	}
 
 	public static void registerReference(Field field) {
-		_referenceEntries.add(new ReferenceEntry(field));
+		ReferenceEntry referenceEntry = new ReferenceEntry(field);
+
+		_referenceEntries.add(referenceEntry);
 	}
 
 	public static void registerReference(Object object, Field field) {
-		_referenceEntries.add(new ReferenceEntry(object, field));
+		ReferenceEntry referenceEntry = new ReferenceEntry(object, field);
+
+		_referenceEntries.add(referenceEntry);
 	}
 
 	public static void releaseReferences() {
@@ -67,9 +77,33 @@ public class ReferenceRegistry {
 		_referenceEntries.clear();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ReferenceRegistry.class);
+	public interface PACL {
 
-	private static Set<ReferenceEntry> _referenceEntries =
-		new ConcurrentHashSet<ReferenceEntry>();
+		public ReferenceEntry getReferenceEntry(
+				Class<?> clazz, Object object, String fieldName)
+			throws NoSuchFieldException, SecurityException;
+
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ReferenceRegistry.class);
+
+	private static final PACL _pacl = new NoPACL();
+	private static final Set<ReferenceEntry> _referenceEntries =
+		new ConcurrentHashSet<>();
+
+	private static class NoPACL implements PACL {
+
+		@Override
+		public ReferenceEntry getReferenceEntry(
+				Class<?> clazz, Object object, String fieldName)
+			throws NoSuchFieldException, SecurityException {
+
+			Field field = clazz.getDeclaredField(fieldName);
+
+			return new ReferenceEntry(object, field);
+		}
+
+	}
 
 }

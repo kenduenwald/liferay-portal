@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -49,6 +49,10 @@ public class ModuleId implements Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
 		if (!(obj instanceof ModuleId)) {
 			return false;
 		}
@@ -112,15 +116,6 @@ public class ModuleId implements Serializable {
 			_groupId, _artifactId, _pluginVersion.toString(), _type);
 	}
 
-	protected ModuleId(
-		String groupId, String artifactId, Version pluginVersion, String type) {
-
-		_groupId = groupId;
-		_artifactId = artifactId;
-		_pluginVersion = pluginVersion;
-		_type = type;
-	}
-
 	protected ModuleId(String moduleId) {
 		StringTokenizer st = new StringTokenizer(moduleId, StringPool.SLASH);
 
@@ -135,12 +130,21 @@ public class ModuleId implements Serializable {
 		_type = st.nextToken();
 	}
 
-	private static Map<String, ModuleId> _moduleIds =
-		new ConcurrentHashMap<String, ModuleId>();
+	protected ModuleId(
+		String groupId, String artifactId, Version pluginVersion, String type) {
 
-	private String _artifactId;
-	private String _groupId;
-	private Version _pluginVersion;
-	private String _type;
+		_groupId = groupId;
+		_artifactId = artifactId;
+		_pluginVersion = pluginVersion;
+		_type = type;
+	}
+
+	private static final Map<String, ModuleId> _moduleIds =
+		new ConcurrentHashMap<>();
+
+	private final String _artifactId;
+	private final String _groupId;
+	private final Version _pluginVersion;
+	private final String _type;
 
 }

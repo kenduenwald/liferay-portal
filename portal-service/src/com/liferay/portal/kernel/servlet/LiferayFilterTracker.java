@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,7 +32,7 @@ public class LiferayFilterTracker {
 			clazz.getName());
 
 		if (liferayFilters == null) {
-			liferayFilters = new HashSet<LiferayFilter>();
+			liferayFilters = new HashSet<>();
 
 			_liferayFilters.put(clazz.getName(), liferayFilters);
 		}
@@ -65,7 +65,7 @@ public class LiferayFilterTracker {
 		}
 	}
 
-	private static Map<String, Set<LiferayFilter>> _liferayFilters =
-		new HashMap<String, Set<LiferayFilter>>();
+	private static final Map<String, Set<LiferayFilter>> _liferayFilters =
+		new HashMap<>();
 
 }

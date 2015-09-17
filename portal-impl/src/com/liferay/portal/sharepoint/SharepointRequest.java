@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,18 @@
 
 package com.liferay.portal.sharepoint;
 
+import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
+import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.User;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,18 +38,15 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class SharepointRequest {
 
-	public SharepointRequest(String rootPath) {
-		_rootPath = rootPath;
+	public SharepointRequest(
+			HttpServletRequest request, HttpServletResponse response, User user)
+		throws SharepointException {
+
+		this(request, response, user, StringPool.BLANK);
 	}
 
-	public SharepointRequest(
-		HttpServletRequest request, HttpServletResponse response, User user) {
-
-		_request = request;
-		_response = response;
-		_user = user;
-
-		_params.putAll(request.getParameterMap());
+	public SharepointRequest(String rootPath) throws SharepointException {
+		this(null, null, null, rootPath);
 	}
 
 	public void addParam(String key, String value) {
@@ -66,7 +72,7 @@ public class SharepointRequest {
 	public String getParameterValue(String name) {
 		String[] values = _params.get(name);
 
-		if ((values != null) && (values.length > 0)) {
+		if (ArrayUtil.isNotEmpty(values)) {
 			return GetterUtil.getString(_params.get(name)[0]);
 		}
 		else {
@@ -102,12 +108,74 @@ public class SharepointRequest {
 		_storage = storage;
 	}
 
+	protected void addParams() throws SharepointException {
+		String contentType = _request.getContentType();
+
+		if (!contentType.equals(SharepointUtil.VEERMER_URLENCODED)) {
+			return;
+		}
+
+		try {
+			InputStream is = _request.getInputStream();
+
+			UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
+				new UnsyncByteArrayOutputStream();
+
+			StreamUtil.transfer(is, unsyncByteArrayOutputStream);
+
+			byte[] bytes = unsyncByteArrayOutputStream.toByteArray();
+
+			UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(
+					new InputStreamReader(new ByteArrayInputStream(bytes)));
+
+			String url = unsyncBufferedReader.readLine();
+
+			String[] params = url.split(StringPool.AMPERSAND);
+
+			for (String param : params) {
+				String[] kvp = param.split(StringPool.EQUAL);
+
+				String key = HttpUtil.decodeURL(kvp[0]);
+				String value = StringPool.BLANK;
+
+				if (kvp.length > 1) {
+					value = HttpUtil.decodeURL(kvp[1]);
+				}
+
+				addParam(key, value);
+			}
+
+			bytes = ArrayUtil.subset(bytes, url.length() + 1, bytes.length);
+
+			setBytes(bytes);
+		}
+		catch (Exception e) {
+			throw new SharepointException(e);
+		}
+	}
+
+	private SharepointRequest(
+			HttpServletRequest request, HttpServletResponse response, User user,
+			String rootPath)
+		throws SharepointException {
+
+		_request = request;
+		_response = response;
+		_user = user;
+		_rootPath = rootPath;
+
+		_params.putAll(request.getParameterMap());
+
+		addParams();
+	}
+
 	private byte[] _bytes;
-	private Map<String, String[]> _params = new HashMap<String, String[]>();
-	private HttpServletRequest _request;
-	private HttpServletResponse _response;
+	private final Map<String, String[]> _params = new HashMap<>();
+	private final HttpServletRequest _request;
+	private final HttpServletResponse _response;
 	private String _rootPath = StringPool.BLANK;
 	private SharepointStorage _storage;
-	private User _user;
+	private final User _user;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,8 +20,10 @@ import com.liferay.taglib.util.IncludeTag;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * @author Brian Wing Shun Chan
+ * @author     Brian Wing Shun Chan
+ * @deprecated As of 7.0.0, with no direct replacement
  */
+@Deprecated
 public class WriteTag extends IncludeTag {
 
 	public void setBean(Object bean) {

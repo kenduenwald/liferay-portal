@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -37,12 +37,12 @@ public class PortalContextLoaderLifecycleThreadLocal {
 		_initializing.set(initializing);
 	}
 
-	private static ThreadLocal<Boolean> _destroying =
+	private static final ThreadLocal<Boolean> _destroying =
 		new InitialThreadLocal<Boolean>(
 			PortalContextLoaderLifecycleThreadLocal.class +
 				"._destroying",
 			Boolean.FALSE);
-	private static ThreadLocal<Boolean> _initializing =
+	private static final ThreadLocal<Boolean> _initializing =
 		new InitialThreadLocal<Boolean>(
 			PortalContextLoaderLifecycleThreadLocal.class +
 				"._initializing",

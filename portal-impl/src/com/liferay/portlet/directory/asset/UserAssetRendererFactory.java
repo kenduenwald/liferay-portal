@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,9 +15,7 @@
 package com.liferay.portlet.directory.asset;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.User;
 import com.liferay.portal.security.permission.PermissionChecker;
@@ -28,28 +26,36 @@ import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portlet.asset.model.AssetRenderer;
 import com.liferay.portlet.asset.model.BaseAssetRendererFactory;
 
-import javax.portlet.PortletURL;
-
 /**
  * @author Michael C. Han
  */
-public class UserAssetRendererFactory extends BaseAssetRendererFactory {
-
-	public static final String CLASS_NAME = User.class.getName();
+@OSGiBeanProperties(
+	property = {"search.asset.type=com.liferay.portal.model.User"}
+)
+public class UserAssetRendererFactory extends BaseAssetRendererFactory<User> {
 
 	public static final String TYPE = "user";
 
-	public AssetRenderer getAssetRenderer(long classPK, int type)
-		throws PortalException, SystemException {
-
-		User user = UserLocalServiceUtil.getUserById(classPK);
-
-		return new UserAssetRenderer(user);
+	public UserAssetRendererFactory() {
+		setSelectable(false);
 	}
 
 	@Override
-	public AssetRenderer getAssetRenderer(long groupId, String urlTitle)
-		throws PortalException, SystemException {
+	public AssetRenderer<User> getAssetRenderer(long classPK, int type)
+		throws PortalException {
+
+		User user = UserLocalServiceUtil.getUserById(classPK);
+
+		UserAssetRenderer userAssetRenderer = new UserAssetRenderer(user);
+
+		userAssetRenderer.setAssetRendererType(type);
+
+		return userAssetRenderer;
+	}
+
+	@Override
+	public AssetRenderer<User> getAssetRenderer(long groupId, String urlTitle)
+		throws PortalException {
 
 		Group group = GroupLocalServiceUtil.getGroup(groupId);
 
@@ -59,20 +65,19 @@ public class UserAssetRendererFactory extends BaseAssetRendererFactory {
 		return new UserAssetRenderer(user);
 	}
 
+	@Override
 	public String getClassName() {
-		return CLASS_NAME;
-	}
-
-	public String getType() {
-		return TYPE;
+		return User.class.getName();
 	}
 
 	@Override
-	public PortletURL getURLAdd(
-		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse) {
+	public String getIconCssClass() {
+		return "icon-user";
+	}
 
-		return null;
+	@Override
+	public String getType() {
+		return TYPE;
 	}
 
 	@Override
@@ -85,15 +90,8 @@ public class UserAssetRendererFactory extends BaseAssetRendererFactory {
 	}
 
 	@Override
-	public boolean isSelectable() {
-		return _SELECTABLE;
-	}
-
-	@Override
 	protected String getIconPath(ThemeDisplay themeDisplay) {
 		return themeDisplay.getPathThemeImages() + "/common/user_icon.png";
 	}
-
-	private static final boolean _SELECTABLE = false;
 
 }

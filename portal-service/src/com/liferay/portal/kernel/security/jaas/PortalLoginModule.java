@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,6 @@
 
 package com.liferay.portal.kernel.security.jaas;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 
 import java.util.Map;
@@ -38,18 +36,21 @@ public class PortalLoginModule implements LoginModule {
 			_loginModule = (LoginModule)clazz.newInstance();
 		}
 		catch (Exception e) {
-			_log.error(e);
+			throw new AssertionError(e);
 		}
 	}
 
+	@Override
 	public boolean abort() throws LoginException {
 		return _loginModule.abort();
 	}
 
+	@Override
 	public boolean commit() throws LoginException {
 		return _loginModule.commit();
 	}
 
+	@Override
 	public void initialize(
 		Subject subject, CallbackHandler callbackHandler,
 		Map<String, ?> sharedState, Map<String, ?> options) {
@@ -57,10 +58,12 @@ public class PortalLoginModule implements LoginModule {
 		_loginModule.initialize(subject, callbackHandler, sharedState, options);
 	}
 
+	@Override
 	public boolean login() throws LoginException {
 		return _loginModule.login();
 	}
 
+	@Override
 	public boolean logout() throws LoginException {
 		return _loginModule.logout();
 	}
@@ -68,8 +71,6 @@ public class PortalLoginModule implements LoginModule {
 	private static final String _CLASS_NAME =
 		"com.liferay.portal.security.jaas.PortalLoginModule";
 
-	private static Log _log = LogFactoryUtil.getLog(PortalLoginModule.class);
-
-	private LoginModule _loginModule;
+	private final LoginModule _loginModule;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,15 +20,13 @@ import com.liferay.portal.model.User;
 /**
  * @author Brian Wing Shun Chan
  */
-public class UserJobTitleComparator extends OrderByComparator {
+public class UserJobTitleComparator extends OrderByComparator<User> {
 
 	public static final String ORDER_BY_ASC =
-		"User_.jobTitle ASC, User_.lastName ASC, User_.firstName ASC, " +
-			"User_.middleName ASC";
+		"jobTitle ASC, lastName ASC, firstName ASC, middleName ASC";
 
 	public static final String ORDER_BY_DESC =
-		"User_.jobTitle DESC, User_.lastName DESC, User_.firstName DESC, " +
-			"User_.middleName DESC";
+		"jobTitle DESC, lastName DESC, firstName DESC, middleName DESC";
 
 	public static final String[] ORDER_BY_FIELDS = {
 		"jobTitle", "lastName", "firstName", "middleName"
@@ -43,22 +41,31 @@ public class UserJobTitleComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		User user1 = (User)obj1;
-		User user2 = (User)obj2;
+	public int compare(User user1, User user2) {
+		String jobTitle1 = user1.getJobTitle();
+		String jobTitle2 = user2.getJobTitle();
 
-		int value = user1.getJobTitle().compareTo(user2.getJobTitle());
+		int value = jobTitle1.compareTo(jobTitle2);
 
 		if (value == 0) {
-			value = user1.getLastName().compareTo(user2.getLastName());
+			String lastName1 = user1.getLastName();
+			String lastName2 = user2.getLastName();
+
+			value = lastName1.compareTo(lastName2);
 		}
 
 		if (value == 0) {
-			value = user1.getFirstName().compareTo(user2.getFirstName());
+			String firstName1 = user1.getFirstName();
+			String firstName2 = user2.getFirstName();
+
+			value = firstName1.compareTo(firstName2);
 		}
 
 		if (value == 0) {
-			value = user1.getMiddleName().compareTo(user2.getMiddleName());
+			String middleName1 = user1.getMiddleName();
+			String middleName2 = user2.getMiddleName();
+
+			value = middleName1.compareTo(middleName2);
 		}
 
 		if (_ascending) {
@@ -89,6 +96,6 @@ public class UserJobTitleComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

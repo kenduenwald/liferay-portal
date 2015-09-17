@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,9 +14,10 @@
 
 package com.liferay.portlet.messageboards.service.persistence;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 import com.liferay.portal.service.ServiceContext;
@@ -26,7 +27,7 @@ import com.liferay.portlet.messageboards.model.MBStatsUser;
 import java.util.List;
 
 /**
- * The persistence utility for the message boards stats user service. This utility wraps {@link MBStatsUserPersistenceImpl} and provides direct access to the database for CRUD operations. This utility should only be used by the service layer, as it must operate within a transaction. Never access this utility in a JSP, controller, model, or other front-end class.
+ * The persistence utility for the message boards stats user service. This utility wraps {@link com.liferay.portlet.messageboards.service.persistence.impl.MBStatsUserPersistenceImpl} and provides direct access to the database for CRUD operations. This utility should only be used by the service layer, as it must operate within a transaction. Never access this utility in a JSP, controller, model, or other front-end class.
  *
  * <p>
  * Caching information and settings can be found in <code>portal.properties</code>
@@ -34,9 +35,10 @@ import java.util.List;
  *
  * @author Brian Wing Shun Chan
  * @see MBStatsUserPersistence
- * @see MBStatsUserPersistenceImpl
+ * @see com.liferay.portlet.messageboards.service.persistence.impl.MBStatsUserPersistenceImpl
  * @generated
  */
+@ProviderType
 public class MBStatsUserUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -61,8 +63,7 @@ public class MBStatsUserUtil {
 	/**
 	 * @see com.liferay.portal.service.persistence.BasePersistence#countWithDynamicQuery(DynamicQuery)
 	 */
-	public long countWithDynamicQuery(DynamicQuery dynamicQuery)
-		throws SystemException {
+	public static long countWithDynamicQuery(DynamicQuery dynamicQuery) {
 		return getPersistence().countWithDynamicQuery(dynamicQuery);
 	}
 
@@ -70,7 +71,7 @@ public class MBStatsUserUtil {
 	 * @see com.liferay.portal.service.persistence.BasePersistence#findWithDynamicQuery(DynamicQuery)
 	 */
 	public static List<MBStatsUser> findWithDynamicQuery(
-		DynamicQuery dynamicQuery) throws SystemException {
+		DynamicQuery dynamicQuery) {
 		return getPersistence().findWithDynamicQuery(dynamicQuery);
 	}
 
@@ -78,8 +79,7 @@ public class MBStatsUserUtil {
 	 * @see com.liferay.portal.service.persistence.BasePersistence#findWithDynamicQuery(DynamicQuery, int, int)
 	 */
 	public static List<MBStatsUser> findWithDynamicQuery(
-		DynamicQuery dynamicQuery, int start, int end)
-		throws SystemException {
+		DynamicQuery dynamicQuery, int start, int end) {
 		return getPersistence().findWithDynamicQuery(dynamicQuery, start, end);
 	}
 
@@ -88,107 +88,25 @@ public class MBStatsUserUtil {
 	 */
 	public static List<MBStatsUser> findWithDynamicQuery(
 		DynamicQuery dynamicQuery, int start, int end,
-		OrderByComparator orderByComparator) throws SystemException {
+		OrderByComparator<MBStatsUser> orderByComparator) {
 		return getPersistence()
 				   .findWithDynamicQuery(dynamicQuery, start, end,
 			orderByComparator);
 	}
 
 	/**
-	 * @see com.liferay.portal.service.persistence.BasePersistence#update(com.liferay.portal.model.BaseModel, boolean)
+	 * @see com.liferay.portal.service.persistence.BasePersistence#update(com.liferay.portal.model.BaseModel)
 	 */
-	public static MBStatsUser update(MBStatsUser mbStatsUser, boolean merge)
-		throws SystemException {
-		return getPersistence().update(mbStatsUser, merge);
+	public static MBStatsUser update(MBStatsUser mbStatsUser) {
+		return getPersistence().update(mbStatsUser);
 	}
 
 	/**
-	 * @see com.liferay.portal.service.persistence.BasePersistence#update(com.liferay.portal.model.BaseModel, boolean, ServiceContext)
+	 * @see com.liferay.portal.service.persistence.BasePersistence#update(com.liferay.portal.model.BaseModel, ServiceContext)
 	 */
-	public static MBStatsUser update(MBStatsUser mbStatsUser, boolean merge,
-		ServiceContext serviceContext) throws SystemException {
-		return getPersistence().update(mbStatsUser, merge, serviceContext);
-	}
-
-	/**
-	* Caches the message boards stats user in the entity cache if it is enabled.
-	*
-	* @param mbStatsUser the message boards stats user
-	*/
-	public static void cacheResult(
-		com.liferay.portlet.messageboards.model.MBStatsUser mbStatsUser) {
-		getPersistence().cacheResult(mbStatsUser);
-	}
-
-	/**
-	* Caches the message boards stats users in the entity cache if it is enabled.
-	*
-	* @param mbStatsUsers the message boards stats users
-	*/
-	public static void cacheResult(
-		java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> mbStatsUsers) {
-		getPersistence().cacheResult(mbStatsUsers);
-	}
-
-	/**
-	* Creates a new message boards stats user with the primary key. Does not add the message boards stats user to the database.
-	*
-	* @param statsUserId the primary key for the new message boards stats user
-	* @return the new message boards stats user
-	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser create(
-		long statsUserId) {
-		return getPersistence().create(statsUserId);
-	}
-
-	/**
-	* Removes the message boards stats user with the primary key from the database. Also notifies the appropriate model listeners.
-	*
-	* @param statsUserId the primary key of the message boards stats user
-	* @return the message boards stats user that was removed
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a message boards stats user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
-	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser remove(
-		long statsUserId)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
-		return getPersistence().remove(statsUserId);
-	}
-
-	public static com.liferay.portlet.messageboards.model.MBStatsUser updateImpl(
-		com.liferay.portlet.messageboards.model.MBStatsUser mbStatsUser,
-		boolean merge)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().updateImpl(mbStatsUser, merge);
-	}
-
-	/**
-	* Returns the message boards stats user with the primary key or throws a {@link com.liferay.portlet.messageboards.NoSuchStatsUserException} if it could not be found.
-	*
-	* @param statsUserId the primary key of the message boards stats user
-	* @return the message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a message boards stats user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
-	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByPrimaryKey(
-		long statsUserId)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
-		return getPersistence().findByPrimaryKey(statsUserId);
-	}
-
-	/**
-	* Returns the message boards stats user with the primary key or returns <code>null</code> if it could not be found.
-	*
-	* @param statsUserId the primary key of the message boards stats user
-	* @return the message boards stats user, or <code>null</code> if a message boards stats user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
-	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser fetchByPrimaryKey(
-		long statsUserId)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().fetchByPrimaryKey(statsUserId);
+	public static MBStatsUser update(MBStatsUser mbStatsUser,
+		ServiceContext serviceContext) {
+		return getPersistence().update(mbStatsUser, serviceContext);
 	}
 
 	/**
@@ -196,11 +114,8 @@ public class MBStatsUserUtil {
 	*
 	* @param groupId the group ID
 	* @return the matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByGroupId(
-		long groupId)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByGroupId(long groupId) {
 		return getPersistence().findByGroupId(groupId);
 	}
 
@@ -208,18 +123,16 @@ public class MBStatsUserUtil {
 	* Returns a range of all the message boards stats users where groupId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param groupId the group ID
 	* @param start the lower bound of the range of message boards stats users
 	* @param end the upper bound of the range of message boards stats users (not inclusive)
 	* @return the range of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByGroupId(
-		long groupId, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByGroupId(long groupId, int start,
+		int end) {
 		return getPersistence().findByGroupId(groupId, start, end);
 	}
 
@@ -227,7 +140,7 @@ public class MBStatsUserUtil {
 	* Returns an ordered range of all the message boards stats users where groupId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param groupId the group ID
@@ -235,12 +148,9 @@ public class MBStatsUserUtil {
 	* @param end the upper bound of the range of message boards stats users (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByGroupId(
-		long groupId, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByGroupId(long groupId, int start,
+		int end, OrderByComparator<MBStatsUser> orderByComparator) {
 		return getPersistence()
 				   .findByGroupId(groupId, start, end, orderByComparator);
 	}
@@ -248,67 +158,89 @@ public class MBStatsUserUtil {
 	/**
 	* Returns the first message boards stats user in the ordered set where groupId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param groupId the group ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByGroupId_First(
-		long groupId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByGroupId_First(long groupId,
+		OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence().findByGroupId_First(groupId, orderByComparator);
+	}
+
+	/**
+	* Returns the first message boards stats user in the ordered set where groupId = &#63;.
+	*
+	* @param groupId the group ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
+	*/
+	public static MBStatsUser fetchByGroupId_First(long groupId,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence().fetchByGroupId_First(groupId, orderByComparator);
 	}
 
 	/**
 	* Returns the last message boards stats user in the ordered set where groupId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param groupId the group ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByGroupId_Last(
-		long groupId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByGroupId_Last(long groupId,
+		OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence().findByGroupId_Last(groupId, orderByComparator);
+	}
+
+	/**
+	* Returns the last message boards stats user in the ordered set where groupId = &#63;.
+	*
+	* @param groupId the group ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
+	*/
+	public static MBStatsUser fetchByGroupId_Last(long groupId,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence().fetchByGroupId_Last(groupId, orderByComparator);
 	}
 
 	/**
 	* Returns the message boards stats users before and after the current message boards stats user in the ordered set where groupId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param statsUserId the primary key of the current message boards stats user
 	* @param groupId the group ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a message boards stats user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a message boards stats user with the primary key could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser[] findByGroupId_PrevAndNext(
-		long statsUserId, long groupId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser[] findByGroupId_PrevAndNext(long statsUserId,
+		long groupId, OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence()
 				   .findByGroupId_PrevAndNext(statsUserId, groupId,
 			orderByComparator);
+	}
+
+	/**
+	* Removes all the message boards stats users where groupId = &#63; from the database.
+	*
+	* @param groupId the group ID
+	*/
+	public static void removeByGroupId(long groupId) {
+		getPersistence().removeByGroupId(groupId);
+	}
+
+	/**
+	* Returns the number of message boards stats users where groupId = &#63;.
+	*
+	* @param groupId the group ID
+	* @return the number of matching message boards stats users
+	*/
+	public static int countByGroupId(long groupId) {
+		return getPersistence().countByGroupId(groupId);
 	}
 
 	/**
@@ -316,10 +248,8 @@ public class MBStatsUserUtil {
 	*
 	* @param userId the user ID
 	* @return the matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByUserId(
-		long userId) throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByUserId(long userId) {
 		return getPersistence().findByUserId(userId);
 	}
 
@@ -327,18 +257,15 @@ public class MBStatsUserUtil {
 	* Returns a range of all the message boards stats users where userId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param userId the user ID
 	* @param start the lower bound of the range of message boards stats users
 	* @param end the upper bound of the range of message boards stats users (not inclusive)
 	* @return the range of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByUserId(
-		long userId, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByUserId(long userId, int start, int end) {
 		return getPersistence().findByUserId(userId, start, end);
 	}
 
@@ -346,7 +273,7 @@ public class MBStatsUserUtil {
 	* Returns an ordered range of all the message boards stats users where userId = &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param userId the user ID
@@ -354,12 +281,9 @@ public class MBStatsUserUtil {
 	* @param end the upper bound of the range of message boards stats users (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByUserId(
-		long userId, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByUserId(long userId, int start,
+		int end, OrderByComparator<MBStatsUser> orderByComparator) {
 		return getPersistence()
 				   .findByUserId(userId, start, end, orderByComparator);
 	}
@@ -367,82 +291,101 @@ public class MBStatsUserUtil {
 	/**
 	* Returns the first message boards stats user in the ordered set where userId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param userId the user ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByUserId_First(
-		long userId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByUserId_First(long userId,
+		OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence().findByUserId_First(userId, orderByComparator);
+	}
+
+	/**
+	* Returns the first message boards stats user in the ordered set where userId = &#63;.
+	*
+	* @param userId the user ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
+	*/
+	public static MBStatsUser fetchByUserId_First(long userId,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence().fetchByUserId_First(userId, orderByComparator);
 	}
 
 	/**
 	* Returns the last message boards stats user in the ordered set where userId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param userId the user ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByUserId_Last(
-		long userId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByUserId_Last(long userId,
+		OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence().findByUserId_Last(userId, orderByComparator);
+	}
+
+	/**
+	* Returns the last message boards stats user in the ordered set where userId = &#63;.
+	*
+	* @param userId the user ID
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
+	*/
+	public static MBStatsUser fetchByUserId_Last(long userId,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence().fetchByUserId_Last(userId, orderByComparator);
 	}
 
 	/**
 	* Returns the message boards stats users before and after the current message boards stats user in the ordered set where userId = &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param statsUserId the primary key of the current message boards stats user
 	* @param userId the user ID
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a message boards stats user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a message boards stats user with the primary key could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser[] findByUserId_PrevAndNext(
-		long statsUserId, long userId,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser[] findByUserId_PrevAndNext(long statsUserId,
+		long userId, OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence()
 				   .findByUserId_PrevAndNext(statsUserId, userId,
 			orderByComparator);
 	}
 
 	/**
-	* Returns the message boards stats user where groupId = &#63; and userId = &#63; or throws a {@link com.liferay.portlet.messageboards.NoSuchStatsUserException} if it could not be found.
+	* Removes all the message boards stats users where userId = &#63; from the database.
+	*
+	* @param userId the user ID
+	*/
+	public static void removeByUserId(long userId) {
+		getPersistence().removeByUserId(userId);
+	}
+
+	/**
+	* Returns the number of message boards stats users where userId = &#63;.
+	*
+	* @param userId the user ID
+	* @return the number of matching message boards stats users
+	*/
+	public static int countByUserId(long userId) {
+		return getPersistence().countByUserId(userId);
+	}
+
+	/**
+	* Returns the message boards stats user where groupId = &#63; and userId = &#63; or throws a {@link NoSuchStatsUserException} if it could not be found.
 	*
 	* @param groupId the group ID
 	* @param userId the user ID
 	* @return the matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByG_U(
-		long groupId, long userId)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByG_U(long groupId, long userId)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence().findByG_U(groupId, userId);
 	}
 
@@ -452,11 +395,8 @@ public class MBStatsUserUtil {
 	* @param groupId the group ID
 	* @param userId the user ID
 	* @return the matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser fetchByG_U(
-		long groupId, long userId)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static MBStatsUser fetchByG_U(long groupId, long userId) {
 		return getPersistence().fetchByG_U(groupId, userId);
 	}
 
@@ -467,12 +407,33 @@ public class MBStatsUserUtil {
 	* @param userId the user ID
 	* @param retrieveFromCache whether to use the finder cache
 	* @return the matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser fetchByG_U(
-		long groupId, long userId, boolean retrieveFromCache)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static MBStatsUser fetchByG_U(long groupId, long userId,
+		boolean retrieveFromCache) {
 		return getPersistence().fetchByG_U(groupId, userId, retrieveFromCache);
+	}
+
+	/**
+	* Removes the message boards stats user where groupId = &#63; and userId = &#63; from the database.
+	*
+	* @param groupId the group ID
+	* @param userId the user ID
+	* @return the message boards stats user that was removed
+	*/
+	public static MBStatsUser removeByG_U(long groupId, long userId)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
+		return getPersistence().removeByG_U(groupId, userId);
+	}
+
+	/**
+	* Returns the number of message boards stats users where groupId = &#63; and userId = &#63;.
+	*
+	* @param groupId the group ID
+	* @param userId the user ID
+	* @return the number of matching message boards stats users
+	*/
+	public static int countByG_U(long groupId, long userId) {
+		return getPersistence().countByG_U(groupId, userId);
 	}
 
 	/**
@@ -482,11 +443,9 @@ public class MBStatsUserUtil {
 	* @param userId the user ID
 	* @param messageCount the message count
 	* @return the matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByG_NotU_NotM(
-		long groupId, long userId, int messageCount)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByG_NotU_NotM(long groupId,
+		long userId, int messageCount) {
 		return getPersistence().findByG_NotU_NotM(groupId, userId, messageCount);
 	}
 
@@ -494,7 +453,7 @@ public class MBStatsUserUtil {
 	* Returns a range of all the message boards stats users where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param groupId the group ID
@@ -503,11 +462,9 @@ public class MBStatsUserUtil {
 	* @param start the lower bound of the range of message boards stats users
 	* @param end the upper bound of the range of message boards stats users (not inclusive)
 	* @return the range of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByG_NotU_NotM(
-		long groupId, long userId, int messageCount, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByG_NotU_NotM(long groupId,
+		long userId, int messageCount, int start, int end) {
 		return getPersistence()
 				   .findByG_NotU_NotM(groupId, userId, messageCount, start, end);
 	}
@@ -516,7 +473,7 @@ public class MBStatsUserUtil {
 	* Returns an ordered range of all the message boards stats users where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
 	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
 	* </p>
 	*
 	* @param groupId the group ID
@@ -526,12 +483,10 @@ public class MBStatsUserUtil {
 	* @param end the upper bound of the range of message boards stats users (not inclusive)
 	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	* @return the ordered range of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findByG_NotU_NotM(
-		long groupId, long userId, int messageCount, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static List<MBStatsUser> findByG_NotU_NotM(long groupId,
+		long userId, int messageCount, int start, int end,
+		OrderByComparator<MBStatsUser> orderByComparator) {
 		return getPersistence()
 				   .findByG_NotU_NotM(groupId, userId, messageCount, start,
 			end, orderByComparator);
@@ -540,59 +495,76 @@ public class MBStatsUserUtil {
 	/**
 	* Returns the first message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
 	* @param groupId the group ID
 	* @param userId the user ID
 	* @param messageCount the message count
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the first matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByG_NotU_NotM_First(
-		long groupId, long userId, int messageCount,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByG_NotU_NotM_First(long groupId,
+		long userId, int messageCount,
+		OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence()
 				   .findByG_NotU_NotM_First(groupId, userId, messageCount,
 			orderByComparator);
 	}
 
 	/**
-	* Returns the last message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
+	* Returns the first message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
+	* @param groupId the group ID
+	* @param userId the user ID
+	* @param messageCount the message count
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the first matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
+	*/
+	public static MBStatsUser fetchByG_NotU_NotM_First(long groupId,
+		long userId, int messageCount,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence()
+				   .fetchByG_NotU_NotM_First(groupId, userId, messageCount,
+			orderByComparator);
+	}
+
+	/**
+	* Returns the last message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
 	* @param groupId the group ID
 	* @param userId the user ID
 	* @param messageCount the message count
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the last matching message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a matching message boards stats user could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a matching message boards stats user could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser findByG_NotU_NotM_Last(
-		long groupId, long userId, int messageCount,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+	public static MBStatsUser findByG_NotU_NotM_Last(long groupId, long userId,
+		int messageCount, OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence()
 				   .findByG_NotU_NotM_Last(groupId, userId, messageCount,
 			orderByComparator);
 	}
 
 	/**
-	* Returns the message boards stats users before and after the current message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
+	* Returns the last message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
+	* @param groupId the group ID
+	* @param userId the user ID
+	* @param messageCount the message count
+	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	* @return the last matching message boards stats user, or <code>null</code> if a matching message boards stats user could not be found
+	*/
+	public static MBStatsUser fetchByG_NotU_NotM_Last(long groupId,
+		long userId, int messageCount,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence()
+				   .fetchByG_NotU_NotM_Last(groupId, userId, messageCount,
+			orderByComparator);
+	}
+
+	/**
+	* Returns the message boards stats users before and after the current message boards stats user in the ordered set where groupId = &#63; and userId &ne; &#63; and messageCount &ne; &#63;.
 	*
 	* @param statsUserId the primary key of the current message boards stats user
 	* @param groupId the group ID
@@ -600,103 +572,15 @@ public class MBStatsUserUtil {
 	* @param messageCount the message count
 	* @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	* @return the previous, current, and next message boards stats user
-	* @throws com.liferay.portlet.messageboards.NoSuchStatsUserException if a message boards stats user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws NoSuchStatsUserException if a message boards stats user with the primary key could not be found
 	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser[] findByG_NotU_NotM_PrevAndNext(
+	public static MBStatsUser[] findByG_NotU_NotM_PrevAndNext(
 		long statsUserId, long groupId, long userId, int messageCount,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
+		OrderByComparator<MBStatsUser> orderByComparator)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
 		return getPersistence()
 				   .findByG_NotU_NotM_PrevAndNext(statsUserId, groupId, userId,
 			messageCount, orderByComparator);
-	}
-
-	/**
-	* Returns all the message boards stats users.
-	*
-	* @return the message boards stats users
-	* @throws SystemException if a system exception occurred
-	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findAll()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().findAll();
-	}
-
-	/**
-	* Returns a range of all the message boards stats users.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
-	* @param start the lower bound of the range of message boards stats users
-	* @param end the upper bound of the range of message boards stats users (not inclusive)
-	* @return the range of message boards stats users
-	* @throws SystemException if a system exception occurred
-	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findAll(
-		int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().findAll(start, end);
-	}
-
-	/**
-	* Returns an ordered range of all the message boards stats users.
-	*
-	* <p>
-	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set.
-	* </p>
-	*
-	* @param start the lower bound of the range of message boards stats users
-	* @param end the upper bound of the range of message boards stats users (not inclusive)
-	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	* @return the ordered range of message boards stats users
-	* @throws SystemException if a system exception occurred
-	*/
-	public static java.util.List<com.liferay.portlet.messageboards.model.MBStatsUser> findAll(
-		int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator orderByComparator)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().findAll(start, end, orderByComparator);
-	}
-
-	/**
-	* Removes all the message boards stats users where groupId = &#63; from the database.
-	*
-	* @param groupId the group ID
-	* @throws SystemException if a system exception occurred
-	*/
-	public static void removeByGroupId(long groupId)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		getPersistence().removeByGroupId(groupId);
-	}
-
-	/**
-	* Removes all the message boards stats users where userId = &#63; from the database.
-	*
-	* @param userId the user ID
-	* @throws SystemException if a system exception occurred
-	*/
-	public static void removeByUserId(long userId)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		getPersistence().removeByUserId(userId);
-	}
-
-	/**
-	* Removes the message boards stats user where groupId = &#63; and userId = &#63; from the database.
-	*
-	* @param groupId the group ID
-	* @param userId the user ID
-	* @return the message boards stats user that was removed
-	* @throws SystemException if a system exception occurred
-	*/
-	public static com.liferay.portlet.messageboards.model.MBStatsUser removeByG_U(
-		long groupId, long userId)
-		throws com.liferay.portal.kernel.exception.SystemException,
-			com.liferay.portlet.messageboards.NoSuchStatsUserException {
-		return getPersistence().removeByG_U(groupId, userId);
 	}
 
 	/**
@@ -705,59 +589,10 @@ public class MBStatsUserUtil {
 	* @param groupId the group ID
 	* @param userId the user ID
 	* @param messageCount the message count
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void removeByG_NotU_NotM(long groupId, long userId,
-		int messageCount)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		int messageCount) {
 		getPersistence().removeByG_NotU_NotM(groupId, userId, messageCount);
-	}
-
-	/**
-	* Removes all the message boards stats users from the database.
-	*
-	* @throws SystemException if a system exception occurred
-	*/
-	public static void removeAll()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		getPersistence().removeAll();
-	}
-
-	/**
-	* Returns the number of message boards stats users where groupId = &#63;.
-	*
-	* @param groupId the group ID
-	* @return the number of matching message boards stats users
-	* @throws SystemException if a system exception occurred
-	*/
-	public static int countByGroupId(long groupId)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().countByGroupId(groupId);
-	}
-
-	/**
-	* Returns the number of message boards stats users where userId = &#63;.
-	*
-	* @param userId the user ID
-	* @return the number of matching message boards stats users
-	* @throws SystemException if a system exception occurred
-	*/
-	public static int countByUserId(long userId)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().countByUserId(userId);
-	}
-
-	/**
-	* Returns the number of message boards stats users where groupId = &#63; and userId = &#63;.
-	*
-	* @param groupId the group ID
-	* @param userId the user ID
-	* @return the number of matching message boards stats users
-	* @throws SystemException if a system exception occurred
-	*/
-	public static int countByG_U(long groupId, long userId)
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return getPersistence().countByG_U(groupId, userId);
 	}
 
 	/**
@@ -767,22 +602,137 @@ public class MBStatsUserUtil {
 	* @param userId the user ID
 	* @param messageCount the message count
 	* @return the number of matching message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
 	public static int countByG_NotU_NotM(long groupId, long userId,
-		int messageCount)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		int messageCount) {
 		return getPersistence().countByG_NotU_NotM(groupId, userId, messageCount);
+	}
+
+	/**
+	* Caches the message boards stats user in the entity cache if it is enabled.
+	*
+	* @param mbStatsUser the message boards stats user
+	*/
+	public static void cacheResult(MBStatsUser mbStatsUser) {
+		getPersistence().cacheResult(mbStatsUser);
+	}
+
+	/**
+	* Caches the message boards stats users in the entity cache if it is enabled.
+	*
+	* @param mbStatsUsers the message boards stats users
+	*/
+	public static void cacheResult(List<MBStatsUser> mbStatsUsers) {
+		getPersistence().cacheResult(mbStatsUsers);
+	}
+
+	/**
+	* Creates a new message boards stats user with the primary key. Does not add the message boards stats user to the database.
+	*
+	* @param statsUserId the primary key for the new message boards stats user
+	* @return the new message boards stats user
+	*/
+	public static MBStatsUser create(long statsUserId) {
+		return getPersistence().create(statsUserId);
+	}
+
+	/**
+	* Removes the message boards stats user with the primary key from the database. Also notifies the appropriate model listeners.
+	*
+	* @param statsUserId the primary key of the message boards stats user
+	* @return the message boards stats user that was removed
+	* @throws NoSuchStatsUserException if a message boards stats user with the primary key could not be found
+	*/
+	public static MBStatsUser remove(long statsUserId)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
+		return getPersistence().remove(statsUserId);
+	}
+
+	public static MBStatsUser updateImpl(MBStatsUser mbStatsUser) {
+		return getPersistence().updateImpl(mbStatsUser);
+	}
+
+	/**
+	* Returns the message boards stats user with the primary key or throws a {@link NoSuchStatsUserException} if it could not be found.
+	*
+	* @param statsUserId the primary key of the message boards stats user
+	* @return the message boards stats user
+	* @throws NoSuchStatsUserException if a message boards stats user with the primary key could not be found
+	*/
+	public static MBStatsUser findByPrimaryKey(long statsUserId)
+		throws com.liferay.portlet.messageboards.NoSuchStatsUserException {
+		return getPersistence().findByPrimaryKey(statsUserId);
+	}
+
+	/**
+	* Returns the message boards stats user with the primary key or returns <code>null</code> if it could not be found.
+	*
+	* @param statsUserId the primary key of the message boards stats user
+	* @return the message boards stats user, or <code>null</code> if a message boards stats user with the primary key could not be found
+	*/
+	public static MBStatsUser fetchByPrimaryKey(long statsUserId) {
+		return getPersistence().fetchByPrimaryKey(statsUserId);
+	}
+
+	public static java.util.Map<java.io.Serializable, MBStatsUser> fetchByPrimaryKeys(
+		java.util.Set<java.io.Serializable> primaryKeys) {
+		return getPersistence().fetchByPrimaryKeys(primaryKeys);
+	}
+
+	/**
+	* Returns all the message boards stats users.
+	*
+	* @return the message boards stats users
+	*/
+	public static List<MBStatsUser> findAll() {
+		return getPersistence().findAll();
+	}
+
+	/**
+	* Returns a range of all the message boards stats users.
+	*
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param start the lower bound of the range of message boards stats users
+	* @param end the upper bound of the range of message boards stats users (not inclusive)
+	* @return the range of message boards stats users
+	*/
+	public static List<MBStatsUser> findAll(int start, int end) {
+		return getPersistence().findAll(start, end);
+	}
+
+	/**
+	* Returns an ordered range of all the message boards stats users.
+	*
+	* <p>
+	* Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link MBStatsUserModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	* </p>
+	*
+	* @param start the lower bound of the range of message boards stats users
+	* @param end the upper bound of the range of message boards stats users (not inclusive)
+	* @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	* @return the ordered range of message boards stats users
+	*/
+	public static List<MBStatsUser> findAll(int start, int end,
+		OrderByComparator<MBStatsUser> orderByComparator) {
+		return getPersistence().findAll(start, end, orderByComparator);
+	}
+
+	/**
+	* Removes all the message boards stats users from the database.
+	*/
+	public static void removeAll() {
+		getPersistence().removeAll();
 	}
 
 	/**
 	* Returns the number of message boards stats users.
 	*
 	* @return the number of message boards stats users
-	* @throws SystemException if a system exception occurred
 	*/
-	public static int countAll()
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static int countAll() {
 		return getPersistence().countAll();
 	}
 
@@ -797,11 +747,11 @@ public class MBStatsUserUtil {
 		return _persistence;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setPersistence(MBStatsUserPersistence persistence) {
-		_persistence = persistence;
-
-		ReferenceRegistry.registerReference(MBStatsUserUtil.class,
-			"_persistence");
 	}
 
 	private static MBStatsUserPersistence _persistence;

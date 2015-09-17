@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -21,8 +21,8 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.model.BaseModel;
+import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.spring.aop.AnnotationChainableMethodAdvice;
-import com.liferay.portal.spring.aop.ServiceBeanAopProxy;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -62,18 +62,35 @@ public class IndexableAdvice
 			return;
 		}
 
-		Indexer indexer = IndexerRegistryUtil.getIndexer(returnType.getName());
+		Indexer<Object> indexer = IndexerRegistryUtil.getIndexer(
+			returnType.getName());
 
-		if (indexer != null) {
-			if (indexable.type() == IndexableType.DELETE) {
-				indexer.delete(result);
-			}
-			else {
-				indexer.reindex(result);
+		if (indexer == null) {
+			serviceBeanAopCacheManager.removeMethodInterceptor(
+				methodInvocation, this);
+
+			return;
+		}
+
+		Object[] arguments = methodInvocation.getArguments();
+
+		for (int i = arguments.length - 1; i >= 0; i--) {
+			if (arguments[i] instanceof ServiceContext) {
+				ServiceContext serviceContext = (ServiceContext)arguments[i];
+
+				if (serviceContext.isIndexingEnabled()) {
+					break;
+				}
+
+				return;
 			}
 		}
+
+		if (indexable.type() == IndexableType.DELETE) {
+			indexer.delete(result);
+		}
 		else {
-			ServiceBeanAopProxy.removeMethodInterceptor(methodInvocation, this);
+			indexer.reindex(result);
 		}
 	}
 
@@ -82,19 +99,21 @@ public class IndexableAdvice
 		return _nullIndexable;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(IndexableAdvice.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		IndexableAdvice.class);
 
-	private static Indexable _nullIndexable =
-		new Indexable() {
+	private static final Indexable _nullIndexable = new Indexable() {
 
-			public Class<? extends Annotation> annotationType() {
-				return Indexable.class;
-			}
+		@Override
+		public Class<? extends Annotation> annotationType() {
+			return Indexable.class;
+		}
 
-			public IndexableType type() {
-				return null;
-			}
+		@Override
+		public IndexableType type() {
+			return null;
+		}
 
-		};
+	};
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,35 +14,81 @@
 
 package com.liferay.portal.kernel.messaging.proxy;
 
-import com.liferay.portal.kernel.messaging.sender.MessageSender;
+import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBus;
+import com.liferay.portal.kernel.messaging.MessageBusUtil;
+import com.liferay.portal.kernel.messaging.sender.SingleDestinationMessageSenderFactoryUtil;
 import com.liferay.portal.kernel.messaging.sender.SynchronousMessageSender;
 
 /**
  * @author Michael C. Han
+ * @author Shuyang Zhou
  */
 public abstract class BaseMultiDestinationProxyBean {
 
+	public void afterPropertiesSet() {
+		_synchronousMessageSender =
+			SingleDestinationMessageSenderFactoryUtil.
+				getSynchronousMessageSender(_mode);
+	}
+
 	public abstract String getDestinationName(ProxyRequest proxyRequest);
 
-	public MessageSender getMessageSender() {
-		return _messageSender;
+	public void send(ProxyRequest proxyRequest) {
+		MessageBusUtil.sendMessage(
+			getDestinationName(proxyRequest), buildMessage(proxyRequest));
 	}
 
-	public SynchronousMessageSender getSynchronousMessageSender() {
-		return _synchronousMessageSender;
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link MessageBusUtil#getMessageBus)
+	 */
+	@Deprecated
+	public void setMessageBus(MessageBus messageBus) {
 	}
 
-	public void setMessageSender(MessageSender messageSender) {
-		_messageSender = messageSender;
-	}
-
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #setSynchronousMessageSenderMode(
+	 *             SynchronousMessageSender.Mode)}
+	 */
+	@Deprecated
 	public void setSynchronousMessageSender(
 		SynchronousMessageSender synchronousMessageSender) {
-
-		_synchronousMessageSender = synchronousMessageSender;
 	}
 
-	private MessageSender _messageSender;
+	public void setSynchronousMessageSenderMode(
+		SynchronousMessageSender.Mode mode) {
+
+		_mode = mode;
+	}
+
+	public Object synchronousSend(ProxyRequest proxyRequest) throws Exception {
+		ProxyResponse proxyResponse =
+			(ProxyResponse)_synchronousMessageSender.send(
+				getDestinationName(proxyRequest), buildMessage(proxyRequest));
+
+		if (proxyResponse == null) {
+			return proxyRequest.execute(this);
+		}
+		else if (proxyResponse.hasError()) {
+			throw proxyResponse.getException();
+		}
+		else {
+			return proxyResponse.getResult();
+		}
+	}
+
+	protected Message buildMessage(ProxyRequest proxyRequest) {
+		Message message = new Message();
+
+		message.setPayload(proxyRequest);
+
+		MessageValuesThreadLocal.populateMessageFromThreadLocals(message);
+
+		return message;
+	}
+
+	private SynchronousMessageSender.Mode _mode;
 	private SynchronousMessageSender _synchronousMessageSender;
 
 }

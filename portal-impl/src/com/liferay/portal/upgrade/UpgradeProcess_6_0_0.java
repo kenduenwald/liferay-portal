@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,6 +23,7 @@ import com.liferay.portal.upgrade.v6_0_0.UpgradeDocumentLibrary;
 import com.liferay.portal.upgrade.v6_0_0.UpgradeExpando;
 import com.liferay.portal.upgrade.v6_0_0.UpgradeGroup;
 import com.liferay.portal.upgrade.v6_0_0.UpgradeJournal;
+import com.liferay.portal.upgrade.v6_0_0.UpgradeLayout;
 import com.liferay.portal.upgrade.v6_0_0.UpgradePolls;
 import com.liferay.portal.upgrade.v6_0_0.UpgradePortletId;
 import com.liferay.portal.upgrade.v6_0_0.UpgradeResourceAction;
@@ -44,6 +45,7 @@ public class UpgradeProcess_6_0_0 extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		upgrade(UpgradeSchema.class);
+
 		upgrade(UpgradeAsset.class);
 		upgrade(UpgradeAssetPublisher.class);
 		upgrade(UpgradeBlogs.class);
@@ -51,6 +53,7 @@ public class UpgradeProcess_6_0_0 extends UpgradeProcess {
 		upgrade(UpgradeExpando.class);
 		upgrade(UpgradeGroup.class);
 		upgrade(UpgradeJournal.class);
+		upgrade(UpgradeLayout.class);
 		upgrade(UpgradePolls.class);
 		upgrade(UpgradePortletId.class);
 		upgrade(UpgradeResourceAction.class);

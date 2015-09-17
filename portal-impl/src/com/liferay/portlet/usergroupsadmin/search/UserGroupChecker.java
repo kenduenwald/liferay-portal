@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,52 +15,38 @@
 package com.liferay.portlet.usergroupsadmin.search;
 
 import com.liferay.portal.kernel.dao.search.RowChecker;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.UserLocalServiceUtil;
+import com.liferay.portal.model.UserGroup;
+import com.liferay.portal.security.permission.ActionKeys;
+import com.liferay.portal.security.permission.PermissionChecker;
+import com.liferay.portal.security.permission.PermissionThreadLocal;
+import com.liferay.portal.service.permission.UserGroupPermissionUtil;
 
 import javax.portlet.RenderResponse;
 
 /**
- * @author Brian Wing Shun Chan
+ * @author Drew Brokke
  */
 public class UserGroupChecker extends RowChecker {
 
-	public UserGroupChecker(RenderResponse renderResponse, Group group) {
+	public UserGroupChecker(RenderResponse renderResponse) {
 		super(renderResponse);
-
-		_group = group;
 	}
 
 	@Override
-	public boolean isChecked(Object obj) {
-		User user = null;
+	public boolean isDisabled(Object obj) {
+		UserGroup userGroup = (UserGroup)obj;
 
-		if (obj instanceof User) {
-			user = (User)obj;
-		}
-		else if (obj instanceof Object[]) {
-			user = (User)((Object[])obj)[0];
-		}
-		else {
-			throw new IllegalArgumentException(obj + " is not a User");
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if (!UserGroupPermissionUtil.contains(
+				permissionChecker, userGroup.getUserGroupId(),
+				ActionKeys.DELETE)) {
+
+			return true;
 		}
 
-		try {
-			return UserLocalServiceUtil.hasGroupUser(
-				_group.getGroupId(), user.getUserId());
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			return false;
-		}
+		return super.isDisabled(obj);
 	}
-
-	private static Log _log = LogFactoryUtil.getLog(UserGroupChecker.class);
-
-	private Group _group;
 
 }

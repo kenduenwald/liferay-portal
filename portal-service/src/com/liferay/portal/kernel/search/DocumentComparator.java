@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -49,6 +49,7 @@ public class DocumentComparator implements Comparator<Document> {
 		_columns.add(orderBy);
 	}
 
+	@Override
 	public int compare(Document doc1, Document doc2) {
 		for (DocumentComparatorOrderBy orderBy : _columns) {
 			String value1 = doc1.get(orderBy.getName());
@@ -80,9 +81,8 @@ public class DocumentComparator implements Comparator<Document> {
 		return 0;
 	}
 
-	private boolean _ascending;
-	private boolean _caseSensitive;
-	private List<DocumentComparatorOrderBy> _columns =
-		new ArrayList<DocumentComparatorOrderBy>();
+	private final boolean _ascending;
+	private final boolean _caseSensitive;
+	private final List<DocumentComparatorOrderBy> _columns = new ArrayList<>();
 
 }

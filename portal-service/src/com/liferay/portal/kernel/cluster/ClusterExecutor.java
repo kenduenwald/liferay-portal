@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,10 +14,10 @@
 
 package com.liferay.portal.kernel.cluster;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Shuyang Zhou
@@ -27,35 +27,17 @@ public interface ClusterExecutor {
 	public void addClusterEventListener(
 		ClusterEventListener clusterEventListener);
 
-	public void destroy();
+	public FutureClusterResponses execute(ClusterRequest clusterRequest);
 
-	public FutureClusterResponses execute(ClusterRequest clusterRequest)
-		throws SystemException;
+	public InetAddress getBindInetAddress();
 
-	public void execute(
-			ClusterRequest clusterRequest,
-			ClusterResponseCallback clusterResponseCallback)
-		throws SystemException;
-
-	public void execute(
-			ClusterRequest clusterRequest,
-			ClusterResponseCallback clusterResponseCallback, long timeout,
-			TimeUnit timeUnit)
-		throws SystemException;
+	public NetworkInterface getBindNetworkInterface();
 
 	public List<ClusterEventListener> getClusterEventListeners();
 
-	public List<Address> getClusterNodeAddresses();
-
 	public List<ClusterNode> getClusterNodes();
 
-	public ClusterNode getLocalClusterNode() throws SystemException;
-
-	public Address getLocalClusterNodeAddress();
-
-	public void initialize();
-
-	public boolean isClusterNodeAlive(Address address);
+	public ClusterNode getLocalClusterNode();
 
 	public boolean isClusterNodeAlive(String clusterNodeId);
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,11 +14,14 @@
 
 package com.liferay.portal.kernel.cluster;
 
+import com.liferay.portal.kernel.concurrent.ConcurrentHashSet;
+
 import java.io.Serializable;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -26,27 +29,25 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class ClusterNodeResponses implements Serializable {
 
-	public static final ClusterNodeResponses EMPTY_CLUSTER_NODE_RESPONSES =
-		new ClusterNodeResponses();
+	public ClusterNodeResponses(Set<String> expectedReplyNodeIds) {
+		_expectedReplyNodeIds = new ConcurrentHashSet<>(expectedReplyNodeIds);
+	}
 
-	public void addClusterResponse(ClusterNodeResponse clusterNodeResponse) {
-		_clusterResponsesByAddress.put(
-			clusterNodeResponse.getAddress(), clusterNodeResponse);
-
+	public boolean addClusterResponse(ClusterNodeResponse clusterNodeResponse) {
 		ClusterNode clusterNode = clusterNodeResponse.getClusterNode();
 
-		_clusterResponsesByClusterNode.put(
-			clusterNode.getClusterNodeId(), clusterNodeResponse);
+		String clusterNodeId = clusterNode.getClusterNodeId();
 
-		_clusterResponsesQueue.offer(clusterNodeResponse);
-	}
+		if (_expectedReplyNodeIds.remove(clusterNodeId)) {
+			_clusterResponsesByClusterNode.put(
+				clusterNodeId, clusterNodeResponse);
 
-	public ClusterNodeResponse getClusterResponse(Address address) {
-		return _clusterResponsesByAddress.get(address);
-	}
+			_clusterResponsesQueue.offer(clusterNodeResponse);
 
-	public ClusterNodeResponse getClusterResponse(ClusterNode clusterNode) {
-		return getClusterResponse(clusterNode.getClusterNodeId());
+			return true;
+		}
+
+		return false;
 	}
 
 	public ClusterNodeResponse getClusterResponse(String clusterNodeId) {
@@ -61,11 +62,10 @@ public class ClusterNodeResponses implements Serializable {
 		return _clusterResponsesByClusterNode.size();
 	}
 
-	private Map<Address, ClusterNodeResponse> _clusterResponsesByAddress =
-		new HashMap<Address, ClusterNodeResponse>();
-	private Map<String, ClusterNodeResponse> _clusterResponsesByClusterNode =
-		new HashMap<String, ClusterNodeResponse>();
-	private BlockingQueue<ClusterNodeResponse> _clusterResponsesQueue =
-		new LinkedBlockingQueue<ClusterNodeResponse>();
+	private final Map<String, ClusterNodeResponse>
+		_clusterResponsesByClusterNode = new ConcurrentHashMap<>();
+	private final BlockingQueue<ClusterNodeResponse> _clusterResponsesQueue =
+		new LinkedBlockingQueue<>();
+	private final Set<String> _expectedReplyNodeIds;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,12 @@
 
 package com.liferay.portal.kernel.webdav;
 
-import com.liferay.portal.NoSuchGroupException;
-import com.liferay.portal.NoSuchUserException;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
 import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -31,24 +31,37 @@ import com.liferay.portal.kernel.xml.Namespace;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.GroupConstants;
+import com.liferay.portal.model.Portlet;
 import com.liferay.portal.model.User;
 import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.util.comparator.GroupFriendlyURLComparator;
+import com.liferay.portlet.documentlibrary.util.DL;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceReference;
+import com.liferay.registry.ServiceRegistration;
+import com.liferay.registry.ServiceTrackerCustomizer;
+import com.liferay.registry.collections.ServiceRegistrationMap;
+import com.liferay.registry.collections.ServiceRegistrationMapImpl;
+import com.liferay.registry.collections.ServiceTrackerMap;
+import com.liferay.registry.collections.ServiceTrackerMapFactory;
+import com.liferay.registry.collections.ServiceTrackerMapFactoryUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Alexander Chow
+ * @author Raymond Augé
  */
 public class WebDAVUtil {
 
@@ -62,7 +75,7 @@ public class WebDAVUtil {
 	public static final String TOKEN_PREFIX = "opaquelocktoken:";
 
 	public static void addStorage(WebDAVStorage storage) {
-		_instance._addStorage(storage);
+		getInstance()._addStorage(storage);
 	}
 
 	public static Namespace createNamespace(String prefix, String uri) {
@@ -82,7 +95,7 @@ public class WebDAVUtil {
 	}
 
 	public static void deleteStorage(WebDAVStorage storage) {
-		_instance._deleteStorage(storage);
+		getInstance()._deleteStorage(storage);
 	}
 
 	public static long getDepth(HttpServletRequest request) {
@@ -135,24 +148,20 @@ public class WebDAVUtil {
 
 			String name = pathArray[0];
 
-			try {
-				Group group = GroupLocalServiceUtil.getFriendlyURLGroup(
-					companyId, StringPool.SLASH + name);
+			Group group = GroupLocalServiceUtil.fetchFriendlyURLGroup(
+				companyId, StringPool.SLASH + name);
 
+			if (group != null) {
 				return group.getGroupId();
 			}
-			catch (NoSuchGroupException nsge) {
-			}
 
-			try {
-				User user = UserLocalServiceUtil.getUserByScreenName(
-					companyId, name);
+			User user = UserLocalServiceUtil.fetchUserByScreenName(
+				companyId, name);
 
-				Group group = user.getGroup();
+			if (user != null) {
+				group = user.getGroup();
 
 				return group.getGroupId();
-			}
-			catch (NoSuchUserException nsue) {
 			}
 		}
 		catch (Exception e) {
@@ -173,7 +182,7 @@ public class WebDAVUtil {
 		// Guest
 
 		if (user.isDefaultUser()) {
-			List<Group> groups = new ArrayList<Group>();
+			List<Group> groups = new ArrayList<>();
 
 			Group group = GroupLocalServiceUtil.getGroup(
 				user.getCompanyId(), GroupConstants.GUEST);
@@ -185,17 +194,19 @@ public class WebDAVUtil {
 
 		// Communities
 
-		LinkedHashMap<String, Object> params =
-			new LinkedHashMap<String, Object>();
+		Set<Group> groups = new HashSet<>();
+
+		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
 		params.put("usersGroups", user.getUserId());
 
-		OrderByComparator orderByComparator = new GroupFriendlyURLComparator(
-			true);
+		OrderByComparator<Group> orderByComparator =
+			new GroupFriendlyURLComparator(true);
 
-		List<Group> groups = GroupLocalServiceUtil.search(
-			user.getCompanyId(), null, null, params, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, orderByComparator);
+		groups.addAll(
+			GroupLocalServiceUtil.search(
+				user.getCompanyId(), null, null, params, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, orderByComparator));
 
 		// Organizations
 
@@ -209,9 +220,17 @@ public class WebDAVUtil {
 			groups.add(user.getGroup());
 		}
 
-		Collections.sort(groups, orderByComparator);
+		List<Group> groupsList = new ArrayList<>(groups);
 
-		return groups;
+		Collections.sort(groupsList, orderByComparator);
+
+		return groupsList;
+	}
+
+	public static WebDAVUtil getInstance() {
+		PortalRuntimePermission.checkGetBeanProperty(WebDAVUtil.class);
+
+		return _instance;
 	}
 
 	public static String getLockUuid(HttpServletRequest request)
@@ -263,16 +282,27 @@ public class WebDAVUtil {
 			return StringPool.BLANK;
 		}
 		else {
-			return pathArray[pathArray.length - 1];
+			return HttpUtil.decodeURL(pathArray[pathArray.length - 1]);
 		}
 	}
 
 	public static WebDAVStorage getStorage(String token) {
-		return _instance._getStorage(token);
+		return getInstance()._getStorage(token);
+	}
+
+	public static String getStorageToken(Portlet portlet) {
+		WebDAVStorage webDAVStorageInstance =
+			portlet.getWebDAVStorageInstance();
+
+		if (webDAVStorageInstance == null) {
+			return null;
+		}
+
+		return webDAVStorageInstance.getToken();
 	}
 
 	public static Collection<String> getStorageTokens() {
-		return _instance._getStorageTokens();
+		return getInstance()._getStorageTokens();
 	}
 
 	public static long getTimeout(HttpServletRequest request) {
@@ -300,35 +330,121 @@ public class WebDAVUtil {
 	}
 
 	public static boolean isOverwrite(HttpServletRequest request) {
-		return _instance._isOverwrite(request);
+		return getInstance()._isOverwrite(request);
+	}
+
+	public static String stripManualCheckInRequiredPath(String url) {
+		return stripToken(url, DL.MANUAL_CHECK_IN_REQUIRED_PATH);
+	}
+
+	public static String stripOfficeExtension(String url) {
+		String strippedUrl = stripToken(url, DL.OFFICE_EXTENSION_PATH);
+
+		if (strippedUrl.length() != url.length()) {
+			strippedUrl = FileUtil.stripExtension(strippedUrl);
+		}
+
+		return strippedUrl;
+	}
+
+	public static String stripToken(String url, String token) {
+		if (Validator.isNull(url)) {
+			return StringPool.BLANK;
+		}
+
+		int index = url.indexOf(token);
+
+		if (index >= 0) {
+			url =
+				url.substring(0, index) + url.substring(index + token.length());
+		}
+
+		return url;
 	}
 
 	private WebDAVUtil() {
-		_storageMap = new TreeMap<String, WebDAVStorage>();
+		ServiceTrackerMapFactory serviceTrackerMapFactory =
+			ServiceTrackerMapFactoryUtil.getServiceTrackerMapFactory();
+
+		_storages = serviceTrackerMapFactory.singleValueMap(
+			WebDAVStorage.class, "webdav.storage.token",
+			new ServiceTrackerCustomizer<WebDAVStorage, WebDAVStorage>() {
+
+				@Override
+				public WebDAVStorage addingService(
+					ServiceReference<WebDAVStorage> serviceReference) {
+
+					Registry registry = RegistryUtil.getRegistry();
+
+					WebDAVStorage webDAVStorage = registry.getService(
+						serviceReference);
+
+					setToken(serviceReference, webDAVStorage);
+
+					return webDAVStorage;
+				}
+
+				@Override
+				public void modifiedService(
+					ServiceReference<WebDAVStorage> serviceReference,
+					WebDAVStorage webDAVStorage) {
+
+					setToken(serviceReference, webDAVStorage);
+				}
+
+				@Override
+				public void removedService(
+					ServiceReference<WebDAVStorage> serviceReference,
+					WebDAVStorage webDAVStorage) {
+				}
+
+				protected void setToken(
+					ServiceReference<WebDAVStorage> serviceReference,
+					WebDAVStorage webDAVStorage) {
+
+					String token = (String)serviceReference.getProperty(
+						"webdav.storage.token");
+
+					webDAVStorage.setToken(token);
+				}
+
+			});
+
+		_storages.open();
 	}
 
 	private void _addStorage(WebDAVStorage storage) {
-		_storageMap.put(storage.getToken(), storage);
+		Registry registry = RegistryUtil.getRegistry();
+
+		ServiceRegistration<WebDAVStorage> serviceRegistration =
+			registry.registerService(WebDAVStorage.class, storage);
+
+		_serviceRegistrations.put(storage, serviceRegistration);
 	}
 
 	private void _deleteStorage(WebDAVStorage storage) {
-		if (storage != null) {
-			_storageMap.remove(storage.getToken());
+		ServiceRegistration<WebDAVStorage> serviceRegistration =
+			_serviceRegistrations.remove(storage);
+
+		if (serviceRegistration != null) {
+			serviceRegistration.unregister();
 		}
 	}
 
 	private WebDAVStorage _getStorage(String token) {
-		return _storageMap.get(token);
+		return _storages.getService(token);
 	}
 
 	private Collection<String> _getStorageTokens() {
-		return _storageMap.keySet();
+		return _storages.keySet();
 	}
 
 	private boolean _isOverwrite(HttpServletRequest request) {
 		String value = GetterUtil.getString(request.getHeader("Overwrite"));
 
-		if (value.equalsIgnoreCase("F") || !GetterUtil.getBoolean(value)) {
+		if (StringUtil.equalsIgnoreCase(value, "F") ||
+			!GetterUtil.getBoolean(value)) {
+
 			return false;
 		}
 		else {
@@ -336,10 +452,12 @@ public class WebDAVUtil {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(WebDAVUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(WebDAVUtil.class);
 
-	private static WebDAVUtil _instance = new WebDAVUtil();
+	private static final WebDAVUtil _instance = new WebDAVUtil();
 
-	private Map<String, WebDAVStorage> _storageMap;
+	private final ServiceRegistrationMap<WebDAVStorage> _serviceRegistrations =
+		new ServiceRegistrationMapImpl<>();
+	private final ServiceTrackerMap<String, WebDAVStorage> _storages;
 
 }

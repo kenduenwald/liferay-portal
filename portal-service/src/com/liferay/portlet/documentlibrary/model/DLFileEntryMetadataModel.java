@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +13,8 @@
  */
 
 package com.liferay.portlet.documentlibrary.model;
+
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.model.BaseModel;
@@ -36,6 +38,7 @@ import java.io.Serializable;
  * @see com.liferay.portlet.documentlibrary.model.impl.DLFileEntryMetadataModelImpl
  * @generated
  */
+@ProviderType
 public interface DLFileEntryMetadataModel extends BaseModel<DLFileEntryMetadata> {
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -115,20 +118,6 @@ public interface DLFileEntryMetadataModel extends BaseModel<DLFileEntryMetadata>
 	public void setDDMStructureId(long DDMStructureId);
 
 	/**
-	 * Returns the file entry type ID of this document library file entry metadata.
-	 *
-	 * @return the file entry type ID of this document library file entry metadata
-	 */
-	public long getFileEntryTypeId();
-
-	/**
-	 * Sets the file entry type ID of this document library file entry metadata.
-	 *
-	 * @param fileEntryTypeId the file entry type ID of this document library file entry metadata
-	 */
-	public void setFileEntryTypeId(long fileEntryTypeId);
-
-	/**
 	 * Returns the file entry ID of this document library file entry metadata.
 	 *
 	 * @return the file entry ID of this document library file entry metadata
@@ -156,35 +145,61 @@ public interface DLFileEntryMetadataModel extends BaseModel<DLFileEntryMetadata>
 	 */
 	public void setFileVersionId(long fileVersionId);
 
+	@Override
 	public boolean isNew();
 
+	@Override
 	public void setNew(boolean n);
 
+	@Override
 	public boolean isCachedModel();
 
+	@Override
 	public void setCachedModel(boolean cachedModel);
 
+	@Override
 	public boolean isEscapedModel();
 
+	@Override
 	public Serializable getPrimaryKeyObj();
 
+	@Override
 	public void setPrimaryKeyObj(Serializable primaryKeyObj);
 
+	@Override
 	public ExpandoBridge getExpandoBridge();
 
+	@Override
+	public void setExpandoBridgeAttributes(BaseModel<?> baseModel);
+
+	@Override
+	public void setExpandoBridgeAttributes(ExpandoBridge expandoBridge);
+
+	@Override
 	public void setExpandoBridgeAttributes(ServiceContext serviceContext);
 
+	@Override
 	public Object clone();
 
-	public int compareTo(DLFileEntryMetadata dlFileEntryMetadata);
+	@Override
+	public int compareTo(
+		com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata dlFileEntryMetadata);
 
+	@Override
 	public int hashCode();
 
-	public CacheModel<DLFileEntryMetadata> toCacheModel();
+	@Override
+	public CacheModel<com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata> toCacheModel();
 
-	public DLFileEntryMetadata toEscapedModel();
+	@Override
+	public com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata toEscapedModel();
 
+	@Override
+	public com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata toUnescapedModel();
+
+	@Override
 	public String toString();
 
+	@Override
 	public String toXmlString();
 }

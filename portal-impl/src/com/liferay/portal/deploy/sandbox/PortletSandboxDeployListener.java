@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -38,7 +38,7 @@ public class PortletSandboxDeployListener
 
 		String portalWebDir = PortalUtil.getPortalWebDir();
 
-		auiTaglibDTD = portalWebDir + "/WEB-INF/tld/aui.tld";
+		auiTaglibDTD = portalWebDir + "/WEB-INF/tld/liferay-aui.tld";
 		portletTaglibDTD = portalWebDir + "/WEB-INF/tld/liferay-portlet.tld";
 		portletExtTaglibDTD =
 			portalWebDir + "/WEB-INF/tld/liferay-portlet-ext.tld";
@@ -47,7 +47,7 @@ public class PortletSandboxDeployListener
 		uiTaglibDTD = portalWebDir + "/WEB-INF/tld/liferay-ui.tld";
 		utilTaglibDTD = portalWebDir + "/WEB-INF/tld/liferay-util.tld";
 
-		jars = new ArrayList<String>();
+		jars = new ArrayList<>();
 
 		String portalLibDir = PortalUtil.getPortalLibDir();
 
@@ -58,6 +58,7 @@ public class PortletSandboxDeployListener
 		jars.add(portalLibDir + "/util-taglib.jar");
 	}
 
+	@Override
 	public void deploy(File dir) throws SandboxDeployException {
 		_sandboxHandler.deploy(dir);
 	}
@@ -69,10 +70,11 @@ public class PortletSandboxDeployListener
 		return _sandboxHandler.getDisplayName(displayName);
 	}
 
+	@Override
 	public void undeploy(File dir) throws SandboxDeployException {
 		_sandboxHandler.undeploy(dir);
 	}
 
-	private SandboxHandler _sandboxHandler;
+	private final SandboxHandler _sandboxHandler;
 
 }

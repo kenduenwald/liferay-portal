@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,17 +14,21 @@
 
 package com.liferay.portlet.social.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class is used by SOAP remote services.
+ * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.social.service.http.SocialActivityServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.social.service.http.SocialActivityServiceSoap
  * @generated
  */
+@ProviderType
 public class SocialActivitySoap implements Serializable {
 	public static SocialActivitySoap toSoapModel(SocialActivity model) {
 		SocialActivitySoap soapModel = new SocialActivitySoap();
@@ -34,9 +38,12 @@ public class SocialActivitySoap implements Serializable {
 		soapModel.setCompanyId(model.getCompanyId());
 		soapModel.setUserId(model.getUserId());
 		soapModel.setCreateDate(model.getCreateDate());
+		soapModel.setActivitySetId(model.getActivitySetId());
 		soapModel.setMirrorActivityId(model.getMirrorActivityId());
 		soapModel.setClassNameId(model.getClassNameId());
 		soapModel.setClassPK(model.getClassPK());
+		soapModel.setParentClassNameId(model.getParentClassNameId());
+		soapModel.setParentClassPK(model.getParentClassPK());
 		soapModel.setType(model.getType());
 		soapModel.setExtraData(model.getExtraData());
 		soapModel.setReceiverUserId(model.getReceiverUserId());
@@ -132,6 +139,14 @@ public class SocialActivitySoap implements Serializable {
 		_createDate = createDate;
 	}
 
+	public long getActivitySetId() {
+		return _activitySetId;
+	}
+
+	public void setActivitySetId(long activitySetId) {
+		_activitySetId = activitySetId;
+	}
+
 	public long getMirrorActivityId() {
 		return _mirrorActivityId;
 	}
@@ -154,6 +169,22 @@ public class SocialActivitySoap implements Serializable {
 
 	public void setClassPK(long classPK) {
 		_classPK = classPK;
+	}
+
+	public long getParentClassNameId() {
+		return _parentClassNameId;
+	}
+
+	public void setParentClassNameId(long parentClassNameId) {
+		_parentClassNameId = parentClassNameId;
+	}
+
+	public long getParentClassPK() {
+		return _parentClassPK;
+	}
+
+	public void setParentClassPK(long parentClassPK) {
+		_parentClassPK = parentClassPK;
 	}
 
 	public int getType() {
@@ -185,9 +216,12 @@ public class SocialActivitySoap implements Serializable {
 	private long _companyId;
 	private long _userId;
 	private long _createDate;
+	private long _activitySetId;
 	private long _mirrorActivityId;
 	private long _classNameId;
 	private long _classPK;
+	private long _parentClassNameId;
+	private long _parentClassPK;
 	private int _type;
 	private String _extraData;
 	private long _receiverUserId;

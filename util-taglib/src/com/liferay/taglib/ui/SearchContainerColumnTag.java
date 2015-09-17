@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -52,6 +52,10 @@ public abstract class SearchContainerColumnTag
 		return name;
 	}
 
+	public boolean getTruncate() {
+		return truncate;
+	}
+
 	public String getValign() {
 		return valign;
 	}
@@ -76,6 +80,10 @@ public abstract class SearchContainerColumnTag
 		this.name = name;
 	}
 
+	public void setTruncate(boolean truncate) {
+		this.truncate = truncate;
+	}
+
 	public void setValign(String valign) {
 		this.valign = valign;
 	}
@@ -85,6 +93,7 @@ public abstract class SearchContainerColumnTag
 	protected String cssClass = SearchEntry.DEFAULT_CSS_CLASS;
 	protected int index = -1;
 	protected String name = StringPool.BLANK;
+	protected boolean truncate = false;
 	protected String valign = SearchEntry.DEFAULT_VALIGN;
 
 }

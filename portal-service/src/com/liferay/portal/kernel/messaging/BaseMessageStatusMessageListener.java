@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,6 @@ package com.liferay.portal.kernel.messaging;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.sender.MessageSender;
 import com.liferay.portal.kernel.messaging.sender.SingleDestinationMessageSender;
 
 /**
@@ -26,20 +25,7 @@ import com.liferay.portal.kernel.messaging.sender.SingleDestinationMessageSender
 public abstract class BaseMessageStatusMessageListener
 	implements MessageListener {
 
-	public BaseMessageStatusMessageListener() {
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public BaseMessageStatusMessageListener(
-		SingleDestinationMessageSender statusSender,
-		MessageSender responseSender) {
-
-		_statusSender = statusSender;
-		_responseSender = responseSender;
-	}
-
+	@Override
 	public void receive(Message message) {
 		MessageStatus messageStatus = new MessageStatus();
 
@@ -61,10 +47,6 @@ public abstract class BaseMessageStatusMessageListener
 		}
 	}
 
-	public void setResponseSender(MessageSender responseSender) {
-		_responseSender = responseSender;
-	}
-
 	public void setStatusSender(SingleDestinationMessageSender statusSender) {
 		_statusSender = statusSender;
 	}
@@ -73,13 +55,9 @@ public abstract class BaseMessageStatusMessageListener
 			Message message, MessageStatus messageStatus)
 		throws Exception;
 
-	protected MessageSender getResponseSender() {
-		return _responseSender;
-	}
+	private static final Log _log = LogFactoryUtil.getLog(
+		BaseMessageStatusMessageListener.class);
 
-	private static Log _log = LogFactoryUtil.getLog(BaseMessageListener.class);
-
-	private MessageSender _responseSender;
 	private SingleDestinationMessageSender _statusSender;
 
 }

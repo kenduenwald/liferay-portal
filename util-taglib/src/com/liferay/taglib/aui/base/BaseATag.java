@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,13 +23,17 @@ import javax.servlet.jsp.JspException;
  * @author Julio Camarero
  * @generated
  */
-public class BaseATag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
 		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
 
 		return super.doStartTag();
+	}
+
+	public java.lang.String getAriaRole() {
+		return _ariaRole;
 	}
 
 	public java.lang.String getCssClass() {
@@ -44,6 +48,10 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 		return _href;
 	}
 
+	public java.lang.String getIconCssClass() {
+		return _iconCssClass;
+	}
+
 	public java.lang.String getId() {
 		return _id;
 	}
@@ -56,6 +64,10 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 		return _lang;
 	}
 
+	public boolean getLocalizeLabel() {
+		return _localizeLabel;
+	}
+
 	public java.lang.String getOnClick() {
 		return _onClick;
 	}
@@ -66,6 +78,12 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 
 	public java.lang.String getTitle() {
 		return _title;
+	}
+
+	public void setAriaRole(java.lang.String ariaRole) {
+		_ariaRole = ariaRole;
+
+		setScopedAttribute("ariaRole", ariaRole);
 	}
 
 	public void setCssClass(java.lang.String cssClass) {
@@ -86,6 +104,12 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 		setScopedAttribute("href", href);
 	}
 
+	public void setIconCssClass(java.lang.String iconCssClass) {
+		_iconCssClass = iconCssClass;
+
+		setScopedAttribute("iconCssClass", iconCssClass);
+	}
+
 	public void setId(java.lang.String id) {
 		_id = id;
 
@@ -102,6 +126,12 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 		_lang = lang;
 
 		setScopedAttribute("lang", lang);
+	}
+
+	public void setLocalizeLabel(boolean localizeLabel) {
+		_localizeLabel = localizeLabel;
+
+		setScopedAttribute("localizeLabel", localizeLabel);
 	}
 
 	public void setOnClick(java.lang.String onClick) {
@@ -124,12 +154,17 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
+		_ariaRole = null;
 		_cssClass = null;
 		_data = null;
 		_href = null;
+		_iconCssClass = null;
 		_id = null;
 		_label = null;
 		_lang = null;
+		_localizeLabel = true;
 		_onClick = null;
 		_target = null;
 		_title = null;
@@ -153,12 +188,15 @@ public class BaseATag extends com.liferay.taglib.util.IncludeTag {
 	private static final String _START_PAGE =
 		"/html/taglib/aui/a/start.jsp";
 
+	private java.lang.String _ariaRole = null;
 	private java.lang.String _cssClass = null;
 	private java.util.Map<java.lang.String, java.lang.Object> _data = null;
 	private java.lang.String _href = null;
+	private java.lang.String _iconCssClass = null;
 	private java.lang.String _id = null;
 	private java.lang.String _label = null;
 	private java.lang.String _lang = null;
+	private boolean _localizeLabel = true;
 	private java.lang.String _onClick = null;
 	private java.lang.String _target = null;
 	private java.lang.String _title = null;

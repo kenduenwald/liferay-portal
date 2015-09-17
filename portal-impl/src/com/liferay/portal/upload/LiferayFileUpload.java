@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -29,9 +29,11 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 /**
- * @author Brian Myunghun Kim
- * @author Brian Wing Shun Chan
+ * @author     Brian Myunghun Kim
+ * @author     Brian Wing Shun Chan
+ * @deprecated As of 7.0.0, with no direct replacement
  */
+@Deprecated
 public class LiferayFileUpload extends ServletFileUpload {
 
 	public static final String FILE_NAME =
@@ -48,18 +50,18 @@ public class LiferayFileUpload extends ServletFileUpload {
 	}
 
 	@Override
-	public List<LiferayFileItem> parseRequest(HttpServletRequest request)
+	public List<FileItem> parseRequest(HttpServletRequest request)
 		throws FileUploadException {
 
-		_session.removeAttribute(LiferayFileUpload.FILE_NAME);
 		_session.removeAttribute(LiferayFileUpload.PERCENT);
 
 		return super.parseRequest(request);
 	}
 
 	/**
-	 * @deprecated
+	 * @deprecated As of 6.1.0
 	 */
+	@Deprecated
 	@Override
 	@SuppressWarnings("rawtypes")
 	protected FileItem createItem(Map headers, boolean formField)
@@ -77,6 +79,6 @@ public class LiferayFileUpload extends ServletFileUpload {
 		return item;
 	}
 
-	private HttpSession _session;
+	private final HttpSession _session;
 
 }

@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,35 +16,19 @@
 
 <%@ include file="/html/taglib/ui/user_display/init.jsp" %>
 
-<%
-if (Validator.isNull(url) && (userDisplay != null)) {
-	url = userDisplay.getDisplayURL(themeDisplay);
-}
-%>
-
-<div class="taglib-user-display display-style-<%= displayStyle %>">
-
-	<%
-	String taglibAlt = (userDisplay != null) ? HtmlUtil.escapeAttribute(userDisplay.getFullName()) : LanguageUtil.get(pageContext, "generic-portrait");
-
-	String taglibSrc = null;
-
-	if (userDisplay != null) {
-		taglibSrc = userDisplay.getPortraitURL(themeDisplay);
-	}
-	else {
-		taglibSrc = UserConstants.getPortraitURL(themeDisplay.getPathImage(), true, 0);
-	}
-	%>
-
+<div class="display-style-<%= displayStyle %> taglib-user-display">
 	<aui:a href="<%= url %>">
 		<span class="user-profile-image">
-			<img alt="<%= taglibAlt %>" class="avatar" src="<%= HtmlUtil.escape(taglibSrc) %>" width="65" />
+			<span class="avatar <%= imageCssClass %>" style="background-image: url('<%= HtmlUtil.escape(taglibSrc) %>')"></span>
 		</span>
 
-		<span class="user-name">
-			<%= (userDisplay != null) ? HtmlUtil.escape(userDisplay.getFullName()) : HtmlUtil.escape(userName) %>
-		</span>
+		<c:if test="<%= showUserName %>">
+			<span class="user-name">
+				<%= (userDisplay != null) ? HtmlUtil.escape(userDisplay.getFullName()) : HtmlUtil.escape(userName) %>
+			</span>
+		</c:if>
 	</aui:a>
 
-	<div class="user-details">
+	<c:if test="<%= showUserDetails %>">
+		<div class="user-details">
+	</c:if>

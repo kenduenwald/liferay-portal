@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -43,7 +43,7 @@ long frameworkVersionId = BeanParamUtil.getLong(frameworkVersion, request, "fram
 		<liferay-ui:message key="name" />
 	</td>
 	<td>
-		<liferay-ui:input-field bean="<%= frameworkVersion %>" field="name" model="<%= SCFrameworkVersion.class %>" />
+		<liferay-ui:input-field autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) %>" bean="<%= frameworkVersion %>" field="name" model="<%= SCFrameworkVersion.class %>" />
 	</td>
 </tr>
 <tr>
@@ -83,23 +83,23 @@ long frameworkVersionId = BeanParamUtil.getLong(frameworkVersion, request, "fram
 
 </table>
 
-<br />
+<div class="btn-toolbar">
+	<aui:button cssClass="btn-primary" type="submit" value="save" />
 
-<input type="submit" value="<liferay-ui:message key="save" />" />
+	<%
+	String taglibCancel = "location.href = '" + HtmlUtil.escape(PortalUtil.escapeRedirect(redirect)) + "';";
+	%>
 
-<input type="button" value="<liferay-ui:message key="cancel" />" onClick="location.href = '<%= HtmlUtil.escape(PortalUtil.escapeRedirect(redirect)) %>';" />
-
+	<aui:button onClick="<%= taglibCancel %>" value="cancel" />
+</div>
 </form>
 
 <aui:script>
 	function <portlet:namespace />saveFrameworkVersion() {
-		document.<portlet:namespace />fm.<portlet:namespace /><%= Constants.CMD %>.value = "<%= (frameworkVersion == null) ? Constants.ADD : Constants.UPDATE %>";
+		document.<portlet:namespace />fm.<portlet:namespace /><%= Constants.CMD %>.value = '<%= (frameworkVersion == null) ? Constants.ADD : Constants.UPDATE %>';
+
 		submitForm(document.<portlet:namespace />fm);
 	}
-
-	<c:if test="<%= windowState.equals(WindowState.MAXIMIZED) %>">
-		Liferay.Util.focusFormField(document.<portlet:namespace />fm.<portlet:namespace />name);
-	</c:if>
 </aui:script>
 
 <%
@@ -108,13 +108,13 @@ PortletURL portletURL = renderResponse.createRenderURL();
 portletURL.setParameter("struts_action", "/software_catalog/view");
 portletURL.setParameter("tabs1", "framework_versions");
 
-PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(pageContext, "framework-versions"), portletURL.toString());
+PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "framework-versions"), portletURL.toString());
 
 if (frameworkVersion != null) {
 	PortalUtil.addPortletBreadcrumbEntry(request, frameworkVersion.getName(), null);
-	PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(pageContext, "edit"), currentURL);
+	PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "edit"), currentURL);
 }
 else {
-	PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(pageContext, "add-framework-version"), currentURL);
+	PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "add-framework-version"), currentURL);
 }
 %>

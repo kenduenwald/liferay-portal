@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -43,23 +43,13 @@ import java.util.List;
  */
 public class ZipReaderImpl implements ZipReader {
 
-	static {
-		File.setDefaultArchiveDetector(
-			new DefaultArchiveDetector(
-				ArchiveDetector.ALL, "lar|" + ArchiveDetector.ALL.getSuffixes(),
-				new ZipDriver()));
-	}
-
 	public ZipReaderImpl(InputStream inputStream) throws IOException {
 		_zipFile = new File(FileUtil.createTempFile("zip"));
 
-		OutputStream outputStream = new FileOutputStream(_zipFile);
-
-		try {
+		try (OutputStream outputStream = new FileOutputStream(_zipFile)) {
 			File.cat(inputStream, outputStream);
 		}
 		finally {
-			outputStream.close();
 			inputStream.close();
 		}
 	}
@@ -68,6 +58,7 @@ public class ZipReaderImpl implements ZipReader {
 		_zipFile = new File(file);
 	}
 
+	@Override
 	public void close() {
 		try {
 			File.umount(_zipFile);
@@ -82,10 +73,15 @@ public class ZipReaderImpl implements ZipReader {
 		}
 	}
 
+	@Override
 	public List<String> getEntries() {
-		List<String> folderEntries = new ArrayList<String>();
+		List<String> folderEntries = new ArrayList<>();
 
 		File[] files = (File[])_zipFile.listFiles();
+
+		if (files == null) {
+			return null;
+		}
 
 		for (File file : files) {
 			if (!file.isDirectory()) {
@@ -99,6 +95,7 @@ public class ZipReaderImpl implements ZipReader {
 		return folderEntries;
 	}
 
+	@Override
 	public byte[] getEntryAsByteArray(String name) {
 		if (Validator.isNull(name)) {
 			return null;
@@ -120,6 +117,7 @@ public class ZipReaderImpl implements ZipReader {
 		return bytes;
 	}
 
+	@Override
 	public InputStream getEntryAsInputStream(String name) {
 		if (Validator.isNull(name)) {
 			return null;
@@ -147,6 +145,7 @@ public class ZipReaderImpl implements ZipReader {
 		return null;
 	}
 
+	@Override
 	public String getEntryAsString(String name) {
 		if (Validator.isNull(name)) {
 			return null;
@@ -161,12 +160,13 @@ public class ZipReaderImpl implements ZipReader {
 		return null;
 	}
 
+	@Override
 	public List<String> getFolderEntries(String path) {
 		if (Validator.isNull(path)) {
 			return Collections.emptyList();
 		}
 
-		List<String> folderEntries = new ArrayList<String>();
+		List<String> folderEntries = new ArrayList<>();
 
 		File directory = new File(_zipFile.getPath() + StringPool.SLASH + path);
 
@@ -200,8 +200,17 @@ public class ZipReaderImpl implements ZipReader {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ZipReaderImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(ZipReaderImpl.class);
 
-	private File _zipFile;
+	static {
+		File.setDefaultArchiveDetector(
+			new DefaultArchiveDetector(
+				ArchiveDetector.ALL, "lar|" + ArchiveDetector.ALL.getSuffixes(),
+				new ZipDriver()));
+
+		TrueZIPHelperUtil.initialize();
+	}
+
+	private final File _zipFile;
 
 }

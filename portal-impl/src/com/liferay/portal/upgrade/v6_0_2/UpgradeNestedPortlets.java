@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,7 +18,6 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.model.PortletConstants;
 import com.liferay.portal.util.PortletKeys;
 
 import java.sql.Connection;
@@ -43,7 +42,7 @@ public class UpgradeNestedPortlets extends UpgradeProcess {
 		ResultSet rs = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(_GET_LAYOUT);
 
@@ -64,11 +63,12 @@ public class UpgradeNestedPortlets extends UpgradeProcess {
 						nestedColumnIds, StringPool.UNDERLINE);
 
 					if (underlineCount == _UNDERLINE_COUNT) {
-						String newNestedColumnIds = nestedColumnIds.replaceAll(
-							_pattern.pattern(), "_$1_$2");
+						String newNestedColumnIds =
+							"_" + matcher.group(1) + "_" + matcher.group(2);
 
-						newTypeSettings = newTypeSettings.replaceAll(
-							nestedColumnIds, newNestedColumnIds);
+						newTypeSettings = StringUtil.replace(
+							newTypeSettings, nestedColumnIds,
+							newNestedColumnIds);
 					}
 				}
 
@@ -89,7 +89,7 @@ public class UpgradeNestedPortlets extends UpgradeProcess {
 		PreparedStatement ps = null;
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(
 				"update Layout set typeSettings = ? where plid = " + plid);
@@ -106,13 +106,15 @@ public class UpgradeNestedPortlets extends UpgradeProcess {
 	private static final String _GET_LAYOUT =
 		"select plid, typeSettings from Layout where typeSettings like " +
 			"'%nested-column-ids=" + PortletKeys.NESTED_PORTLETS +
-				PortletConstants.INSTANCE_SEPARATOR + "%'";
+				UpgradeNestedPortlets._INSTANCE_SEPARATOR + "%'";
+
+	private static final String _INSTANCE_SEPARATOR = "_INSTANCE_";
 
 	private static final int _UNDERLINE_COUNT = StringUtil.count(
-		PortletConstants.INSTANCE_SEPARATOR, StringPool.UNDERLINE) + 1;
+		_INSTANCE_SEPARATOR, StringPool.UNDERLINE) + 1;
 
-	private static Pattern _pattern = Pattern.compile(
+	private static final Pattern _pattern = Pattern.compile(
 		"(" + PortletKeys.NESTED_PORTLETS +
-			PortletConstants.INSTANCE_SEPARATOR + "[^_,\\s=]+_)([^_,\\s=]+)");
+			_INSTANCE_SEPARATOR + "[^_,\\s=]+_)([^_,\\s=]+)");
 
 }

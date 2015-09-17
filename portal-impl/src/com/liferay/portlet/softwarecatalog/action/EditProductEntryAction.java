@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,10 +16,12 @@ package com.liferay.portlet.softwarecatalog.action;
 
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.Image;
@@ -66,8 +68,9 @@ public class EditProductEntryAction extends PortletAction {
 
 	@Override
 	public void processAction(
-			ActionMapping mapping, ActionForm form, PortletConfig portletConfig,
-			ActionRequest actionRequest, ActionResponse actionResponse)
+			ActionMapping actionMapping, ActionForm actionForm,
+			PortletConfig portletConfig, ActionRequest actionRequest,
+			ActionResponse actionResponse)
 		throws Exception {
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
@@ -88,7 +91,7 @@ public class EditProductEntryAction extends PortletAction {
 			if (e instanceof NoSuchProductEntryException ||
 				e instanceof PrincipalException) {
 
-				SessionErrors.add(actionRequest, e.getClass().getName());
+				SessionErrors.add(actionRequest, e.getClass());
 
 				setForward(actionRequest, "portlet.software_catalog.error");
 			}
@@ -101,7 +104,7 @@ public class EditProductEntryAction extends PortletAction {
 					 e instanceof ProductEntryShortDescriptionException ||
 					 e instanceof ProductEntryTypeException) {
 
-				SessionErrors.add(actionRequest, e.getClass().getName());
+				SessionErrors.add(actionRequest, e.getClass());
 			}
 			else {
 				throw e;
@@ -111,8 +114,9 @@ public class EditProductEntryAction extends PortletAction {
 
 	@Override
 	public ActionForward render(
-			ActionMapping mapping, ActionForm form, PortletConfig portletConfig,
-			RenderRequest renderRequest, RenderResponse renderResponse)
+			ActionMapping actionMapping, ActionForm actionForm,
+			PortletConfig portletConfig, RenderRequest renderRequest,
+			RenderResponse renderResponse)
 		throws Exception {
 
 		try {
@@ -122,17 +126,19 @@ public class EditProductEntryAction extends PortletAction {
 			if (e instanceof NoSuchProductEntryException ||
 				e instanceof PrincipalException) {
 
-				SessionErrors.add(renderRequest, e.getClass().getName());
+				SessionErrors.add(renderRequest, e.getClass());
 
-				return mapping.findForward("portlet.software_catalog.error");
+				return actionMapping.findForward(
+					"portlet.software_catalog.error");
 			}
 			else {
 				throw e;
 			}
 		}
 
-		return mapping.findForward(getForward(
-			renderRequest, "portlet.software_catalog.edit_product_entry"));
+		return actionMapping.findForward(
+			getForward(
+				renderRequest, "portlet.software_catalog.edit_product_entry"));
 	}
 
 	protected void deleteProductEntry(ActionRequest actionRequest)
@@ -155,10 +161,16 @@ public class EditProductEntryAction extends PortletAction {
 			UploadPortletRequest uploadPortletRequest, String imagePrefix)
 		throws Exception {
 
-		List<byte[]> images = new ArrayList<byte[]>();
+		List<byte[]> images = new ArrayList<>();
 
 		for (String name :
 				getSortedParameterNames(uploadPortletRequest, imagePrefix)) {
+
+			String contentType = uploadPortletRequest.getContentType(name);
+
+			if (!MimeTypesUtil.isWebImage(contentType)) {
+				throw new ProductEntryScreenshotsException();
+			}
 
 			int priority = GetterUtil.getInteger(
 				name.substring(imagePrefix.length()));
@@ -194,7 +206,7 @@ public class EditProductEntryAction extends PortletAction {
 				}
 			}
 
-			if ((bytes != null) && (bytes.length > 0)) {
+			if (ArrayUtil.isNotEmpty(bytes)) {
 				images.add(bytes);
 			}
 			else {
@@ -225,7 +237,7 @@ public class EditProductEntryAction extends PortletAction {
 			UploadPortletRequest uploadPortletRequest, String imagePrefix)
 		throws Exception {
 
-		List<String> parameterNames = new ArrayList<String>();
+		List<String> parameterNames = new ArrayList<>();
 
 		Enumeration<String> enu = uploadPortletRequest.getParameterNames();
 

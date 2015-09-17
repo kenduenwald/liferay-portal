@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,11 +19,11 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.util.PropsValues;
 
 import org.hibernate.dialect.DB2Dialect;
-import org.hibernate.dialect.DerbyDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.FirebirdDialect;
 import org.hibernate.dialect.HSQLDialect;
@@ -46,9 +46,11 @@ import org.hibernate.dialect.SybaseDialect;
  * @author Alexander Chow
  * @author Brian Wing Shun Chan
  */
+@DoPrivileged
 @SuppressWarnings("deprecation")
 public class DBFactoryImpl implements DBFactory {
 
+	@Override
 	public DB getDB() {
 		if (_db == null) {
 			try {
@@ -69,6 +71,7 @@ public class DBFactoryImpl implements DBFactory {
 		return _db;
 	}
 
+	@Override
 	public DB getDB(Object dialect) {
 		DB db = null;
 
@@ -79,12 +82,7 @@ public class DBFactoryImpl implements DBFactory {
 		}
 
 		if (dialect instanceof DB2Dialect) {
-			if (dialect instanceof DerbyDialect) {
-				db = DerbyDB.getInstance();
-			}
-			else {
-				db = DB2DB.getInstance();
-			}
+			db = DB2DB.getInstance();
 		}
 		else if (dialect instanceof HSQLDialect) {
 			db = HypersonicDB.getInstance();
@@ -134,14 +132,12 @@ public class DBFactoryImpl implements DBFactory {
 		return db;
 	}
 
+	@Override
 	public DB getDB(String type) {
 		DB db = null;
 
 		if (type.equals(DB.TYPE_DB2)) {
 			db = DB2DB.getInstance();
-		}
-		else if (type.equals(DB.TYPE_DERBY)) {
-			db = DerbyDB.getInstance();
 		}
 		else if (type.equals(DB.TYPE_FIREBIRD)) {
 			db = FirebirdDB.getInstance();
@@ -183,6 +179,7 @@ public class DBFactoryImpl implements DBFactory {
 		return db;
 	}
 
+	@Override
 	public void setDB(Object dialect) {
 		_db = getDB(dialect);
 
@@ -203,6 +200,7 @@ public class DBFactoryImpl implements DBFactory {
 		}
 	}
 
+	@Override
 	public void setDB(String type) {
 		if (_db != null) {
 			return;
@@ -224,7 +222,7 @@ public class DBFactoryImpl implements DBFactory {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(DBFactoryImpl.class);
+	private static final Log _log = LogFactoryUtil.getLog(DBFactoryImpl.class);
 
 	private static DB _db;
 

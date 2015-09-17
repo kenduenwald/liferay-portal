@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,22 @@
 
 package com.liferay.portal.action;
 
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.model.Layout;
 import com.liferay.portal.model.LayoutConstants;
 import com.liferay.portal.service.LayoutLocalServiceUtil;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.SessionTreeJSClicks;
+import com.liferay.portlet.PortalPreferences;
+import com.liferay.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.taglib.ui.util.SessionTreeJSClicks;
 
+import java.util.ConcurrentModificationException;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,8 +47,8 @@ public class SessionTreeJSClickAction extends Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping mapping, ActionForm form, HttpServletRequest request,
-			HttpServletResponse response)
+			ActionMapping actionMapping, ActionForm actionForm,
+			HttpServletRequest request, HttpServletResponse response)
 		throws Exception {
 
 		try {
@@ -72,16 +79,19 @@ public class SessionTreeJSClickAction extends Action {
 
 					for (Layout layout : layouts) {
 						SessionTreeJSClicks.openLayoutNodes(
-							request, treeId, layout.getPrivateLayout(),
+							request, treeId, layout.isPrivateLayout(),
 							layout.getLayoutId(), true);
 					}
 				}
 				else {
+					boolean recursive = ParamUtil.getBoolean(
+						request, "recursive");
+
 					Layout layout = LayoutLocalServiceUtil.getLayout(plid);
 
 					SessionTreeJSClicks.openLayoutNodes(
-						request, treeId, layout.getPrivateLayout(),
-						layout.getLayoutId(), true);
+						request, treeId, layout.isPrivateLayout(),
+						layout.getLayoutId(), recursive);
 				}
 			}
 			else if (cmd.equals("layoutCollapse")) {
@@ -100,16 +110,19 @@ public class SessionTreeJSClickAction extends Action {
 
 					for (Layout layout : layouts) {
 						SessionTreeJSClicks.closeLayoutNodes(
-							request, treeId, layout.getPrivateLayout(),
+							request, treeId, layout.isPrivateLayout(),
 							layout.getLayoutId(), true);
 					}
 				}
 				else {
+					boolean recursive = ParamUtil.getBoolean(
+						request, "recursive");
+
 					Layout layout = LayoutLocalServiceUtil.getLayout(plid);
 
 					SessionTreeJSClicks.closeLayoutNodes(
-						request, treeId, layout.getPrivateLayout(),
-						layout.getLayoutId(), true);
+						request, treeId, layout.isPrivateLayout(),
+						layout.getLayoutId(), recursive);
 				}
 			}
 			else if (cmd.equals("layoutUncollapse")) {
@@ -126,12 +139,67 @@ public class SessionTreeJSClickAction extends Action {
 				}
 			}
 
+			if (!cmd.isEmpty()) {
+				updateCheckedLayoutPlids(request, treeId);
+			}
+
+			response.setContentType(ContentTypes.APPLICATION_JSON);
+
+			PortalPreferences portalPreferences =
+				PortletPreferencesFactoryUtil.getPortalPreferences(request);
+
+			String json = portalPreferences.getValue(
+				SessionTreeJSClicks.class.getName(), treeId + "Plid");
+
+			ServletResponseUtil.write(response, json);
+
 			return null;
 		}
 		catch (Exception e) {
 			PortalUtil.sendError(e, request, response);
 
 			return null;
+		}
+	}
+
+	protected void updateCheckedLayoutPlids(
+		HttpServletRequest request, String treeId) {
+
+		long groupId = ParamUtil.getLong(request, "groupId");
+		boolean privateLayout = ParamUtil.getBoolean(request, "privateLayout");
+
+		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+
+		while (true) {
+			try {
+				PortalPreferences portalPreferences =
+					PortletPreferencesFactoryUtil.getPortalPreferences(request);
+
+				long[] checkedLayoutIds = StringUtil.split(
+					portalPreferences.getValue(
+						SessionTreeJSClicks.class.getName(), treeId),
+					0L);
+
+				for (long checkedLayoutId : checkedLayoutIds) {
+					Layout checkedLayout = LayoutLocalServiceUtil.fetchLayout(
+						groupId, privateLayout, checkedLayoutId);
+
+					if (checkedLayout == null) {
+						continue;
+					}
+
+					jsonArray.put(String.valueOf(checkedLayout.getPlid()));
+				}
+
+				portalPreferences.setValue(
+					SessionTreeJSClicks.class.getName(), treeId + "Plid",
+					jsonArray.toString());
+
+				return;
+			}
+			catch (ConcurrentModificationException cme) {
+				continue;
+			}
 		}
 	}
 

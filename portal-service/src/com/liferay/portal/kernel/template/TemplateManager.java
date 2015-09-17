@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,39 +14,56 @@
 
 package com.liferay.portal.kernel.template;
 
+import java.util.Map;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * @author Tina Tian
+ * @author Raymond Augé
  */
 public interface TemplateManager {
 
-	public static final String FREEMARKER = "FREEMARKER";
+	public void addContextObjects(
+		Map<String, Object> contextObjects,
+		Map<String, Object> newContextObjects);
 
-	public static final String VELOCITY = "VELOCITY";
+	public void addStaticClassSupport(
+		Map<String, Object> contextObjects, String variableName,
+		Class<?> variableClass);
 
-	public void clearCache();
+	public void addTaglibApplication(
+		Map<String, Object> contextObjects, String applicationName,
+		ServletContext servletContext);
 
-	public void clearCache(String templateId);
+	public void addTaglibFactory(
+		Map<String, Object> contextObjects, String taglibLiferayHash,
+		ServletContext servletContext);
+
+	public void addTaglibRequest(
+		Map<String, Object> contextObjects, String applicationName,
+		HttpServletRequest request, HttpServletResponse response);
+
+	public void addTaglibTheme(
+		Map<String, Object> contextObjects, String string,
+		HttpServletRequest request, HttpServletResponse response);
 
 	public void destroy();
 
-	public Template getTemplate(
-		String templateId, String templateContent, String errorTemplateId,
-		String errorTemplateContent, TemplateContextType templateContextType);
+	public void destroy(ClassLoader classLoader);
+
+	public String getName();
+
+	public String[] getRestrictedVariables();
 
 	public Template getTemplate(
-		String templateId, String templateContent, String errorTemplateId,
-		TemplateContextType templateContextType);
+		TemplateResource templateResource, boolean restricted);
 
 	public Template getTemplate(
-		String templateId, String templateContent,
-		TemplateContextType templateContextType);
-
-	public Template getTemplate(
-		String templateId, TemplateContextType templateContextType);
-
-	public String getTemplateManagerName();
-
-	public boolean hasTemplate(String templateId);
+		TemplateResource templateResource,
+		TemplateResource errorTemplateResource, boolean restricted);
 
 	public void init() throws TemplateException;
 

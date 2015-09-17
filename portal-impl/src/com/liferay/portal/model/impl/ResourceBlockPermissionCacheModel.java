@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,11 +14,18 @@
 
 package com.liferay.portal.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.model.CacheModel;
+import com.liferay.portal.model.MVCCModel;
 import com.liferay.portal.model.ResourceBlockPermission;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * The cache model class for representing ResourceBlockPermission in entity cache.
@@ -27,13 +34,53 @@ import java.io.Serializable;
  * @see ResourceBlockPermission
  * @generated
  */
+@ProviderType
 public class ResourceBlockPermissionCacheModel implements CacheModel<ResourceBlockPermission>,
-	Serializable {
+	Externalizable, MVCCModel {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof ResourceBlockPermissionCacheModel)) {
+			return false;
+		}
+
+		ResourceBlockPermissionCacheModel resourceBlockPermissionCacheModel = (ResourceBlockPermissionCacheModel)obj;
+
+		if ((resourceBlockPermissionId == resourceBlockPermissionCacheModel.resourceBlockPermissionId) &&
+				(mvccVersion == resourceBlockPermissionCacheModel.mvccVersion)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int hashCode = HashUtil.hash(0, resourceBlockPermissionId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(9);
+		StringBundler sb = new StringBundler(11);
 
-		sb.append("{resourceBlockPermissionId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", resourceBlockPermissionId=");
 		sb.append(resourceBlockPermissionId);
 		sb.append(", resourceBlockId=");
 		sb.append(resourceBlockId);
@@ -46,9 +93,11 @@ public class ResourceBlockPermissionCacheModel implements CacheModel<ResourceBlo
 		return sb.toString();
 	}
 
+	@Override
 	public ResourceBlockPermission toEntityModel() {
 		ResourceBlockPermissionImpl resourceBlockPermissionImpl = new ResourceBlockPermissionImpl();
 
+		resourceBlockPermissionImpl.setMvccVersion(mvccVersion);
 		resourceBlockPermissionImpl.setResourceBlockPermissionId(resourceBlockPermissionId);
 		resourceBlockPermissionImpl.setResourceBlockId(resourceBlockId);
 		resourceBlockPermissionImpl.setRoleId(roleId);
@@ -59,6 +108,26 @@ public class ResourceBlockPermissionCacheModel implements CacheModel<ResourceBlo
 		return resourceBlockPermissionImpl;
 	}
 
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+		resourceBlockPermissionId = objectInput.readLong();
+		resourceBlockId = objectInput.readLong();
+		roleId = objectInput.readLong();
+		actionIds = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		objectOutput.writeLong(mvccVersion);
+		objectOutput.writeLong(resourceBlockPermissionId);
+		objectOutput.writeLong(resourceBlockId);
+		objectOutput.writeLong(roleId);
+		objectOutput.writeLong(actionIds);
+	}
+
+	public long mvccVersion;
 	public long resourceBlockPermissionId;
 	public long resourceBlockId;
 	public long roleId;

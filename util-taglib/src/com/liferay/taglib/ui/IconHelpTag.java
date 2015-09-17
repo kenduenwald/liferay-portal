@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,9 +15,10 @@
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.servlet.taglib.FileAvailabilityUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.util.PwdGenerator;
+import com.liferay.taglib.FileAvailabilityUtil;
 
 import javax.servlet.jsp.JspWriter;
 
@@ -29,7 +30,7 @@ public class IconHelpTag extends IconTag {
 
 	@Override
 	protected String getPage() {
-		if (FileAvailabilityUtil.isAvailable(getServletContext(), _PAGE)) {
+		if (FileAvailabilityUtil.isAvailable(servletContext, _PAGE)) {
 			return _PAGE;
 		}
 		else {
@@ -39,12 +40,12 @@ public class IconHelpTag extends IconTag {
 
 	@Override
 	protected int processEndTag() throws Exception {
-		ThemeDisplay themeDisplay = (ThemeDisplay)pageContext.getAttribute(
-			"themeDisplay");
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		JspWriter jspWriter = pageContext.getOut();
 
-		String id = PwdGenerator.getPassword(PwdGenerator.KEY3, 4);
+		String id = StringUtil.randomId();
 
 		jspWriter.write("<span class=\"taglib-icon-help\"><img alt=\"\" ");
 		jspWriter.write("aria-labelledby=\"");
@@ -57,11 +58,11 @@ public class IconHelpTag extends IconTag {
 		jspWriter.write(themeDisplay.getPathThemeImages());
 		jspWriter.write("/portlet/help.png\" tabIndex=\"0\" ");
 		jspWriter.write("/><span ");
-		jspWriter.write("class=\"aui-helper-hidden-accessible tooltip-text\" ");
+		jspWriter.write("class=\"hide-accessible tooltip-text\" ");
 		jspWriter.write("id=\"");
 		jspWriter.write(id);
 		jspWriter.write("\" >");
-		jspWriter.write(LanguageUtil.get(pageContext, getMessage()));
+		jspWriter.write(LanguageUtil.get(request, getMessage()));
 		jspWriter.write("</span></span>");
 
 		return EVAL_PAGE;

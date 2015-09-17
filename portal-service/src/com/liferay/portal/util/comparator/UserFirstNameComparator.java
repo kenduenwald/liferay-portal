@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,13 +20,13 @@ import com.liferay.portal.model.User;
 /**
  * @author Brian Wing Shun Chan
  */
-public class UserFirstNameComparator extends OrderByComparator {
+public class UserFirstNameComparator extends OrderByComparator<User> {
 
 	public static final String ORDER_BY_ASC =
-		"User_.firstName ASC, User_.middleName ASC, User_.lastName ASC";
+		"firstName ASC, middleName ASC, lastName ASC";
 
 	public static final String ORDER_BY_DESC =
-		"User_.firstName DESC, User_.middleName DESC, User_.lastName DESC";
+		"firstName DESC, middleName DESC, lastName DESC";
 
 	public static final String[] ORDER_BY_FIELDS = {
 		"firstName", "middleName", "lastName"
@@ -41,18 +41,24 @@ public class UserFirstNameComparator extends OrderByComparator {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		User user1 = (User)obj1;
-		User user2 = (User)obj2;
+	public int compare(User user1, User user2) {
+		String firstName1 = user1.getFirstName();
+		String firstName2 = user2.getFirstName();
 
-		int value = user1.getFirstName().compareTo(user2.getFirstName());
+		int value = firstName1.compareTo(firstName2);
 
 		if (value == 0) {
-			value = user1.getMiddleName().compareTo(user2.getMiddleName());
+			String middleName1 = user1.getMiddleName();
+			String middleName2 = user2.getMiddleName();
+
+			value = middleName1.compareTo(middleName2);
 		}
 
 		if (value == 0) {
-			value = user1.getLastName().compareTo(user2.getLastName());
+			String lastName1 = user1.getLastName();
+			String lastName2 = user2.getLastName();
+
+			value = lastName1.compareTo(lastName2);
 		}
 
 		if (_ascending) {
@@ -83,6 +89,6 @@ public class UserFirstNameComparator extends OrderByComparator {
 		return _ascending;
 	}
 
-	private boolean _ascending;
+	private final boolean _ascending;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,6 +23,9 @@ import com.liferay.portal.kernel.util.UnicodeFormatter;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
@@ -33,7 +36,9 @@ public class JS {
 
 		// Get rid of all unicode
 
-		s = s.replaceAll("%u[0-9a-fA-F]{4}", StringPool.BLANK);
+		Matcher matcher = _pattern.matcher(s);
+
+		s = matcher.replaceAll(StringPool.BLANK);
 
 		// Adjust for JavaScript specific annoyances
 
@@ -70,8 +75,9 @@ public class JS {
 	}
 
 	/**
-	 * @deprecated Use <code>encodeURIComponent</code>.
+	 * @deprecated As of 6.2.0, replaced by {@link #encodeURIComponent}
 	 */
+	@Deprecated
 	public static String escape(String s) {
 		return encodeURIComponent(s);
 	}
@@ -138,10 +144,13 @@ public class JS {
 	}
 
 	/**
-	 * @deprecated Use <code>decodeURIComponent</code>.
+	 * @deprecated As of 6.2.0, replaced by {@link #decodeURIComponent}
 	 */
+	@Deprecated
 	public static String unescape(String s) {
 		return decodeURIComponent(s);
 	}
+
+	private static final Pattern _pattern = Pattern.compile("%u[0-9a-fA-F]{4}");
 
 }

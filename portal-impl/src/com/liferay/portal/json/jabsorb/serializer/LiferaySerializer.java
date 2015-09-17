@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,7 +16,6 @@ package com.liferay.portal.json.jabsorb.serializer;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ArrayUtil;
 
 import java.io.Serializable;
 
@@ -65,14 +64,17 @@ public class LiferaySerializer extends AbstractSerializer {
 		return false;
 	}
 
+	@Override
 	public Class<?>[] getJSONClasses() {
 		return _JSON_CLASSES;
 	}
 
+	@Override
 	public Class<?>[] getSerializableClasses() {
 		return _SERIALIZABLE_CLASSES;
 	}
 
+	@Override
 	public Object marshall(
 			SerializerState serializerState, Object parentObject, Object object)
 		throws MarshallException {
@@ -105,7 +107,7 @@ public class LiferaySerializer extends AbstractSerializer {
 		String fieldName = null;
 
 		try {
-			Set<String> processedFieldNames = new HashSet<String>();
+			Set<String> processedFieldNames = new HashSet<>();
 
 			while (javaClass != null) {
 				Field[] declaredFields = javaClass.getDeclaredFields();
@@ -123,11 +125,9 @@ public class LiferaySerializer extends AbstractSerializer {
 
 					int modifiers = field.getModifiers();
 
-					// Only marshall fields that are not final, static, or
-					// transient
+					// Only marshall fields that are not static or transient
 
-					if (((modifiers & Modifier.FINAL) == Modifier.FINAL) ||
-						((modifiers & Modifier.STATIC) == Modifier.STATIC) ||
+					if (((modifiers & Modifier.STATIC) == Modifier.STATIC) ||
 						((modifiers & Modifier.TRANSIENT) ==
 							Modifier.TRANSIENT)) {
 
@@ -152,6 +152,10 @@ public class LiferaySerializer extends AbstractSerializer {
 					if (JSONSerializer.CIRC_REF_OR_DUPLICATE != fieldObject) {
 						serializableJSONObject.put(fieldName, fieldObject);
 					}
+					else if (!serializableJSONObject.has(fieldName)) {
+						serializableJSONObject.put(
+							fieldName, field.get(object));
+					}
 				}
 
 				javaClass = javaClass.getSuperclass();
@@ -168,6 +172,7 @@ public class LiferaySerializer extends AbstractSerializer {
 		return jsonObject;
 	}
 
+	@Override
 	public ObjectMatch tryUnmarshall(
 			SerializerState serializerState,
 			@SuppressWarnings("rawtypes") Class clazz, Object object)
@@ -189,9 +194,7 @@ public class LiferaySerializer extends AbstractSerializer {
 		}
 
 		try {
-			Class<?> javaClass = Class.forName(javaClassName);
-
-			Serializable.class.isAssignableFrom(javaClass);
+			Class.forName(javaClassName);
 		}
 		catch (Exception e) {
 			throw new UnmarshallException(
@@ -241,6 +244,7 @@ public class LiferaySerializer extends AbstractSerializer {
 		return objectMatch;
 	}
 
+	@Override
 	public Object unmarshall(
 			SerializerState serializerState,
 			@SuppressWarnings("rawtypes") Class clazz, Object object)
@@ -293,7 +297,7 @@ public class LiferaySerializer extends AbstractSerializer {
 		String fieldName = null;
 
 		try {
-			Set<String> processedFieldNames = new HashSet<String>();
+			Set<String> processedFieldNames = new HashSet<>();
 
 			while (javaClass != null) {
 				Field[] fields = javaClass.getDeclaredFields();
@@ -311,11 +315,9 @@ public class LiferaySerializer extends AbstractSerializer {
 
 					int modifiers = field.getModifiers();
 
-					// Only unmarshall fields that are not final, static, or
-					// transient
+					// Only unmarshall fields that are not static or transient
 
-					if (((modifiers & Modifier.FINAL) == Modifier.FINAL) ||
-						((modifiers & Modifier.STATIC) == Modifier.STATIC) ||
+					if (((modifiers & Modifier.STATIC) == Modifier.STATIC) ||
 						((modifiers & Modifier.TRANSIENT) ==
 							Modifier.TRANSIENT)) {
 
@@ -332,9 +334,13 @@ public class LiferaySerializer extends AbstractSerializer {
 
 					Object value = null;
 
+					if (!serializableJSONObject.has(fieldName)) {
+						continue;
+					}
+
 					try {
 						value = ser.unmarshall(
-							serializerState, null,
+							serializerState, field.getType(),
 							serializableJSONObject.get(fieldName));
 					}
 					catch (Exception e) {
@@ -342,8 +348,6 @@ public class LiferaySerializer extends AbstractSerializer {
 
 					if (value != null) {
 						try {
-							value = getValue(field, value);
-
 							field.set(javaClassInstance, value);
 						}
 						catch (Exception e) {
@@ -363,52 +367,12 @@ public class LiferaySerializer extends AbstractSerializer {
 		return javaClassInstance;
 	}
 
-	protected Object getValue(Field field, Object value) {
-		Class<?> type = field.getType();
-
-		if (!type.isArray()) {
-			return value;
-		}
-
-		Class<?> componentType = type.getComponentType();
-
-		if (!componentType.isPrimitive()) {
-			return value;
-		}
-
-		if (type.isAssignableFrom(boolean[].class)) {
-			value = ArrayUtil.toArray((Boolean[])value);
-		}
-		else if (type.isAssignableFrom(byte[].class)) {
-			value = ArrayUtil.toArray((Byte[])value);
-		}
-		else if (type.isAssignableFrom(char[].class)) {
-			value = ArrayUtil.toArray((Character[])value);
-		}
-		else if (type.isAssignableFrom(double[].class)) {
-			value = ArrayUtil.toArray((Double[])value);
-		}
-		else if (type.isAssignableFrom(float[].class)) {
-			value = ArrayUtil.toArray((Float[])value);
-		}
-		else if (type.isAssignableFrom(int[].class)) {
-			value = ArrayUtil.toArray((Integer[])value);
-		}
-		else if (type.isAssignableFrom(long[].class)) {
-			value = ArrayUtil.toArray((Long[])value);
-		}
-		else if (type.isAssignableFrom(short[].class)) {
-			value = ArrayUtil.toArray((Short[])value);
-		}
-
-		return value;
-	}
-
 	private static final Class<?>[] _JSON_CLASSES = {JSONObject.class};
 
 	private static final Class<?>[] _SERIALIZABLE_CLASSES =
 		{Serializable.class};
 
-	private static Log _log = LogFactoryUtil.getLog(LiferaySerializer.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		LiferaySerializer.class);
 
 }

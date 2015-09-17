@@ -31,8 +31,16 @@
 					) OR
 					(
 						(repeating = [$TRUE$]) AND
-						(endDate >= ?)
+						(endDate >= ? OR endDate IS NULL)
 					)
+				) AND
+				EXISTS (
+					SELECT
+						1
+					FROM
+						User_
+					WHERE
+						User_.userId = CalEvent.userId
 				)
 		]]>
 	</sql>
@@ -42,15 +50,11 @@
 				{CalEvent.*}
 			FROM
 				CalEvent
+			LEFT JOIN
+				AssetEntry ON
+					(AssetEntry.classPK = CalEvent.eventId)
 			WHERE
-				(eventId NOT IN(
-					SELECT
-						classPK
-					FROM
-						AssetEntry
-					WHERE
-						classNameId = [$CLASS_NAME_ID_COM.LIFERAY.PORTLET.CALENDAR.MODEL.CALEVENT$]
-				))
+				(AssetEntry.classPK IS NULL)
 		]]>
 	</sql>
 	<sql id="com.liferay.portlet.calendar.service.persistence.CalEventFinder.findByG_SD_T">

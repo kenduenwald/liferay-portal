@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.service.http;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.service.OrganizationServiceUtil;
@@ -21,13 +23,11 @@ import com.liferay.portal.service.OrganizationServiceUtil;
 import java.rmi.RemoteException;
 
 /**
- * <p>
- * This class provides a SOAP utility for the
- * {@link com.liferay.portal.service.OrganizationServiceUtil} service utility. The
+ * Provides the SOAP utility for the
+ * {@link OrganizationServiceUtil} service utility. The
  * static methods of this class calls the same methods of the service utility.
  * However, the signatures are different because it is difficult for SOAP to
  * support certain types.
- * </p>
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
@@ -47,9 +47,8 @@ import java.rmi.RemoteException;
  * </p>
  *
  * <p>
- * You can see a list of services at
- * http://localhost:8080/api/secure/axis. Set the property
- * <b>axis.servlet.hosts.allowed</b> in portal.properties to configure
+ * You can see a list of services at http://localhost:8080/api/axis. Set the
+ * property <b>axis.servlet.hosts.allowed</b> in portal.properties to configure
  * security.
  * </p>
  *
@@ -57,12 +56,13 @@ import java.rmi.RemoteException;
  * The SOAP utility is only generated for remote services.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       OrganizationServiceHttp
- * @see       com.liferay.portal.model.OrganizationSoap
- * @see       com.liferay.portal.service.OrganizationServiceUtil
+ * @author Brian Wing Shun Chan
+ * @see OrganizationServiceHttp
+ * @see com.liferay.portal.model.OrganizationSoap
+ * @see OrganizationServiceUtil
  * @generated
  */
+@ProviderType
 public class OrganizationServiceSoap {
 	/**
 	* Adds the organizations to the group.
@@ -72,7 +72,6 @@ public class OrganizationServiceSoap {
 	* @throws PortalException if a group or organization with the primary key
 	could not be found or if the user did not have permission to
 	assign group members
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void addGroupOrganizations(long groupId,
 		long[] organizationIds) throws RemoteException {
@@ -95,12 +94,12 @@ public class OrganizationServiceSoap {
 	* including its resources, metadata, and internal data structures.
 	* </p>
 	*
-	* @param parentOrganizationId the primary key of the organization's parent
-	organization
+	* @param parentOrganizationId the primary key of the organization's
+	parent organization
 	* @param name the organization's name
 	* @param type the organization's type
-	* @param recursable whether the permissions of the organization are to be
-	inherited by its sub-organizations
+	* @param recursable whether the permissions of the organization are to
+	be inherited by its suborganizations
 	* @param regionId the primary key of the organization's region
 	* @param countryId the primary key of the organization's country
 	* @param statusId the organization's workflow status
@@ -112,20 +111,23 @@ public class OrganizationServiceSoap {
 	* @param orgLabors the organization's hours of operation
 	* @param phones the organization's phone numbers
 	* @param websites the organization's websites
-	* @param serviceContext the organization's service context (optionally
-	<code>null</code>). Can set asset category IDs, asset tag names,
-	and expando bridge attributes for the organization.
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs, asset tag
+	names, and expando bridge attributes for the organization.
 	* @return the organization
 	* @throws PortalException if a parent organization with the primary key
 	could not be found, if the organization's information was
 	invalid, or if the user did not have permission to add the
 	organization
-	* @throws SystemException if a system exception occurred
+	* @deprecated As of 6.2.0, replaced by {@link #addOrganization(long,
+	String, String, long, long, int, String, boolean, List, List,
+	List, List, List, ServiceContext)}
 	*/
+	@Deprecated
 	public static com.liferay.portal.model.OrganizationSoap addOrganization(
 		long parentOrganizationId, java.lang.String name,
 		java.lang.String type, boolean recursable, long regionId,
-		long countryId, int statusId, java.lang.String comments, boolean site,
+		long countryId, long statusId, java.lang.String comments, boolean site,
 		com.liferay.portal.model.AddressSoap[] addresses,
 		com.liferay.portal.model.EmailAddressSoap[] emailAddresses,
 		com.liferay.portal.model.OrgLaborSoap[] orgLabors,
@@ -165,37 +167,153 @@ public class OrganizationServiceSoap {
 	* including its resources, metadata, and internal data structures.
 	* </p>
 	*
-	* @param parentOrganizationId the primary key of the organization's parent
-	organization
+	* @param parentOrganizationId the primary key of the organization's
+	parent organization
 	* @param name the organization's name
 	* @param type the organization's type
-	* @param recursable whether the permissions of the organization are to be
-	inherited by its sub-organizations
+	* @param recursable whether the permissions of the organization are to
+	be inherited by its suborganizations
 	* @param regionId the primary key of the organization's region
 	* @param countryId the primary key of the organization's country
 	* @param statusId the organization's workflow status
 	* @param comments the comments about the organization
 	* @param site whether the organization is to be associated with a main
 	site
-	* @param serviceContext the organization's service context (optionally
-	<code>null</code>). Can set asset category IDs, asset tag names,
-	and expando bridge attributes for the organization.
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs, asset tag
+	names, and expando bridge attributes for the organization.
 	* @return the organization
-	* @throws PortalException if the parent organization with the primary key
-	could not be found, if the organization information was invalid,
-	or if the user did not have permission to add the organization
-	* @throws SystemException if a system exception occurred
+	* @throws PortalException if the parent organization with the primary
+	key could not be found, if the organization information was
+	invalid, or if the user did not have permission to add the
+	organization
+	* @deprecated As of 6.2.0, replaced by {@link #addOrganization(long,
+	String, String, long, long, int, String, boolean,
+	ServiceContext)}
 	*/
+	@Deprecated
 	public static com.liferay.portal.model.OrganizationSoap addOrganization(
 		long parentOrganizationId, java.lang.String name,
 		java.lang.String type, boolean recursable, long regionId,
-		long countryId, int statusId, java.lang.String comments, boolean site,
+		long countryId, long statusId, java.lang.String comments, boolean site,
 		com.liferay.portal.service.ServiceContext serviceContext)
 		throws RemoteException {
 		try {
 			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.addOrganization(parentOrganizationId,
 					name, type, recursable, regionId, countryId, statusId,
 					comments, site, serviceContext);
+
+			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Adds an organization with additional parameters.
+	*
+	* <p>
+	* This method handles the creation and bookkeeping of the organization
+	* including its resources, metadata, and internal data structures.
+	* </p>
+	*
+	* @param parentOrganizationId the primary key of the organization's parent
+	organization
+	* @param name the organization's name
+	* @param type the organization's type
+	* @param regionId the primary key of the organization's region
+	* @param countryId the primary key of the organization's country
+	* @param statusId the organization's workflow status
+	* @param comments the comments about the organization
+	* @param site whether the organization is to be associated with a main
+	site
+	* @param addresses the organization's addresses
+	* @param emailAddresses the organization's email addresses
+	* @param orgLabors the organization's hours of operation
+	* @param phones the organization's phone numbers
+	* @param websites the organization's websites
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs, asset tag names,
+	and expando bridge attributes for the organization.
+	* @return the organization
+	* @throws PortalException if a parent organization with the primary key
+	could not be found, if the organization's information was
+	invalid, or if the user did not have permission to add the
+	organization
+	*/
+	public static com.liferay.portal.model.OrganizationSoap addOrganization(
+		long parentOrganizationId, java.lang.String name,
+		java.lang.String type, long regionId, long countryId, long statusId,
+		java.lang.String comments, boolean site,
+		com.liferay.portal.model.AddressSoap[] addresses,
+		com.liferay.portal.model.EmailAddressSoap[] emailAddresses,
+		com.liferay.portal.model.OrgLaborSoap[] orgLabors,
+		com.liferay.portal.model.PhoneSoap[] phones,
+		com.liferay.portal.model.WebsiteSoap[] websites,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws RemoteException {
+		try {
+			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.addOrganization(parentOrganizationId,
+					name, type, regionId, countryId, statusId, comments, site,
+					com.liferay.portal.model.impl.AddressModelImpl.toModels(
+						addresses),
+					com.liferay.portal.model.impl.EmailAddressModelImpl.toModels(
+						emailAddresses),
+					com.liferay.portal.model.impl.OrgLaborModelImpl.toModels(
+						orgLabors),
+					com.liferay.portal.model.impl.PhoneModelImpl.toModels(
+						phones),
+					com.liferay.portal.model.impl.WebsiteModelImpl.toModels(
+						websites), serviceContext);
+
+			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Adds an organization.
+	*
+	* <p>
+	* This method handles the creation and bookkeeping of the organization
+	* including its resources, metadata, and internal data structures.
+	* </p>
+	*
+	* @param parentOrganizationId the primary key of the organization's parent
+	organization
+	* @param name the organization's name
+	* @param type the organization's type
+	* @param regionId the primary key of the organization's region
+	* @param countryId the primary key of the organization's country
+	* @param statusId the organization's workflow status
+	* @param comments the comments about the organization
+	* @param site whether the organization is to be associated with a main
+	site
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs, asset tag names,
+	and expando bridge attributes for the organization.
+	* @return the organization
+	* @throws PortalException if the parent organization with the primary key
+	could not be found, if the organization information was invalid,
+	or if the user did not have permission to add the organization
+	*/
+	public static com.liferay.portal.model.OrganizationSoap addOrganization(
+		long parentOrganizationId, java.lang.String name,
+		java.lang.String type, long regionId, long countryId, long statusId,
+		java.lang.String comments, boolean site,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws RemoteException {
+		try {
+			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.addOrganization(parentOrganizationId,
+					name, type, regionId, countryId, statusId, comments, site,
+					serviceContext);
 
 			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
 		}
@@ -214,7 +332,6 @@ public class OrganizationServiceSoap {
 	* @param organizationIds the primary keys of the organizations
 	* @throws PortalException if the user did not have permission to update the
 	password policy
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void addPasswordPolicyOrganizations(long passwordPolicyId,
 		long[] organizationIds) throws RemoteException {
@@ -230,13 +347,12 @@ public class OrganizationServiceSoap {
 	}
 
 	/**
-	* Deletes the logo of the organization.
+	* Deletes the organization's logo.
 	*
 	* @param organizationId the primary key of the organization
 	* @throws PortalException if an organization with the primary key could not
 	be found, if the organization's logo could not be found, or if
 	the user did not have permission to update the organization
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void deleteLogo(long organizationId)
 		throws RemoteException {
@@ -259,12 +375,34 @@ public class OrganizationServiceSoap {
 	be found, if the user did not have permission to delete the
 	organization, if the organization had a workflow in approved
 	status, or if the organization was a parent organization
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void deleteOrganization(long organizationId)
 		throws RemoteException {
 		try {
 			OrganizationServiceUtil.deleteOrganization(organizationId);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Returns the organization with the primary key.
+	*
+	* @param organizationId the primary key of the organization
+	* @return the organization with the primary key, or <code>null</code> if an
+	organization with the primary key could not be found or if the
+	user did not have permission to view the organization
+	* @throws PortalException if a portal exception occurred
+	*/
+	public static com.liferay.portal.model.OrganizationSoap fetchOrganization(
+		long organizationId) throws RemoteException {
+		try {
+			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.fetchOrganization(organizationId);
+
+			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
 		}
 		catch (Exception e) {
 			_log.error(e, e);
@@ -280,9 +418,10 @@ public class OrganizationServiceSoap {
 	* @param max the maximum number of the organizations to be considered
 	* @return the organizations which the user has permission to manage
 	* @throws PortalException if a portal exception occurred
-	* @throws SystemException if a system exception occurred
-	* @deprecated Replaced by {@link #getOrganizations(long, long, int, int)}
+	* @deprecated As of 6.2.0, replaced by {@link #getOrganizations(long, long,
+	int, int)}
 	*/
+	@Deprecated
 	public static com.liferay.portal.model.OrganizationSoap[] getManageableOrganizations(
 		java.lang.String actionId, int max) throws RemoteException {
 		try {
@@ -306,7 +445,6 @@ public class OrganizationServiceSoap {
 	* @throws PortalException if an organization with the primary key could not
 	be found or if the user did not have permission to view the
 	organization
-	* @throws SystemException if a system exception occurred
 	*/
 	public static com.liferay.portal.model.OrganizationSoap getOrganization(
 		long organizationId) throws RemoteException {
@@ -329,7 +467,8 @@ public class OrganizationServiceSoap {
 	* @param name the organization's name
 	* @return the primary key of the organization with the name, or
 	<code>0</code> if the organization could not be found
-	* @throws SystemException if a system exception occurred
+	* @throws PortalException if the user did not have permission to view the
+	organization
 	*/
 	public static long getOrganizationId(long companyId, java.lang.String name)
 		throws RemoteException {
@@ -353,7 +492,6 @@ public class OrganizationServiceSoap {
 	* @param parentOrganizationId the primary key of the organizations' parent
 	organization
 	* @return the organizations belonging to the parent organization
-	* @throws SystemException if a system exception occurred
 	*/
 	public static com.liferay.portal.model.OrganizationSoap[] getOrganizations(
 		long companyId, long parentOrganizationId) throws RemoteException {
@@ -391,7 +529,6 @@ public class OrganizationServiceSoap {
 	* @param end the upper bound of the range of organizations to return (not
 	inclusive)
 	* @return the range of organizations belonging to the parent organization
-	* @throws SystemException if a system exception occurred
 	*/
 	public static com.liferay.portal.model.OrganizationSoap[] getOrganizations(
 		long companyId, long parentOrganizationId, int start, int end)
@@ -416,7 +553,6 @@ public class OrganizationServiceSoap {
 	* @param parentOrganizationId the primary key of the organizations' parent
 	organization
 	* @return the number of organizations belonging to the parent organization
-	* @throws SystemException if a system exception occurred
 	*/
 	public static int getOrganizationsCount(long companyId,
 		long parentOrganizationId) throws RemoteException {
@@ -434,12 +570,18 @@ public class OrganizationServiceSoap {
 	}
 
 	/**
-	* Returns all the organizations associated with the user.
+	* Returns all the organizations with which the user is explicitly
+	* associated.
+	*
+	* <p>
+	* A user is considered to be <i>explicitly</i> associated with an
+	* organization if his account is individually created within the
+	* organization or if the user is later added as a member.
+	* </p>
 	*
 	* @param userId the primary key of the user
-	* @return the organizations associated with the user
+	* @return the organizations with which the user is explicitly associated
 	* @throws PortalException if a user with the primary key could not be found
-	* @throws SystemException if a system exception occurred
 	*/
 	public static com.liferay.portal.model.OrganizationSoap[] getUserOrganizations(
 		long userId) throws RemoteException {
@@ -464,7 +606,6 @@ public class OrganizationServiceSoap {
 	* @throws PortalException if a group or organization with the primary key
 	could not be found or if the user did not have permission to
 	assign group members
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void setGroupOrganizations(long groupId,
 		long[] organizationIds) throws RemoteException {
@@ -487,7 +628,6 @@ public class OrganizationServiceSoap {
 	* @throws PortalException if a group or organization with the primary key
 	could not be found or if the user did not have permission to
 	assign group members
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void unsetGroupOrganizations(long groupId,
 		long[] organizationIds) throws RemoteException {
@@ -510,7 +650,6 @@ public class OrganizationServiceSoap {
 	* @throws PortalException if a password policy or organization with the
 	primary key could not be found, or if the user did not have
 	permission to update the password policy
-	* @throws SystemException if a system exception occurred
 	*/
 	public static void unsetPasswordPolicyOrganizations(long passwordPolicyId,
 		long[] organizationIds) throws RemoteException {
@@ -529,12 +668,12 @@ public class OrganizationServiceSoap {
 	* Updates the organization with additional parameters.
 	*
 	* @param organizationId the primary key of the organization
-	* @param parentOrganizationId the primary key of the organization's parent
-	organization
+	* @param parentOrganizationId the primary key of the organization's
+	parent organization
 	* @param name the organization's name
 	* @param type the organization's type
-	* @param recursable whether the permissions of the organization are to be
-	inherited by its sub-organizations
+	* @param recursable whether the permissions of the organization are to
+	be inherited by its suborganizations
 	* @param regionId the primary key of the organization's region
 	* @param countryId the primary key of the organization's country
 	* @param statusId the organization's workflow status
@@ -546,21 +685,25 @@ public class OrganizationServiceSoap {
 	* @param orgLabors the organization's hours of operation
 	* @param phones the organization's phone numbers
 	* @param websites the organization's websites
-	* @param serviceContext the organization's service context (optionally
+	* @param serviceContext the service context to be applied (optionally
 	<code>null</code>). Can set asset category IDs and asset tag
-	names for the organization, and merge expando bridge attributes
-	for the organization.
+	names for the organization, and merge expando bridge
+	attributes for the organization.
 	* @return the organization
-	* @throws PortalException if an organization or parent organization with
-	the primary key could not be found, if the user did not have
-	permission to update the organization information, or if the new
-	information was invalid
-	* @throws SystemException if a system exception occurred
+	* @throws PortalException if an organization or parent organization
+	with the primary key could not be found, if the user did not
+	have permission to update the organization information, or if
+	the new information was invalid
+	* @deprecated As of 6.2.0, replaced by {@link #updateOrganization(long,
+	long, String, String, long, long, int, String, boolean,
+	byte[], boolean, List, List, List, List, List,
+	ServiceContext)}
 	*/
+	@Deprecated
 	public static com.liferay.portal.model.OrganizationSoap updateOrganization(
 		long organizationId, long parentOrganizationId, java.lang.String name,
 		java.lang.String type, boolean recursable, long regionId,
-		long countryId, int statusId, java.lang.String comments, boolean site,
+		long countryId, long statusId, java.lang.String comments, boolean site,
 		com.liferay.portal.model.AddressSoap[] addresses,
 		com.liferay.portal.model.EmailAddressSoap[] emailAddresses,
 		com.liferay.portal.model.OrgLaborSoap[] orgLabors,
@@ -596,19 +739,202 @@ public class OrganizationServiceSoap {
 	* Updates the organization.
 	*
 	* @param organizationId the primary key of the organization
-	* @param parentOrganizationId the primary key of the organization's parent
-	organization
+	* @param parentOrganizationId the primary key of the organization's
+	parent organization
 	* @param name the organization's name
 	* @param type the organization's type
 	* @param recursable whether permissions of the organization are to be
-	inherited by its sub-organizations
+	inherited by its suborganizations
 	* @param regionId the primary key of the organization's region
 	* @param countryId the primary key of the organization's country
 	* @param statusId the organization's workflow status
 	* @param comments the comments about the organization
 	* @param site whether the organization is to be associated with a main
 	site
-	* @param serviceContext the organization's service context (optionally
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs and asset tag
+	names for the organization, and merge expando bridge
+	attributes for the organization.
+	* @return the organization
+	* @throws PortalException if an organization or parent organization
+	with the primary key could not be found, if the user did not
+	have permission to update the organization, or if the new
+	information was invalid
+	* @deprecated As of 6.2.0, replaced by {@link #updateOrganization(long,
+	long, String, String, long, long, int, String, boolean,
+	ServiceContext)}
+	*/
+	@Deprecated
+	public static com.liferay.portal.model.OrganizationSoap updateOrganization(
+		long organizationId, long parentOrganizationId, java.lang.String name,
+		java.lang.String type, boolean recursable, long regionId,
+		long countryId, long statusId, java.lang.String comments, boolean site,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws RemoteException {
+		try {
+			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.updateOrganization(organizationId,
+					parentOrganizationId, name, type, recursable, regionId,
+					countryId, statusId, comments, site, serviceContext);
+
+			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Updates the organization with additional parameters.
+	*
+	* @param organizationId the primary key of the organization
+	* @param parentOrganizationId the primary key of the organization's parent
+	organization
+	* @param name the organization's name
+	* @param type the organization's type
+	* @param regionId the primary key of the organization's region
+	* @param countryId the primary key of the organization's country
+	* @param statusId the organization's workflow status
+	* @param comments the comments about the organization
+	* @param logo whether to update the ogranization's logo
+	* @param logoBytes the new logo image data
+	* @param site whether the organization is to be associated with a main
+	site
+	* @param addresses the organization's addresses
+	* @param emailAddresses the organization's email addresses
+	* @param orgLabors the organization's hours of operation
+	* @param phones the organization's phone numbers
+	* @param websites the organization's websites
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs and asset tag
+	names for the organization, and merge expando bridge attributes
+	for the organization.
+	* @return the organization
+	* @throws PortalException if an organization or parent organization with
+	the primary key could not be found, if the user did not have
+	permission to update the organization information, or if the new
+	information was invalid
+	*/
+	public static com.liferay.portal.model.OrganizationSoap updateOrganization(
+		long organizationId, long parentOrganizationId, java.lang.String name,
+		java.lang.String type, long regionId, long countryId, long statusId,
+		java.lang.String comments, boolean logo, byte[] logoBytes,
+		boolean site, com.liferay.portal.model.AddressSoap[] addresses,
+		com.liferay.portal.model.EmailAddressSoap[] emailAddresses,
+		com.liferay.portal.model.OrgLaborSoap[] orgLabors,
+		com.liferay.portal.model.PhoneSoap[] phones,
+		com.liferay.portal.model.WebsiteSoap[] websites,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws RemoteException {
+		try {
+			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.updateOrganization(organizationId,
+					parentOrganizationId, name, type, regionId, countryId,
+					statusId, comments, logo, logoBytes, site,
+					com.liferay.portal.model.impl.AddressModelImpl.toModels(
+						addresses),
+					com.liferay.portal.model.impl.EmailAddressModelImpl.toModels(
+						emailAddresses),
+					com.liferay.portal.model.impl.OrgLaborModelImpl.toModels(
+						orgLabors),
+					com.liferay.portal.model.impl.PhoneModelImpl.toModels(
+						phones),
+					com.liferay.portal.model.impl.WebsiteModelImpl.toModels(
+						websites), serviceContext);
+
+			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Updates the organization with additional parameters.
+	*
+	* @param organizationId the primary key of the organization
+	* @param parentOrganizationId the primary key of the organization's
+	parent organization
+	* @param name the organization's name
+	* @param type the organization's type
+	* @param regionId the primary key of the organization's region
+	* @param countryId the primary key of the organization's country
+	* @param statusId the organization's workflow status
+	* @param comments the comments about the organization
+	* @param site whether the organization is to be associated with a main
+	site
+	* @param addresses the organization's addresses
+	* @param emailAddresses the organization's email addresses
+	* @param orgLabors the organization's hours of operation
+	* @param phones the organization's phone numbers
+	* @param websites the organization's websites
+	* @param serviceContext the service context to be applied (optionally
+	<code>null</code>). Can set asset category IDs and asset tag
+	names for the organization, and merge expando bridge
+	attributes for the organization.
+	* @return the organization
+	* @throws PortalException if an organization or parent organization
+	with the primary key could not be found, if the user did not
+	have permission to update the organization information, or if
+	the new information was invalid
+	* @deprecated As of 7.0.0, replaced by {@link #updateOrganization(long,
+	long, String, String, long, long, int, String, boolean,
+	byte[], boolean, List, List, List, List, List,
+	ServiceContext)}
+	*/
+	@Deprecated
+	public static com.liferay.portal.model.OrganizationSoap updateOrganization(
+		long organizationId, long parentOrganizationId, java.lang.String name,
+		java.lang.String type, long regionId, long countryId, long statusId,
+		java.lang.String comments, boolean site,
+		com.liferay.portal.model.AddressSoap[] addresses,
+		com.liferay.portal.model.EmailAddressSoap[] emailAddresses,
+		com.liferay.portal.model.OrgLaborSoap[] orgLabors,
+		com.liferay.portal.model.PhoneSoap[] phones,
+		com.liferay.portal.model.WebsiteSoap[] websites,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws RemoteException {
+		try {
+			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.updateOrganization(organizationId,
+					parentOrganizationId, name, type, regionId, countryId,
+					statusId, comments, site,
+					com.liferay.portal.model.impl.AddressModelImpl.toModels(
+						addresses),
+					com.liferay.portal.model.impl.EmailAddressModelImpl.toModels(
+						emailAddresses),
+					com.liferay.portal.model.impl.OrgLaborModelImpl.toModels(
+						orgLabors),
+					com.liferay.portal.model.impl.PhoneModelImpl.toModels(
+						phones),
+					com.liferay.portal.model.impl.WebsiteModelImpl.toModels(
+						websites), serviceContext);
+
+			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Updates the organization.
+	*
+	* @param organizationId the primary key of the organization
+	* @param parentOrganizationId the primary key of the organization's parent
+	organization
+	* @param name the organization's name
+	* @param type the organization's type
+	* @param regionId the primary key of the organization's region
+	* @param countryId the primary key of the organization's country
+	* @param statusId the organization's workflow status
+	* @param comments the comments about the organization
+	* @param site whether the organization is to be associated with a main
+	site
+	* @param serviceContext the service context to be applied (optionally
 	<code>null</code>). Can set asset category IDs and asset tag
 	names for the organization, and merge expando bridge attributes
 	for the organization.
@@ -617,18 +943,17 @@ public class OrganizationServiceSoap {
 	the primary key could not be found, if the user did not have
 	permission to update the organization, or if the new information
 	was invalid
-	* @throws SystemException if a system exception occurred
 	*/
 	public static com.liferay.portal.model.OrganizationSoap updateOrganization(
 		long organizationId, long parentOrganizationId, java.lang.String name,
-		java.lang.String type, boolean recursable, long regionId,
-		long countryId, int statusId, java.lang.String comments, boolean site,
+		java.lang.String type, long regionId, long countryId, long statusId,
+		java.lang.String comments, boolean site,
 		com.liferay.portal.service.ServiceContext serviceContext)
 		throws RemoteException {
 		try {
 			com.liferay.portal.model.Organization returnValue = OrganizationServiceUtil.updateOrganization(organizationId,
-					parentOrganizationId, name, type, recursable, regionId,
-					countryId, statusId, comments, site, serviceContext);
+					parentOrganizationId, name, type, regionId, countryId,
+					statusId, comments, site, serviceContext);
 
 			return com.liferay.portal.model.OrganizationSoap.toSoapModel(returnValue);
 		}

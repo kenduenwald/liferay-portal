@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,7 +15,8 @@
 package com.liferay.portal.model;
 
 import com.liferay.portal.kernel.util.Tuple;
-import com.liferay.portal.kernel.xml.Element;
+
+import java.io.InputStream;
 
 import java.util.List;
 import java.util.Map;
@@ -29,9 +30,11 @@ public interface ModelHints {
 
 	public Map<String, String> getDefaultHints(String model);
 
-	public Element getFieldsEl(String model, String field);
+	public Object getFieldsElement(String model, String field);
 
 	public Map<String, String> getHints(String model, String field);
+
+	public int getMaxLength(String model, String field);
 
 	public List<String> getModels();
 
@@ -43,9 +46,17 @@ public interface ModelHints {
 
 	public List<Tuple> getValidators(String model, String field);
 
+	public String getValue(
+		String model, String field, String name, String defaultValue);
+
+	public boolean hasField(String model, String field);
+
 	public boolean isCustomValidator(String validatorName);
 
 	public boolean isLocalized(String model, String field);
+
+	public void read(ClassLoader classLoader, InputStream inputStream)
+		throws Exception;
 
 	public void read(ClassLoader classLoader, String source) throws Exception;
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,19 +20,18 @@ package com.liferay.portal.kernel.dao.orm;
 public class ORMException extends RuntimeException {
 
 	public ORMException() {
-		super();
 	}
 
 	public ORMException(String msg) {
 		super(msg);
 	}
 
-	public ORMException(Throwable cause) {
-		super(cause);
-	}
-
 	public ORMException(String msg, Throwable cause) {
 		super(msg, cause);
+	}
+
+	public ORMException(Throwable cause) {
+		super(cause);
 	}
 
 }

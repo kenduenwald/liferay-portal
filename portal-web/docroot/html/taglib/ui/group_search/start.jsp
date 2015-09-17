@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,38 +16,43 @@
 
 <%@ include file="/html/taglib/init.jsp" %>
 
-<%@ page import="com.liferay.portlet.usersadmin.search.GroupSearch" %>
-<%@ page import="com.liferay.portlet.usersadmin.search.GroupSearchTerms" %>
-
 <portlet:defineObjects />
 
 <%
 PortletURL portletURL = (PortletURL)request.getAttribute("liferay-ui:group-search:portletURL");
 RowChecker rowChecker = (RowChecker)request.getAttribute("liferay-ui:group-search:rowChecker");
-LinkedHashMap groupParams = (LinkedHashMap)request.getAttribute("liferay-ui:group-search:groupParams");
+LinkedHashMap<String, Object> groupParams = (LinkedHashMap<String, Object>)request.getAttribute("liferay-ui:group-search:groupParams");
 
 GroupSearch searchContainer = new GroupSearch(renderRequest, portletURL);
 
 request.setAttribute(WebKeys.SEARCH_CONTAINER, searchContainer);
 
 searchContainer.setRowChecker(rowChecker);
-%>
 
-<liferay-ui:search-form
-	page="/html/portlet/users_admin/group_search.jsp"
-	searchContainer="<%= searchContainer %>"
-/>
-
-<%
 GroupSearchTerms searchTerms = (GroupSearchTerms)searchContainer.getSearchTerms();
 
 List<Group> results = null;
 int total = 0;
 %>
 
-<%@ include file="/html/portlet/users_admin/group_search_results.jspf" %>
+<liferay-ui:group-search-form />
 
 <%
+if (searchTerms.isAdvancedSearch()) {
+	total = GroupLocalServiceUtil.searchCount(company.getCompanyId(), searchTerms.getName(), searchTerms.getDescription(), groupParams, searchTerms.isAndOperator());
+
+	searchContainer.setTotal(total);
+
+	results = GroupLocalServiceUtil.search(company.getCompanyId(), searchTerms.getName(), searchTerms.getDescription(), groupParams, searchTerms.isAndOperator(), searchContainer.getStart(), searchContainer.getEnd(), searchContainer.getOrderByComparator());
+}
+else {
+	total = GroupLocalServiceUtil.searchCount(company.getCompanyId(), searchTerms.getKeywords(), groupParams);
+
+	searchContainer.setTotal(total);
+
+	results = GroupLocalServiceUtil.search(company.getCompanyId(), searchTerms.getKeywords(), groupParams, searchContainer.getStart(), searchContainer.getEnd(), searchContainer.getOrderByComparator());
+}
+
 searchContainer.setResults(results);
 searchContainer.setTotal(total);
 %>

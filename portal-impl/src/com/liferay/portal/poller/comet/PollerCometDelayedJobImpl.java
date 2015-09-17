@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -31,6 +31,7 @@ import java.util.TimerTask;
 public class PollerCometDelayedJobImpl
 	extends BaseMessageListener implements PollerCometDelayedJob {
 
+	@Override
 	public void addPollerCometDelayedTask(
 		PollerCometDelayedTask pollerCometDelayedTask) {
 
@@ -67,11 +68,11 @@ public class PollerCometDelayedJobImpl
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
-		PollerCometDelayedJob.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		PollerCometDelayedJobImpl.class);
 
-	private List<PollerCometDelayedTask> _pollerCometDelayedTasks =
-		new LinkedList<PollerCometDelayedTask>();
+	private final List<PollerCometDelayedTask> _pollerCometDelayedTasks =
+		new LinkedList<>();
 	private Timer _timer;
 
 	private class PollerCometTimerTask extends TimerTask {
@@ -95,6 +96,7 @@ public class PollerCometDelayedJobImpl
 				_pollerCometDelayedTasks.clear();
 			}
 		}
+
 	}
 
 }

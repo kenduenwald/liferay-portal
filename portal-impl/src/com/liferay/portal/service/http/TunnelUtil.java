@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,16 @@
 
 package com.liferay.portal.service.http;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.tunnel.TunnelAuthenticationManagerUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
-import com.liferay.portal.kernel.util.Base64;
+import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
-import com.liferay.portal.kernel.util.MethodWrapper;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.HttpPrincipal;
 import com.liferay.portal.security.auth.PrincipalException;
 
@@ -39,109 +39,59 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Brian Wing Shun Chan
  */
-@SuppressWarnings("deprecation")
 public class TunnelUtil {
 
 	public static Object invoke(
 			HttpPrincipal httpPrincipal, MethodHandler methodHandler)
 		throws Exception {
 
-		HttpURLConnection urlc = _getConnection(httpPrincipal);
+		HttpURLConnection httpURLConnection = _getConnection(httpPrincipal);
 
-		ObjectOutputStream oos = new ObjectOutputStream(urlc.getOutputStream());
+		TunnelAuthenticationManagerUtil.setCredentials(
+			httpPrincipal.getLogin(), httpURLConnection);
 
-		oos.writeObject(
-			new ObjectValuePair<HttpPrincipal, MethodHandler>(
-				httpPrincipal, methodHandler));
+		try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(
+				httpURLConnection.getOutputStream())) {
 
-		oos.flush();
-		oos.close();
+			objectOutputStream.writeObject(
+				new ObjectValuePair<HttpPrincipal, MethodHandler>(
+					httpPrincipal, methodHandler));
+		}
 
-		Object returnObj = null;
+		Object returnObject = null;
 
-		try {
-			ObjectInputStream ois = new ObjectInputStream(
-				urlc.getInputStream());
+		try (ObjectInputStream objectInputStream = new ObjectInputStream(
+				httpURLConnection.getInputStream())) {
 
-			returnObj = ois.readObject();
-
-			ois.close();
+			returnObject = objectInputStream.readObject();
 		}
 		catch (EOFException eofe) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to read object", eofe);
+			}
 		}
 		catch (IOException ioe) {
 			String ioeMessage = ioe.getMessage();
 
 			if ((ioeMessage != null) &&
-				(ioeMessage.indexOf("HTTP response code: 401") != -1)) {
+				ioeMessage.contains("HTTP response code: 401")) {
 
-				throw new PrincipalException(ioeMessage);
+				throw new PrincipalException.MustBeAuthenticated(
+					httpPrincipal.getLogin());
 			}
 			else {
 				throw ioe;
 			}
 		}
 
-		if ((returnObj != null) && returnObj instanceof Exception) {
-			throw (Exception)returnObj;
+		if ((returnObject != null) && returnObject instanceof Exception) {
+			throw (Exception)returnObject;
 		}
 
-		return returnObj;
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public static Object invoke(
-			HttpPrincipal httpPrincipal, MethodWrapper methodWrapper)
-		throws Exception {
-
-		HttpURLConnection urlc = _getConnection(httpPrincipal);
-
-		ObjectOutputStream oos = new ObjectOutputStream(urlc.getOutputStream());
-
-		oos.writeObject(
-			new ObjectValuePair<HttpPrincipal, MethodWrapper>(
-				httpPrincipal, methodWrapper));
-
-		oos.flush();
-		oos.close();
-
-		Object returnObj = null;
-
-		try {
-			ObjectInputStream ois = new ObjectInputStream(
-				urlc.getInputStream());
-
-			returnObj = ois.readObject();
-
-			ois.close();
-		}
-		catch (EOFException eofe) {
-		}
-		catch (IOException ioe) {
-			String ioeMessage = ioe.getMessage();
-
-			if ((ioeMessage != null) &&
-				(ioeMessage.indexOf("HTTP response code: 401") != -1)) {
-
-				throw new PrincipalException(ioeMessage);
-			}
-			else {
-				throw ioe;
-			}
-		}
-
-		if ((returnObj != null) && returnObj instanceof Exception) {
-			throw (Exception)returnObj;
-		}
-
-		return returnObj;
+		return returnObject;
 	}
 
 	private static HttpURLConnection _getConnection(HttpPrincipal httpPrincipal)
@@ -151,16 +101,7 @@ public class TunnelUtil {
 			return null;
 		}
 
-		URL url = null;
-
-		if (Validator.isNull(httpPrincipal.getLogin()) ||
-			Validator.isNull(httpPrincipal.getPassword())) {
-
-			url = new URL(httpPrincipal.getUrl() + "/api/liferay/do");
-		}
-		else {
-			url = new URL(httpPrincipal.getUrl() + "/api/secure/liferay/do");
-		}
+		URL url = new URL(httpPrincipal.getUrl() + "/api/liferay/do");
 
 		HttpURLConnection httpURLConnection =
 			(HttpURLConnection)url.openConnection();
@@ -177,6 +118,7 @@ public class TunnelUtil {
 			httpsURLConnection.setHostnameVerifier(
 				new HostnameVerifier() {
 
+					@Override
 					public boolean verify(String hostname, SSLSession session) {
 						return true;
 					}
@@ -190,25 +132,14 @@ public class TunnelUtil {
 			ContentTypes.APPLICATION_X_JAVA_SERIALIZED_OBJECT);
 		httpURLConnection.setUseCaches(false);
 
-		httpURLConnection.setRequestMethod("POST");
-
-		if (Validator.isNotNull(httpPrincipal.getLogin()) &&
-			Validator.isNotNull(httpPrincipal.getPassword())) {
-
-			String userNameAndPassword =
-				httpPrincipal.getLogin() + StringPool.COLON +
-					httpPrincipal.getPassword();
-
-			httpURLConnection.setRequestProperty(
-				HttpHeaders.AUTHORIZATION,
-				HttpServletRequest.BASIC_AUTH + StringPool.SPACE +
-					Base64.encode(userNameAndPassword.getBytes()));
-		}
+		httpURLConnection.setRequestMethod(HttpMethods.POST);
 
 		return httpURLConnection;
 	}
 
 	private static final boolean _VERIFY_SSL_HOSTNAME = GetterUtil.getBoolean(
 		PropsUtil.get(TunnelUtil.class.getName() + ".verify.ssl.hostname"));
+
+	private static final Log _log = LogFactoryUtil.getLog(TunnelUtil.class);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -41,7 +41,7 @@ public class FilterConfigFactory {
 	}
 
 	private FilterConfigFactory() {
-		_pool = new ConcurrentHashMap<String, Map<String, FilterConfig>>();
+		_pool = new ConcurrentHashMap<>();
 	}
 
 	private FilterConfig _create(
@@ -54,7 +54,7 @@ public class FilterConfigFactory {
 			portletApp.getServletContextName());
 
 		if (filterConfigs == null) {
-			filterConfigs = new ConcurrentHashMap<String, FilterConfig>();
+			filterConfigs = new ConcurrentHashMap<>();
 
 			_pool.put(portletApp.getServletContextName(), filterConfigs);
 		}
@@ -81,8 +81,9 @@ public class FilterConfigFactory {
 		_pool.remove(portletApp.getServletContextName());
 	}
 
-	private static FilterConfigFactory _instance = new FilterConfigFactory();
+	private static final FilterConfigFactory _instance =
+		new FilterConfigFactory();
 
-	private Map<String, Map<String, FilterConfig>> _pool;
+	private final Map<String, Map<String, FilterConfig>> _pool;
 
 }

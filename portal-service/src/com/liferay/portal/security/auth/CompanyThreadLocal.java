@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -38,6 +38,10 @@ public class CompanyThreadLocal {
 		return companyId;
 	}
 
+	public static boolean isDeleteInProcess() {
+		return _deleteInProcess.get();
+	}
+
 	public static void setCompanyId(int companyId) {
 		setCompanyId(Long.valueOf(companyId));
 	}
@@ -48,6 +52,8 @@ public class CompanyThreadLocal {
 		}
 
 		if (companyId > 0) {
+			_companyId.set(companyId);
+
 			try {
 				Company company = CompanyLocalServiceUtil.getCompany(companyId);
 
@@ -57,21 +63,27 @@ public class CompanyThreadLocal {
 			catch (Exception e) {
 				_log.error(e, e);
 			}
-
-			_companyId.set(companyId);
 		}
 		else {
+			_companyId.set(CompanyConstants.SYSTEM);
+
 			LocaleThreadLocal.setDefaultLocale(null);
 			TimeZoneThreadLocal.setDefaultTimeZone(null);
-
-			_companyId.set(CompanyConstants.SYSTEM);
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(CompanyThreadLocal.class);
+	public static void setDeleteInProcess(boolean deleteInProcess) {
+		_deleteInProcess.set(deleteInProcess);
+	}
 
-	private static ThreadLocal<Long> _companyId =
-		new AutoResetThreadLocal<Long>(
+	private static final Log _log = LogFactoryUtil.getLog(
+		CompanyThreadLocal.class);
+
+	private static final ThreadLocal<Long> _companyId =
+		new AutoResetThreadLocal<>(
 			CompanyThreadLocal.class + "._companyId", CompanyConstants.SYSTEM);
+	private static final ThreadLocal<Boolean> _deleteInProcess =
+		new AutoResetThreadLocal<>(
+			CompanyThreadLocal.class + "._deleteInProcess", false);
 
 }

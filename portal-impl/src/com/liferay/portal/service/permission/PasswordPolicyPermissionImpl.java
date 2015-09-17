@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,16 +23,20 @@ import com.liferay.portal.security.permission.PermissionChecker;
  */
 public class PasswordPolicyPermissionImpl implements PasswordPolicyPermission {
 
+	@Override
 	public void check(
 			PermissionChecker permissionChecker, long passwordPolicyId,
 			String actionId)
 		throws PrincipalException {
 
 		if (!contains(permissionChecker, passwordPolicyId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, PasswordPolicy.class.getName(),
+				passwordPolicyId, actionId);
 		}
 	}
 
+	@Override
 	public boolean contains(
 		PermissionChecker permissionChecker, long passwordPolicyId,
 		String actionId) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,617 +14,232 @@
 
 package com.liferay.portlet.messageboards.model;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.ModelWrapper;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>
  * This class is a wrapper for {@link MBMailingList}.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       MBMailingList
+ * @author Brian Wing Shun Chan
+ * @see MBMailingList
  * @generated
  */
+@ProviderType
 public class MBMailingListWrapper implements MBMailingList,
 	ModelWrapper<MBMailingList> {
 	public MBMailingListWrapper(MBMailingList mbMailingList) {
 		_mbMailingList = mbMailingList;
 	}
 
+	@Override
 	public Class<?> getModelClass() {
 		return MBMailingList.class;
 	}
 
+	@Override
 	public String getModelClassName() {
 		return MBMailingList.class.getName();
 	}
 
-	/**
-	* Returns the primary key of this message boards mailing list.
-	*
-	* @return the primary key of this message boards mailing list
-	*/
-	public long getPrimaryKey() {
-		return _mbMailingList.getPrimaryKey();
-	}
-
-	/**
-	* Sets the primary key of this message boards mailing list.
-	*
-	* @param primaryKey the primary key of this message boards mailing list
-	*/
-	public void setPrimaryKey(long primaryKey) {
-		_mbMailingList.setPrimaryKey(primaryKey);
-	}
-
-	/**
-	* Returns the uuid of this message boards mailing list.
-	*
-	* @return the uuid of this message boards mailing list
-	*/
-	public java.lang.String getUuid() {
-		return _mbMailingList.getUuid();
-	}
-
-	/**
-	* Sets the uuid of this message boards mailing list.
-	*
-	* @param uuid the uuid of this message boards mailing list
-	*/
-	public void setUuid(java.lang.String uuid) {
-		_mbMailingList.setUuid(uuid);
-	}
-
-	/**
-	* Returns the mailing list ID of this message boards mailing list.
-	*
-	* @return the mailing list ID of this message boards mailing list
-	*/
-	public long getMailingListId() {
-		return _mbMailingList.getMailingListId();
-	}
-
-	/**
-	* Sets the mailing list ID of this message boards mailing list.
-	*
-	* @param mailingListId the mailing list ID of this message boards mailing list
-	*/
-	public void setMailingListId(long mailingListId) {
-		_mbMailingList.setMailingListId(mailingListId);
-	}
-
-	/**
-	* Returns the group ID of this message boards mailing list.
-	*
-	* @return the group ID of this message boards mailing list
-	*/
-	public long getGroupId() {
-		return _mbMailingList.getGroupId();
-	}
-
-	/**
-	* Sets the group ID of this message boards mailing list.
-	*
-	* @param groupId the group ID of this message boards mailing list
-	*/
-	public void setGroupId(long groupId) {
-		_mbMailingList.setGroupId(groupId);
-	}
-
-	/**
-	* Returns the company ID of this message boards mailing list.
-	*
-	* @return the company ID of this message boards mailing list
-	*/
-	public long getCompanyId() {
-		return _mbMailingList.getCompanyId();
-	}
-
-	/**
-	* Sets the company ID of this message boards mailing list.
-	*
-	* @param companyId the company ID of this message boards mailing list
-	*/
-	public void setCompanyId(long companyId) {
-		_mbMailingList.setCompanyId(companyId);
-	}
-
-	/**
-	* Returns the user ID of this message boards mailing list.
-	*
-	* @return the user ID of this message boards mailing list
-	*/
-	public long getUserId() {
-		return _mbMailingList.getUserId();
-	}
-
-	/**
-	* Sets the user ID of this message boards mailing list.
-	*
-	* @param userId the user ID of this message boards mailing list
-	*/
-	public void setUserId(long userId) {
-		_mbMailingList.setUserId(userId);
-	}
-
-	/**
-	* Returns the user uuid of this message boards mailing list.
-	*
-	* @return the user uuid of this message boards mailing list
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.lang.String getUserUuid()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return _mbMailingList.getUserUuid();
-	}
-
-	/**
-	* Sets the user uuid of this message boards mailing list.
-	*
-	* @param userUuid the user uuid of this message boards mailing list
-	*/
-	public void setUserUuid(java.lang.String userUuid) {
-		_mbMailingList.setUserUuid(userUuid);
-	}
-
-	/**
-	* Returns the user name of this message boards mailing list.
-	*
-	* @return the user name of this message boards mailing list
-	*/
-	public java.lang.String getUserName() {
-		return _mbMailingList.getUserName();
-	}
-
-	/**
-	* Sets the user name of this message boards mailing list.
-	*
-	* @param userName the user name of this message boards mailing list
-	*/
-	public void setUserName(java.lang.String userName) {
-		_mbMailingList.setUserName(userName);
-	}
+	@Override
+	public Map<String, Object> getModelAttributes() {
+		Map<String, Object> attributes = new HashMap<String, Object>();
 
-	/**
-	* Returns the create date of this message boards mailing list.
-	*
-	* @return the create date of this message boards mailing list
-	*/
-	public java.util.Date getCreateDate() {
-		return _mbMailingList.getCreateDate();
-	}
+		attributes.put("uuid", getUuid());
+		attributes.put("mailingListId", getMailingListId());
+		attributes.put("groupId", getGroupId());
+		attributes.put("companyId", getCompanyId());
+		attributes.put("userId", getUserId());
+		attributes.put("userName", getUserName());
+		attributes.put("createDate", getCreateDate());
+		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("categoryId", getCategoryId());
+		attributes.put("emailAddress", getEmailAddress());
+		attributes.put("inProtocol", getInProtocol());
+		attributes.put("inServerName", getInServerName());
+		attributes.put("inServerPort", getInServerPort());
+		attributes.put("inUseSSL", getInUseSSL());
+		attributes.put("inUserName", getInUserName());
+		attributes.put("inPassword", getInPassword());
+		attributes.put("inReadInterval", getInReadInterval());
+		attributes.put("outEmailAddress", getOutEmailAddress());
+		attributes.put("outCustom", getOutCustom());
+		attributes.put("outServerName", getOutServerName());
+		attributes.put("outServerPort", getOutServerPort());
+		attributes.put("outUseSSL", getOutUseSSL());
+		attributes.put("outUserName", getOutUserName());
+		attributes.put("outPassword", getOutPassword());
+		attributes.put("allowAnonymous", getAllowAnonymous());
+		attributes.put("active", getActive());
 
-	/**
-	* Sets the create date of this message boards mailing list.
-	*
-	* @param createDate the create date of this message boards mailing list
-	*/
-	public void setCreateDate(java.util.Date createDate) {
-		_mbMailingList.setCreateDate(createDate);
+		return attributes;
 	}
 
-	/**
-	* Returns the modified date of this message boards mailing list.
-	*
-	* @return the modified date of this message boards mailing list
-	*/
-	public java.util.Date getModifiedDate() {
-		return _mbMailingList.getModifiedDate();
-	}
+	@Override
+	public void setModelAttributes(Map<String, Object> attributes) {
+		String uuid = (String)attributes.get("uuid");
 
-	/**
-	* Sets the modified date of this message boards mailing list.
-	*
-	* @param modifiedDate the modified date of this message boards mailing list
-	*/
-	public void setModifiedDate(java.util.Date modifiedDate) {
-		_mbMailingList.setModifiedDate(modifiedDate);
-	}
+		if (uuid != null) {
+			setUuid(uuid);
+		}
 
-	/**
-	* Returns the category ID of this message boards mailing list.
-	*
-	* @return the category ID of this message boards mailing list
-	*/
-	public long getCategoryId() {
-		return _mbMailingList.getCategoryId();
-	}
+		Long mailingListId = (Long)attributes.get("mailingListId");
 
-	/**
-	* Sets the category ID of this message boards mailing list.
-	*
-	* @param categoryId the category ID of this message boards mailing list
-	*/
-	public void setCategoryId(long categoryId) {
-		_mbMailingList.setCategoryId(categoryId);
-	}
+		if (mailingListId != null) {
+			setMailingListId(mailingListId);
+		}
 
-	/**
-	* Returns the email address of this message boards mailing list.
-	*
-	* @return the email address of this message boards mailing list
-	*/
-	public java.lang.String getEmailAddress() {
-		return _mbMailingList.getEmailAddress();
-	}
+		Long groupId = (Long)attributes.get("groupId");
 
-	/**
-	* Sets the email address of this message boards mailing list.
-	*
-	* @param emailAddress the email address of this message boards mailing list
-	*/
-	public void setEmailAddress(java.lang.String emailAddress) {
-		_mbMailingList.setEmailAddress(emailAddress);
-	}
+		if (groupId != null) {
+			setGroupId(groupId);
+		}
 
-	/**
-	* Returns the in protocol of this message boards mailing list.
-	*
-	* @return the in protocol of this message boards mailing list
-	*/
-	public java.lang.String getInProtocol() {
-		return _mbMailingList.getInProtocol();
-	}
+		Long companyId = (Long)attributes.get("companyId");
 
-	/**
-	* Sets the in protocol of this message boards mailing list.
-	*
-	* @param inProtocol the in protocol of this message boards mailing list
-	*/
-	public void setInProtocol(java.lang.String inProtocol) {
-		_mbMailingList.setInProtocol(inProtocol);
-	}
+		if (companyId != null) {
+			setCompanyId(companyId);
+		}
 
-	/**
-	* Returns the in server name of this message boards mailing list.
-	*
-	* @return the in server name of this message boards mailing list
-	*/
-	public java.lang.String getInServerName() {
-		return _mbMailingList.getInServerName();
-	}
+		Long userId = (Long)attributes.get("userId");
 
-	/**
-	* Sets the in server name of this message boards mailing list.
-	*
-	* @param inServerName the in server name of this message boards mailing list
-	*/
-	public void setInServerName(java.lang.String inServerName) {
-		_mbMailingList.setInServerName(inServerName);
-	}
+		if (userId != null) {
+			setUserId(userId);
+		}
 
-	/**
-	* Returns the in server port of this message boards mailing list.
-	*
-	* @return the in server port of this message boards mailing list
-	*/
-	public int getInServerPort() {
-		return _mbMailingList.getInServerPort();
-	}
+		String userName = (String)attributes.get("userName");
 
-	/**
-	* Sets the in server port of this message boards mailing list.
-	*
-	* @param inServerPort the in server port of this message boards mailing list
-	*/
-	public void setInServerPort(int inServerPort) {
-		_mbMailingList.setInServerPort(inServerPort);
-	}
+		if (userName != null) {
+			setUserName(userName);
+		}
 
-	/**
-	* Returns the in use s s l of this message boards mailing list.
-	*
-	* @return the in use s s l of this message boards mailing list
-	*/
-	public boolean getInUseSSL() {
-		return _mbMailingList.getInUseSSL();
-	}
+		Date createDate = (Date)attributes.get("createDate");
 
-	/**
-	* Returns <code>true</code> if this message boards mailing list is in use s s l.
-	*
-	* @return <code>true</code> if this message boards mailing list is in use s s l; <code>false</code> otherwise
-	*/
-	public boolean isInUseSSL() {
-		return _mbMailingList.isInUseSSL();
-	}
+		if (createDate != null) {
+			setCreateDate(createDate);
+		}
 
-	/**
-	* Sets whether this message boards mailing list is in use s s l.
-	*
-	* @param inUseSSL the in use s s l of this message boards mailing list
-	*/
-	public void setInUseSSL(boolean inUseSSL) {
-		_mbMailingList.setInUseSSL(inUseSSL);
-	}
+		Date modifiedDate = (Date)attributes.get("modifiedDate");
 
-	/**
-	* Returns the in user name of this message boards mailing list.
-	*
-	* @return the in user name of this message boards mailing list
-	*/
-	public java.lang.String getInUserName() {
-		return _mbMailingList.getInUserName();
-	}
+		if (modifiedDate != null) {
+			setModifiedDate(modifiedDate);
+		}
 
-	/**
-	* Sets the in user name of this message boards mailing list.
-	*
-	* @param inUserName the in user name of this message boards mailing list
-	*/
-	public void setInUserName(java.lang.String inUserName) {
-		_mbMailingList.setInUserName(inUserName);
-	}
+		Long categoryId = (Long)attributes.get("categoryId");
 
-	/**
-	* Returns the in password of this message boards mailing list.
-	*
-	* @return the in password of this message boards mailing list
-	*/
-	public java.lang.String getInPassword() {
-		return _mbMailingList.getInPassword();
-	}
+		if (categoryId != null) {
+			setCategoryId(categoryId);
+		}
 
-	/**
-	* Sets the in password of this message boards mailing list.
-	*
-	* @param inPassword the in password of this message boards mailing list
-	*/
-	public void setInPassword(java.lang.String inPassword) {
-		_mbMailingList.setInPassword(inPassword);
-	}
+		String emailAddress = (String)attributes.get("emailAddress");
 
-	/**
-	* Returns the in read interval of this message boards mailing list.
-	*
-	* @return the in read interval of this message boards mailing list
-	*/
-	public int getInReadInterval() {
-		return _mbMailingList.getInReadInterval();
-	}
+		if (emailAddress != null) {
+			setEmailAddress(emailAddress);
+		}
 
-	/**
-	* Sets the in read interval of this message boards mailing list.
-	*
-	* @param inReadInterval the in read interval of this message boards mailing list
-	*/
-	public void setInReadInterval(int inReadInterval) {
-		_mbMailingList.setInReadInterval(inReadInterval);
-	}
+		String inProtocol = (String)attributes.get("inProtocol");
 
-	/**
-	* Returns the out email address of this message boards mailing list.
-	*
-	* @return the out email address of this message boards mailing list
-	*/
-	public java.lang.String getOutEmailAddress() {
-		return _mbMailingList.getOutEmailAddress();
-	}
+		if (inProtocol != null) {
+			setInProtocol(inProtocol);
+		}
 
-	/**
-	* Sets the out email address of this message boards mailing list.
-	*
-	* @param outEmailAddress the out email address of this message boards mailing list
-	*/
-	public void setOutEmailAddress(java.lang.String outEmailAddress) {
-		_mbMailingList.setOutEmailAddress(outEmailAddress);
-	}
+		String inServerName = (String)attributes.get("inServerName");
 
-	/**
-	* Returns the out custom of this message boards mailing list.
-	*
-	* @return the out custom of this message boards mailing list
-	*/
-	public boolean getOutCustom() {
-		return _mbMailingList.getOutCustom();
-	}
+		if (inServerName != null) {
+			setInServerName(inServerName);
+		}
 
-	/**
-	* Returns <code>true</code> if this message boards mailing list is out custom.
-	*
-	* @return <code>true</code> if this message boards mailing list is out custom; <code>false</code> otherwise
-	*/
-	public boolean isOutCustom() {
-		return _mbMailingList.isOutCustom();
-	}
+		Integer inServerPort = (Integer)attributes.get("inServerPort");
 
-	/**
-	* Sets whether this message boards mailing list is out custom.
-	*
-	* @param outCustom the out custom of this message boards mailing list
-	*/
-	public void setOutCustom(boolean outCustom) {
-		_mbMailingList.setOutCustom(outCustom);
-	}
+		if (inServerPort != null) {
+			setInServerPort(inServerPort);
+		}
 
-	/**
-	* Returns the out server name of this message boards mailing list.
-	*
-	* @return the out server name of this message boards mailing list
-	*/
-	public java.lang.String getOutServerName() {
-		return _mbMailingList.getOutServerName();
-	}
+		Boolean inUseSSL = (Boolean)attributes.get("inUseSSL");
 
-	/**
-	* Sets the out server name of this message boards mailing list.
-	*
-	* @param outServerName the out server name of this message boards mailing list
-	*/
-	public void setOutServerName(java.lang.String outServerName) {
-		_mbMailingList.setOutServerName(outServerName);
-	}
+		if (inUseSSL != null) {
+			setInUseSSL(inUseSSL);
+		}
 
-	/**
-	* Returns the out server port of this message boards mailing list.
-	*
-	* @return the out server port of this message boards mailing list
-	*/
-	public int getOutServerPort() {
-		return _mbMailingList.getOutServerPort();
-	}
+		String inUserName = (String)attributes.get("inUserName");
 
-	/**
-	* Sets the out server port of this message boards mailing list.
-	*
-	* @param outServerPort the out server port of this message boards mailing list
-	*/
-	public void setOutServerPort(int outServerPort) {
-		_mbMailingList.setOutServerPort(outServerPort);
-	}
+		if (inUserName != null) {
+			setInUserName(inUserName);
+		}
 
-	/**
-	* Returns the out use s s l of this message boards mailing list.
-	*
-	* @return the out use s s l of this message boards mailing list
-	*/
-	public boolean getOutUseSSL() {
-		return _mbMailingList.getOutUseSSL();
-	}
+		String inPassword = (String)attributes.get("inPassword");
 
-	/**
-	* Returns <code>true</code> if this message boards mailing list is out use s s l.
-	*
-	* @return <code>true</code> if this message boards mailing list is out use s s l; <code>false</code> otherwise
-	*/
-	public boolean isOutUseSSL() {
-		return _mbMailingList.isOutUseSSL();
-	}
+		if (inPassword != null) {
+			setInPassword(inPassword);
+		}
 
-	/**
-	* Sets whether this message boards mailing list is out use s s l.
-	*
-	* @param outUseSSL the out use s s l of this message boards mailing list
-	*/
-	public void setOutUseSSL(boolean outUseSSL) {
-		_mbMailingList.setOutUseSSL(outUseSSL);
-	}
+		Integer inReadInterval = (Integer)attributes.get("inReadInterval");
 
-	/**
-	* Returns the out user name of this message boards mailing list.
-	*
-	* @return the out user name of this message boards mailing list
-	*/
-	public java.lang.String getOutUserName() {
-		return _mbMailingList.getOutUserName();
-	}
+		if (inReadInterval != null) {
+			setInReadInterval(inReadInterval);
+		}
 
-	/**
-	* Sets the out user name of this message boards mailing list.
-	*
-	* @param outUserName the out user name of this message boards mailing list
-	*/
-	public void setOutUserName(java.lang.String outUserName) {
-		_mbMailingList.setOutUserName(outUserName);
-	}
+		String outEmailAddress = (String)attributes.get("outEmailAddress");
 
-	/**
-	* Returns the out password of this message boards mailing list.
-	*
-	* @return the out password of this message boards mailing list
-	*/
-	public java.lang.String getOutPassword() {
-		return _mbMailingList.getOutPassword();
-	}
+		if (outEmailAddress != null) {
+			setOutEmailAddress(outEmailAddress);
+		}
 
-	/**
-	* Sets the out password of this message boards mailing list.
-	*
-	* @param outPassword the out password of this message boards mailing list
-	*/
-	public void setOutPassword(java.lang.String outPassword) {
-		_mbMailingList.setOutPassword(outPassword);
-	}
+		Boolean outCustom = (Boolean)attributes.get("outCustom");
 
-	/**
-	* Returns the allow anonymous of this message boards mailing list.
-	*
-	* @return the allow anonymous of this message boards mailing list
-	*/
-	public boolean getAllowAnonymous() {
-		return _mbMailingList.getAllowAnonymous();
-	}
+		if (outCustom != null) {
+			setOutCustom(outCustom);
+		}
 
-	/**
-	* Returns <code>true</code> if this message boards mailing list is allow anonymous.
-	*
-	* @return <code>true</code> if this message boards mailing list is allow anonymous; <code>false</code> otherwise
-	*/
-	public boolean isAllowAnonymous() {
-		return _mbMailingList.isAllowAnonymous();
-	}
+		String outServerName = (String)attributes.get("outServerName");
 
-	/**
-	* Sets whether this message boards mailing list is allow anonymous.
-	*
-	* @param allowAnonymous the allow anonymous of this message boards mailing list
-	*/
-	public void setAllowAnonymous(boolean allowAnonymous) {
-		_mbMailingList.setAllowAnonymous(allowAnonymous);
-	}
+		if (outServerName != null) {
+			setOutServerName(outServerName);
+		}
 
-	/**
-	* Returns the active of this message boards mailing list.
-	*
-	* @return the active of this message boards mailing list
-	*/
-	public boolean getActive() {
-		return _mbMailingList.getActive();
-	}
+		Integer outServerPort = (Integer)attributes.get("outServerPort");
 
-	/**
-	* Returns <code>true</code> if this message boards mailing list is active.
-	*
-	* @return <code>true</code> if this message boards mailing list is active; <code>false</code> otherwise
-	*/
-	public boolean isActive() {
-		return _mbMailingList.isActive();
-	}
+		if (outServerPort != null) {
+			setOutServerPort(outServerPort);
+		}
 
-	/**
-	* Sets whether this message boards mailing list is active.
-	*
-	* @param active the active of this message boards mailing list
-	*/
-	public void setActive(boolean active) {
-		_mbMailingList.setActive(active);
-	}
+		Boolean outUseSSL = (Boolean)attributes.get("outUseSSL");
 
-	public boolean isNew() {
-		return _mbMailingList.isNew();
-	}
+		if (outUseSSL != null) {
+			setOutUseSSL(outUseSSL);
+		}
 
-	public void setNew(boolean n) {
-		_mbMailingList.setNew(n);
-	}
+		String outUserName = (String)attributes.get("outUserName");
 
-	public boolean isCachedModel() {
-		return _mbMailingList.isCachedModel();
-	}
+		if (outUserName != null) {
+			setOutUserName(outUserName);
+		}
 
-	public void setCachedModel(boolean cachedModel) {
-		_mbMailingList.setCachedModel(cachedModel);
-	}
+		String outPassword = (String)attributes.get("outPassword");
 
-	public boolean isEscapedModel() {
-		return _mbMailingList.isEscapedModel();
-	}
+		if (outPassword != null) {
+			setOutPassword(outPassword);
+		}
 
-	public java.io.Serializable getPrimaryKeyObj() {
-		return _mbMailingList.getPrimaryKeyObj();
-	}
+		Boolean allowAnonymous = (Boolean)attributes.get("allowAnonymous");
 
-	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
-		_mbMailingList.setPrimaryKeyObj(primaryKeyObj);
-	}
+		if (allowAnonymous != null) {
+			setAllowAnonymous(allowAnonymous);
+		}
 
-	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
-		return _mbMailingList.getExpandoBridge();
-	}
+		Boolean active = (Boolean)attributes.get("active");
 
-	public void setExpandoBridgeAttributes(
-		com.liferay.portal.service.ServiceContext serviceContext) {
-		_mbMailingList.setExpandoBridgeAttributes(serviceContext);
+		if (active != null) {
+			setActive(active);
+		}
 	}
 
 	@Override
@@ -632,9 +247,300 @@ public class MBMailingListWrapper implements MBMailingList,
 		return new MBMailingListWrapper((MBMailingList)_mbMailingList.clone());
 	}
 
+	@Override
 	public int compareTo(
 		com.liferay.portlet.messageboards.model.MBMailingList mbMailingList) {
 		return _mbMailingList.compareTo(mbMailingList);
+	}
+
+	/**
+	* Returns the active of this message boards mailing list.
+	*
+	* @return the active of this message boards mailing list
+	*/
+	@Override
+	public boolean getActive() {
+		return _mbMailingList.getActive();
+	}
+
+	/**
+	* Returns the allow anonymous of this message boards mailing list.
+	*
+	* @return the allow anonymous of this message boards mailing list
+	*/
+	@Override
+	public boolean getAllowAnonymous() {
+		return _mbMailingList.getAllowAnonymous();
+	}
+
+	/**
+	* Returns the category ID of this message boards mailing list.
+	*
+	* @return the category ID of this message boards mailing list
+	*/
+	@Override
+	public long getCategoryId() {
+		return _mbMailingList.getCategoryId();
+	}
+
+	/**
+	* Returns the company ID of this message boards mailing list.
+	*
+	* @return the company ID of this message boards mailing list
+	*/
+	@Override
+	public long getCompanyId() {
+		return _mbMailingList.getCompanyId();
+	}
+
+	/**
+	* Returns the create date of this message boards mailing list.
+	*
+	* @return the create date of this message boards mailing list
+	*/
+	@Override
+	public Date getCreateDate() {
+		return _mbMailingList.getCreateDate();
+	}
+
+	/**
+	* Returns the email address of this message boards mailing list.
+	*
+	* @return the email address of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getEmailAddress() {
+		return _mbMailingList.getEmailAddress();
+	}
+
+	@Override
+	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
+		return _mbMailingList.getExpandoBridge();
+	}
+
+	/**
+	* Returns the group ID of this message boards mailing list.
+	*
+	* @return the group ID of this message boards mailing list
+	*/
+	@Override
+	public long getGroupId() {
+		return _mbMailingList.getGroupId();
+	}
+
+	/**
+	* Returns the in password of this message boards mailing list.
+	*
+	* @return the in password of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getInPassword() {
+		return _mbMailingList.getInPassword();
+	}
+
+	/**
+	* Returns the in protocol of this message boards mailing list.
+	*
+	* @return the in protocol of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getInProtocol() {
+		return _mbMailingList.getInProtocol();
+	}
+
+	/**
+	* Returns the in read interval of this message boards mailing list.
+	*
+	* @return the in read interval of this message boards mailing list
+	*/
+	@Override
+	public int getInReadInterval() {
+		return _mbMailingList.getInReadInterval();
+	}
+
+	/**
+	* Returns the in server name of this message boards mailing list.
+	*
+	* @return the in server name of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getInServerName() {
+		return _mbMailingList.getInServerName();
+	}
+
+	/**
+	* Returns the in server port of this message boards mailing list.
+	*
+	* @return the in server port of this message boards mailing list
+	*/
+	@Override
+	public int getInServerPort() {
+		return _mbMailingList.getInServerPort();
+	}
+
+	/**
+	* Returns the in use s s l of this message boards mailing list.
+	*
+	* @return the in use s s l of this message boards mailing list
+	*/
+	@Override
+	public boolean getInUseSSL() {
+		return _mbMailingList.getInUseSSL();
+	}
+
+	/**
+	* Returns the in user name of this message boards mailing list.
+	*
+	* @return the in user name of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getInUserName() {
+		return _mbMailingList.getInUserName();
+	}
+
+	/**
+	* Returns the mailing list ID of this message boards mailing list.
+	*
+	* @return the mailing list ID of this message boards mailing list
+	*/
+	@Override
+	public long getMailingListId() {
+		return _mbMailingList.getMailingListId();
+	}
+
+	/**
+	* Returns the modified date of this message boards mailing list.
+	*
+	* @return the modified date of this message boards mailing list
+	*/
+	@Override
+	public Date getModifiedDate() {
+		return _mbMailingList.getModifiedDate();
+	}
+
+	/**
+	* Returns the out custom of this message boards mailing list.
+	*
+	* @return the out custom of this message boards mailing list
+	*/
+	@Override
+	public boolean getOutCustom() {
+		return _mbMailingList.getOutCustom();
+	}
+
+	/**
+	* Returns the out email address of this message boards mailing list.
+	*
+	* @return the out email address of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getOutEmailAddress() {
+		return _mbMailingList.getOutEmailAddress();
+	}
+
+	/**
+	* Returns the out password of this message boards mailing list.
+	*
+	* @return the out password of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getOutPassword() {
+		return _mbMailingList.getOutPassword();
+	}
+
+	/**
+	* Returns the out server name of this message boards mailing list.
+	*
+	* @return the out server name of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getOutServerName() {
+		return _mbMailingList.getOutServerName();
+	}
+
+	/**
+	* Returns the out server port of this message boards mailing list.
+	*
+	* @return the out server port of this message boards mailing list
+	*/
+	@Override
+	public int getOutServerPort() {
+		return _mbMailingList.getOutServerPort();
+	}
+
+	/**
+	* Returns the out use s s l of this message boards mailing list.
+	*
+	* @return the out use s s l of this message boards mailing list
+	*/
+	@Override
+	public boolean getOutUseSSL() {
+		return _mbMailingList.getOutUseSSL();
+	}
+
+	/**
+	* Returns the out user name of this message boards mailing list.
+	*
+	* @return the out user name of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getOutUserName() {
+		return _mbMailingList.getOutUserName();
+	}
+
+	/**
+	* Returns the primary key of this message boards mailing list.
+	*
+	* @return the primary key of this message boards mailing list
+	*/
+	@Override
+	public long getPrimaryKey() {
+		return _mbMailingList.getPrimaryKey();
+	}
+
+	@Override
+	public java.io.Serializable getPrimaryKeyObj() {
+		return _mbMailingList.getPrimaryKeyObj();
+	}
+
+	/**
+	* Returns the user ID of this message boards mailing list.
+	*
+	* @return the user ID of this message boards mailing list
+	*/
+	@Override
+	public long getUserId() {
+		return _mbMailingList.getUserId();
+	}
+
+	/**
+	* Returns the user name of this message boards mailing list.
+	*
+	* @return the user name of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getUserName() {
+		return _mbMailingList.getUserName();
+	}
+
+	/**
+	* Returns the user uuid of this message boards mailing list.
+	*
+	* @return the user uuid of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getUserUuid() {
+		return _mbMailingList.getUserUuid();
+	}
+
+	/**
+	* Returns the uuid of this message boards mailing list.
+	*
+	* @return the uuid of this message boards mailing list
+	*/
+	@Override
+	public java.lang.String getUuid() {
+		return _mbMailingList.getUuid();
 	}
 
 	@Override
@@ -642,10 +548,395 @@ public class MBMailingListWrapper implements MBMailingList,
 		return _mbMailingList.hashCode();
 	}
 
+	/**
+	* Returns <code>true</code> if this message boards mailing list is active.
+	*
+	* @return <code>true</code> if this message boards mailing list is active; <code>false</code> otherwise
+	*/
+	@Override
+	public boolean isActive() {
+		return _mbMailingList.isActive();
+	}
+
+	/**
+	* Returns <code>true</code> if this message boards mailing list is allow anonymous.
+	*
+	* @return <code>true</code> if this message boards mailing list is allow anonymous; <code>false</code> otherwise
+	*/
+	@Override
+	public boolean isAllowAnonymous() {
+		return _mbMailingList.isAllowAnonymous();
+	}
+
+	@Override
+	public boolean isCachedModel() {
+		return _mbMailingList.isCachedModel();
+	}
+
+	@Override
+	public boolean isEscapedModel() {
+		return _mbMailingList.isEscapedModel();
+	}
+
+	/**
+	* Returns <code>true</code> if this message boards mailing list is in use s s l.
+	*
+	* @return <code>true</code> if this message boards mailing list is in use s s l; <code>false</code> otherwise
+	*/
+	@Override
+	public boolean isInUseSSL() {
+		return _mbMailingList.isInUseSSL();
+	}
+
+	@Override
+	public boolean isNew() {
+		return _mbMailingList.isNew();
+	}
+
+	/**
+	* Returns <code>true</code> if this message boards mailing list is out custom.
+	*
+	* @return <code>true</code> if this message boards mailing list is out custom; <code>false</code> otherwise
+	*/
+	@Override
+	public boolean isOutCustom() {
+		return _mbMailingList.isOutCustom();
+	}
+
+	/**
+	* Returns <code>true</code> if this message boards mailing list is out use s s l.
+	*
+	* @return <code>true</code> if this message boards mailing list is out use s s l; <code>false</code> otherwise
+	*/
+	@Override
+	public boolean isOutUseSSL() {
+		return _mbMailingList.isOutUseSSL();
+	}
+
+	@Override
+	public void persist() {
+		_mbMailingList.persist();
+	}
+
+	/**
+	* Sets whether this message boards mailing list is active.
+	*
+	* @param active the active of this message boards mailing list
+	*/
+	@Override
+	public void setActive(boolean active) {
+		_mbMailingList.setActive(active);
+	}
+
+	/**
+	* Sets whether this message boards mailing list is allow anonymous.
+	*
+	* @param allowAnonymous the allow anonymous of this message boards mailing list
+	*/
+	@Override
+	public void setAllowAnonymous(boolean allowAnonymous) {
+		_mbMailingList.setAllowAnonymous(allowAnonymous);
+	}
+
+	@Override
+	public void setCachedModel(boolean cachedModel) {
+		_mbMailingList.setCachedModel(cachedModel);
+	}
+
+	/**
+	* Sets the category ID of this message boards mailing list.
+	*
+	* @param categoryId the category ID of this message boards mailing list
+	*/
+	@Override
+	public void setCategoryId(long categoryId) {
+		_mbMailingList.setCategoryId(categoryId);
+	}
+
+	/**
+	* Sets the company ID of this message boards mailing list.
+	*
+	* @param companyId the company ID of this message boards mailing list
+	*/
+	@Override
+	public void setCompanyId(long companyId) {
+		_mbMailingList.setCompanyId(companyId);
+	}
+
+	/**
+	* Sets the create date of this message boards mailing list.
+	*
+	* @param createDate the create date of this message boards mailing list
+	*/
+	@Override
+	public void setCreateDate(Date createDate) {
+		_mbMailingList.setCreateDate(createDate);
+	}
+
+	/**
+	* Sets the email address of this message boards mailing list.
+	*
+	* @param emailAddress the email address of this message boards mailing list
+	*/
+	@Override
+	public void setEmailAddress(java.lang.String emailAddress) {
+		_mbMailingList.setEmailAddress(emailAddress);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.model.BaseModel<?> baseModel) {
+		_mbMailingList.setExpandoBridgeAttributes(baseModel);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portlet.expando.model.ExpandoBridge expandoBridge) {
+		_mbMailingList.setExpandoBridgeAttributes(expandoBridge);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		_mbMailingList.setExpandoBridgeAttributes(serviceContext);
+	}
+
+	/**
+	* Sets the group ID of this message boards mailing list.
+	*
+	* @param groupId the group ID of this message boards mailing list
+	*/
+	@Override
+	public void setGroupId(long groupId) {
+		_mbMailingList.setGroupId(groupId);
+	}
+
+	/**
+	* Sets the in password of this message boards mailing list.
+	*
+	* @param inPassword the in password of this message boards mailing list
+	*/
+	@Override
+	public void setInPassword(java.lang.String inPassword) {
+		_mbMailingList.setInPassword(inPassword);
+	}
+
+	/**
+	* Sets the in protocol of this message boards mailing list.
+	*
+	* @param inProtocol the in protocol of this message boards mailing list
+	*/
+	@Override
+	public void setInProtocol(java.lang.String inProtocol) {
+		_mbMailingList.setInProtocol(inProtocol);
+	}
+
+	/**
+	* Sets the in read interval of this message boards mailing list.
+	*
+	* @param inReadInterval the in read interval of this message boards mailing list
+	*/
+	@Override
+	public void setInReadInterval(int inReadInterval) {
+		_mbMailingList.setInReadInterval(inReadInterval);
+	}
+
+	/**
+	* Sets the in server name of this message boards mailing list.
+	*
+	* @param inServerName the in server name of this message boards mailing list
+	*/
+	@Override
+	public void setInServerName(java.lang.String inServerName) {
+		_mbMailingList.setInServerName(inServerName);
+	}
+
+	/**
+	* Sets the in server port of this message boards mailing list.
+	*
+	* @param inServerPort the in server port of this message boards mailing list
+	*/
+	@Override
+	public void setInServerPort(int inServerPort) {
+		_mbMailingList.setInServerPort(inServerPort);
+	}
+
+	/**
+	* Sets whether this message boards mailing list is in use s s l.
+	*
+	* @param inUseSSL the in use s s l of this message boards mailing list
+	*/
+	@Override
+	public void setInUseSSL(boolean inUseSSL) {
+		_mbMailingList.setInUseSSL(inUseSSL);
+	}
+
+	/**
+	* Sets the in user name of this message boards mailing list.
+	*
+	* @param inUserName the in user name of this message boards mailing list
+	*/
+	@Override
+	public void setInUserName(java.lang.String inUserName) {
+		_mbMailingList.setInUserName(inUserName);
+	}
+
+	/**
+	* Sets the mailing list ID of this message boards mailing list.
+	*
+	* @param mailingListId the mailing list ID of this message boards mailing list
+	*/
+	@Override
+	public void setMailingListId(long mailingListId) {
+		_mbMailingList.setMailingListId(mailingListId);
+	}
+
+	/**
+	* Sets the modified date of this message boards mailing list.
+	*
+	* @param modifiedDate the modified date of this message boards mailing list
+	*/
+	@Override
+	public void setModifiedDate(Date modifiedDate) {
+		_mbMailingList.setModifiedDate(modifiedDate);
+	}
+
+	@Override
+	public void setNew(boolean n) {
+		_mbMailingList.setNew(n);
+	}
+
+	/**
+	* Sets whether this message boards mailing list is out custom.
+	*
+	* @param outCustom the out custom of this message boards mailing list
+	*/
+	@Override
+	public void setOutCustom(boolean outCustom) {
+		_mbMailingList.setOutCustom(outCustom);
+	}
+
+	/**
+	* Sets the out email address of this message boards mailing list.
+	*
+	* @param outEmailAddress the out email address of this message boards mailing list
+	*/
+	@Override
+	public void setOutEmailAddress(java.lang.String outEmailAddress) {
+		_mbMailingList.setOutEmailAddress(outEmailAddress);
+	}
+
+	/**
+	* Sets the out password of this message boards mailing list.
+	*
+	* @param outPassword the out password of this message boards mailing list
+	*/
+	@Override
+	public void setOutPassword(java.lang.String outPassword) {
+		_mbMailingList.setOutPassword(outPassword);
+	}
+
+	/**
+	* Sets the out server name of this message boards mailing list.
+	*
+	* @param outServerName the out server name of this message boards mailing list
+	*/
+	@Override
+	public void setOutServerName(java.lang.String outServerName) {
+		_mbMailingList.setOutServerName(outServerName);
+	}
+
+	/**
+	* Sets the out server port of this message boards mailing list.
+	*
+	* @param outServerPort the out server port of this message boards mailing list
+	*/
+	@Override
+	public void setOutServerPort(int outServerPort) {
+		_mbMailingList.setOutServerPort(outServerPort);
+	}
+
+	/**
+	* Sets whether this message boards mailing list is out use s s l.
+	*
+	* @param outUseSSL the out use s s l of this message boards mailing list
+	*/
+	@Override
+	public void setOutUseSSL(boolean outUseSSL) {
+		_mbMailingList.setOutUseSSL(outUseSSL);
+	}
+
+	/**
+	* Sets the out user name of this message boards mailing list.
+	*
+	* @param outUserName the out user name of this message boards mailing list
+	*/
+	@Override
+	public void setOutUserName(java.lang.String outUserName) {
+		_mbMailingList.setOutUserName(outUserName);
+	}
+
+	/**
+	* Sets the primary key of this message boards mailing list.
+	*
+	* @param primaryKey the primary key of this message boards mailing list
+	*/
+	@Override
+	public void setPrimaryKey(long primaryKey) {
+		_mbMailingList.setPrimaryKey(primaryKey);
+	}
+
+	@Override
+	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
+		_mbMailingList.setPrimaryKeyObj(primaryKeyObj);
+	}
+
+	/**
+	* Sets the user ID of this message boards mailing list.
+	*
+	* @param userId the user ID of this message boards mailing list
+	*/
+	@Override
+	public void setUserId(long userId) {
+		_mbMailingList.setUserId(userId);
+	}
+
+	/**
+	* Sets the user name of this message boards mailing list.
+	*
+	* @param userName the user name of this message boards mailing list
+	*/
+	@Override
+	public void setUserName(java.lang.String userName) {
+		_mbMailingList.setUserName(userName);
+	}
+
+	/**
+	* Sets the user uuid of this message boards mailing list.
+	*
+	* @param userUuid the user uuid of this message boards mailing list
+	*/
+	@Override
+	public void setUserUuid(java.lang.String userUuid) {
+		_mbMailingList.setUserUuid(userUuid);
+	}
+
+	/**
+	* Sets the uuid of this message boards mailing list.
+	*
+	* @param uuid the uuid of this message boards mailing list
+	*/
+	@Override
+	public void setUuid(java.lang.String uuid) {
+		_mbMailingList.setUuid(uuid);
+	}
+
+	@Override
 	public com.liferay.portal.model.CacheModel<com.liferay.portlet.messageboards.model.MBMailingList> toCacheModel() {
 		return _mbMailingList.toCacheModel();
 	}
 
+	@Override
 	public com.liferay.portlet.messageboards.model.MBMailingList toEscapedModel() {
 		return new MBMailingListWrapper(_mbMailingList.toEscapedModel());
 	}
@@ -655,29 +946,62 @@ public class MBMailingListWrapper implements MBMailingList,
 		return _mbMailingList.toString();
 	}
 
+	@Override
+	public com.liferay.portlet.messageboards.model.MBMailingList toUnescapedModel() {
+		return new MBMailingListWrapper(_mbMailingList.toUnescapedModel());
+	}
+
+	@Override
 	public java.lang.String toXmlString() {
 		return _mbMailingList.toXmlString();
 	}
 
-	public void persist()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		_mbMailingList.persist();
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof MBMailingListWrapper)) {
+			return false;
+		}
+
+		MBMailingListWrapper mbMailingListWrapper = (MBMailingListWrapper)obj;
+
+		if (Validator.equals(_mbMailingList, mbMailingListWrapper._mbMailingList)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedModel}
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedModel}
 	 */
+	@Deprecated
 	public MBMailingList getWrappedMBMailingList() {
 		return _mbMailingList;
 	}
 
+	@Override
 	public MBMailingList getWrappedModel() {
 		return _mbMailingList;
 	}
 
+	@Override
+	public boolean isEntityCacheEnabled() {
+		return _mbMailingList.isEntityCacheEnabled();
+	}
+
+	@Override
+	public boolean isFinderCacheEnabled() {
+		return _mbMailingList.isFinderCacheEnabled();
+	}
+
+	@Override
 	public void resetOriginalValues() {
 		_mbMailingList.resetOriginalValues();
 	}
 
-	private MBMailingList _mbMailingList;
+	private final MBMailingList _mbMailingList;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,54 +14,38 @@
 
 package com.liferay.portlet;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.registry.Filter;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Shuyang Zhou
+ * @author Peter Fellwock
  */
 public class DefaultControlPanelEntryFactory {
 
 	public static ControlPanelEntry getInstance() {
-		if (_controlPanelEntry == null) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Instantiate " +
-						PropsValues.CONTROL_PANEL_DEFAULT_ENTRY_CLASS);
-			}
-
-			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
-
-			try {
-				_controlPanelEntry = (ControlPanelEntry)classLoader.loadClass(
-					PropsValues.CONTROL_PANEL_DEFAULT_ENTRY_CLASS).
-						newInstance();
-			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-		}
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Return " + _controlPanelEntry.getClass().getName());
-		}
-
-		return _controlPanelEntry;
+		return _instance._serviceTracker.getService();
 	}
 
-	public static void setInstance(ControlPanelEntry controlPanelEntryFactory) {
-		if (_log.isDebugEnabled()) {
-			_log.debug("Set " + controlPanelEntryFactory.getClass().getName());
-		}
+	private DefaultControlPanelEntryFactory() {
+		Registry registry = RegistryUtil.getRegistry();
 
-		_controlPanelEntry = controlPanelEntryFactory;
+		Filter filter = registry.getFilter(
+			"(&(!(javax.portlet.name=*))(objectClass=" +
+				ControlPanelEntry.class.getName() + "))");
+
+		_serviceTracker = registry.trackServices(filter);
+
+		_serviceTracker.open();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
-		DefaultControlPanelEntryFactory.class);
+	private static final DefaultControlPanelEntryFactory _instance =
+		new DefaultControlPanelEntryFactory();
 
-	private static ControlPanelEntry _controlPanelEntry = null;
+	private final ServiceTracker<ControlPanelEntry, ControlPanelEntry>
+		_serviceTracker;
 
 }

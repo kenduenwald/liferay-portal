@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,13 @@
 package com.liferay.taglib.theme;
 
 import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
-import com.liferay.portal.kernel.servlet.PipingServletResponse;
+import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.kernel.util.ThemeHelper;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.model.Theme;
 import com.liferay.portal.theme.PortletDisplay;
 import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.taglib.servlet.PipingServletResponse;
 import com.liferay.taglib.util.ParamAndPropertyAncestorTagImpl;
 import com.liferay.taglib.util.ThemeUtil;
 
@@ -29,7 +30,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 import javax.servlet.jsp.tagext.BodyTag;
 
 /**
@@ -40,8 +40,7 @@ public class WrapPortletTag
 
 	public static String doTag(
 			String wrapPage, String portletPage, ServletContext servletContext,
-			HttpServletRequest request, HttpServletResponse response,
-			PageContext pageContext)
+			HttpServletRequest request, HttpServletResponse response)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
@@ -53,7 +52,8 @@ public class WrapPortletTag
 		// Portlet content
 
 		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher(portletPage);
+			DirectRequestDispatcherFactoryUtil.getRequestDispatcher(
+				servletContext, portletPage);
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
@@ -72,11 +72,11 @@ public class WrapPortletTag
 
 		if (extension.equals(ThemeHelper.TEMPLATE_EXTENSION_FTL)) {
 			content = ThemeUtil.includeFTL(
-				servletContext, request, pageContext, wrapPage, theme, false);
+				servletContext, request, response, wrapPage, theme, false);
 		}
 		else if (extension.equals(ThemeHelper.TEMPLATE_EXTENSION_VM)) {
 			content = ThemeUtil.includeVM(
-				servletContext, request, pageContext, wrapPage, theme, false);
+				servletContext, request, response, wrapPage, theme, false);
 		}
 
 		return _CONTENT_WRAPPER_PRE.concat(content).concat(
@@ -86,9 +86,6 @@ public class WrapPortletTag
 	@Override
 	public int doEndTag() throws JspException {
 		try {
-			ServletContext servletContext = getServletContext();
-			HttpServletRequest request = getServletRequest();
-
 			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
@@ -103,7 +100,7 @@ public class WrapPortletTag
 
 			ThemeUtil.include(
 				servletContext, request, new PipingServletResponse(pageContext),
-				pageContext, getPage(), theme);
+				getPage(), theme);
 
 			return EVAL_PAGE;
 		}

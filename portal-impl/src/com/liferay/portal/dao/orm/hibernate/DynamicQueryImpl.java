@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,11 +18,13 @@ import com.liferay.portal.kernel.dao.orm.Criterion;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Order;
 import com.liferay.portal.kernel.dao.orm.Projection;
+import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.UnmodifiableList;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.hibernate.Criteria;
@@ -37,6 +39,7 @@ public class DynamicQueryImpl implements DynamicQuery {
 		_detachedCriteria = detachedCriteria;
 	}
 
+	@Override
 	public DynamicQuery add(Criterion criterion) {
 		CriterionImpl criterionImpl = (CriterionImpl)criterion;
 
@@ -45,6 +48,7 @@ public class DynamicQueryImpl implements DynamicQuery {
 		return this;
 	}
 
+	@Override
 	public DynamicQuery addOrder(Order order) {
 		OrderImpl orderImpl = (OrderImpl)order;
 
@@ -53,54 +57,117 @@ public class DynamicQueryImpl implements DynamicQuery {
 		return this;
 	}
 
+	@Override
 	public void compile(Session session) {
 		org.hibernate.Session hibernateSession =
 			(org.hibernate.Session)session.getWrappedSession();
 
 		_criteria = _detachedCriteria.getExecutableCriteria(hibernateSession);
 
-		if ((_start == null) || (_end == null)) {
+		if ((_start == null) && (_end == null)) {
 			return;
 		}
 
-		int start = _start.intValue();
-		int end = _end.intValue();
+		int start = QueryUtil.ALL_POS;
+
+		if (_start != null) {
+			start = _start.intValue();
+		}
+
+		int end = QueryUtil.ALL_POS;
+
+		if (_end != null) {
+			end = _end.intValue();
+		}
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS)) {
 			return;
 		}
+		else if ((start < QueryUtil.ALL_POS) && (end < QueryUtil.ALL_POS)) {
+			_criteria = _criteria.setFirstResult(0);
+			_criteria = _criteria.setMaxResults(0);
+
+			_requiresProcessing = false;
+
+			return;
+		}
+
+		if (start < 0) {
+			start = 0;
+		}
 
 		_criteria = _criteria.setFirstResult(start);
-		_criteria = _criteria.setMaxResults(end - start);
+
+		if (end == QueryUtil.ALL_POS) {
+			return;
+		}
+
+		if (start <= end) {
+			end = end - start;
+		}
+		else {
+			end = 0;
+		}
+
+		_criteria = _criteria.setMaxResults(end);
+
+		if (end == 0) {
+			_requiresProcessing = false;
+		}
 	}
 
 	public DetachedCriteria getDetachedCriteria() {
 		return _detachedCriteria;
 	}
 
+	@Override
 	@SuppressWarnings("rawtypes")
 	public List list() {
 		return list(true);
 	}
 
+	@Override
 	@SuppressWarnings("rawtypes")
 	public List list(boolean unmodifiable) {
+		if (!_requiresProcessing) {
+			if (unmodifiable) {
+				return Collections.emptyList();
+			}
+
+			return new ArrayList<>();
+		}
+
 		List list = _criteria.list();
 
 		if (unmodifiable) {
-			return new UnmodifiableList(list);
+			return Collections.unmodifiableList(list);
 		}
 		else {
 			return ListUtil.copy(list);
 		}
 	}
 
+	@Override
 	public void setLimit(int start, int end) {
 		_start = Integer.valueOf(start);
 		_end = Integer.valueOf(end);
 	}
 
+	@Override
 	public DynamicQuery setProjection(Projection projection) {
+		return setProjection(projection, true);
+	}
+
+	@Override
+	public DynamicQuery setProjection(
+		Projection projection, boolean useColumnAlias) {
+
+		if (!useColumnAlias) {
+			projection = ProjectionFactoryUtil.sqlProjection(
+				_detachedCriteria.getAlias() + "_." + projection.toString(),
+				null, null);
+		}
+
 		ProjectionImpl projectionImpl = (ProjectionImpl)projection;
 
 		_detachedCriteria.setProjection(projectionImpl.getWrappedProjection());
@@ -118,8 +185,9 @@ public class DynamicQueryImpl implements DynamicQuery {
 	}
 
 	private Criteria _criteria;
-	private DetachedCriteria _detachedCriteria;
+	private final DetachedCriteria _detachedCriteria;
 	private Integer _end;
+	private boolean _requiresProcessing = true;
 	private Integer _start;
 
 }

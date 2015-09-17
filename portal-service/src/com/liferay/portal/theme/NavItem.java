@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,14 +15,14 @@
 package com.liferay.portal.theme;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.MethodCache;
-import com.liferay.portal.kernel.util.MethodKey;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PredicateFilter;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.model.Layout;
+import com.liferay.portal.model.LayoutType;
 import com.liferay.portal.util.PortalUtil;
 
 import java.io.Serializable;
@@ -31,62 +31,164 @@ import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
 /**
+ * Represents a portal navigation item, providing access to layouts and metadata
+ * from templates, which can be found in a theme's
+ * <code>portal-normal.vm</code>.
+ *
  * @author Brian Wing Shun Chan
+ * @author Shuyang Zhou
  */
 public class NavItem implements Serializable {
 
-	public static NavItem fromLayout(RequestVars vars, Layout layout) {
-		return new NavItem(vars, layout);
-	}
-
+	/**
+	 * Creates a single level of navigation items from the layouts. Navigation
+	 * items for nested layouts are only created when they are accessed.
+	 *
+	 * <p>
+	 * No permission checks are performed in this method. Permissions of child
+	 * layouts are honored when accessing them via {@link #getChildren()}.
+	 * </p>
+	 *
+	 * @param  request the currently served {@link HttpServletRequest}
+	 * @param  layouts the layouts from which to create the navigation items
+	 * @return a single level of navigation items from the layouts, or
+	 *         <code>null</code> if the collection of layouts was
+	 *         <code>null</code>.
+	 */
 	public static List<NavItem> fromLayouts(
-		RequestVars vars, List<Layout> layouts) {
+		HttpServletRequest request, List<Layout> layouts,
+		Map<String, Object> contextObjects) {
 
 		if (layouts == null) {
 			return null;
 		}
 
-		List<NavItem> navItems = new ArrayList<NavItem>(layouts.size());
+		List<NavItem> navItems = new ArrayList<>(layouts.size());
 
 		for (Layout layout : layouts) {
-			navItems.add(fromLayout(vars, layout));
+			navItems.add(new NavItem(request, layout, contextObjects));
 		}
 
 		return navItems;
 	}
 
-	public NavItem(RequestVars vars, Layout layout) {
-		_vars = vars;
+	public NavItem(
+		HttpServletRequest request, Layout layout,
+		Map<String, Object> contextObjects) {
+
+		_request = request;
+		_themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
 		_layout = layout;
+		_contextObjects = contextObjects;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof NavItem)) {
+			return false;
+		}
+
+		NavItem navItem = (NavItem)obj;
+
+		if (Validator.equals(getLayoutId(), navItem.getLayoutId())) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Returns all of the browsable child layouts that the current user has
+	 * permission to access from this navigation item's layout.
+	 *
+	 * @return the list of all browsable child layouts that the current user has
+	 *         permission to access from this navigation item's layout
+	 * @throws Exception if an exception occurred
+	 */
+	public List<NavItem> getBrowsableChildren() throws Exception {
+		if (_browsableChildren == null) {
+			List<NavItem> children = getChildren();
+
+			_browsableChildren = ListUtil.filter(
+				children,
+				new PredicateFilter<NavItem>() {
+
+					@Override
+					public boolean filter(NavItem navItem) {
+						return navItem.isBrowsable();
+					}
+
+				});
+		}
+
+		return _browsableChildren;
+	}
+
+	/**
+	 * Returns all of child layouts that the current user has permission to
+	 * access from this navigation item's layout.
+	 *
+	 * @return the list of all child layouts that the current user has
+	 *         permission to access from this navigation item's layout
+	 * @throws Exception if an exception occurred
+	 */
 	public List<NavItem> getChildren() throws Exception {
 		if (_children == null) {
-			ThemeDisplay themeDisplay = _vars.getThemeDisplay();
-
 			List<Layout> layouts = _layout.getChildren(
-				themeDisplay.getPermissionChecker());
+				_themeDisplay.getPermissionChecker());
 
-			_children = fromLayouts(_vars, layouts);
+			_children = fromLayouts(_request, layouts, _contextObjects);
 		}
 
 		return _children;
 	}
 
+	/**
+	 * Returns the navigation item's layout.
+	 *
+	 * @return the navigation item's layout
+	 */
 	public Layout getLayout() {
 		return _layout;
 	}
 
+	/**
+	 * Returns the ID of the navigation item's layout.
+	 *
+	 * @return the ID of the navigation item's layout
+	 */
+	public long getLayoutId() {
+		return _layout.getLayoutId();
+	}
+
+	/**
+	 * Returns the HTML-escaped name of the navigation item's layout.
+	 *
+	 * @return the HTML-escaped name of the navigation item's layout
+	 */
 	public String getName() {
 		return HtmlUtil.escape(getUnescapedName());
 	}
 
+	/**
+	 * Returns the full, absolute URL (including the portal's URL) of the
+	 * navigation item's layout.
+	 *
+	 * @return the full, absolute URL of the navigation item's layout
+	 * @throws Exception if an exception occurred
+	 */
 	public String getRegularFullURL() throws Exception {
-		String portalURL = PortalUtil.getPortalURL(_vars.getRequest());
+		String portalURL = PortalUtil.getPortalURL(_request);
 
 		String regularURL = getRegularURL();
 
@@ -100,36 +202,79 @@ public class NavItem implements Serializable {
 		}
 	}
 
+	/**
+	 * Returns the regular URL of the navigation item's layout.
+	 *
+	 * @return the regular URL of the navigation item's layout
+	 * @throws Exception if an exception occurred
+	 */
 	public String getRegularURL() throws Exception {
-		return _layout.getRegularURL(_vars.getRequest());
+		return _layout.getRegularURL(_request);
 	}
 
 	public String getResetLayoutURL() throws Exception {
-		return _layout.getResetLayoutURL(_vars.getRequest());
+		return _layout.getResetLayoutURL(_request);
 	}
 
 	public String getResetMaxStateURL() throws Exception {
-		return _layout.getResetMaxStateURL(_vars.getRequest());
+		return _layout.getResetMaxStateURL(_request);
 	}
 
+	/**
+	 * Returns the target of the navigation item's layout.
+	 *
+	 * @return the target of the navigation item's layout
+	 */
 	public String getTarget() {
 		return _layout.getTarget();
 	}
 
+	/**
+	 * Returns the title of the navigation item's layout in the current
+	 * request's locale.
+	 *
+	 * @return the title of the navigation item's layout in the current
+	 *         request's locale
+	 */
 	public String getTitle() {
-		return _layout.getTitle(_vars.getThemeDisplay().getLocale());
+		return _layout.getTitle(_themeDisplay.getLocale());
 	}
 
+	/**
+	 * Returns the unescaped name of the navigation item's layout in the current
+	 * request's locale.
+	 *
+	 * @return the unescaped name of the navigation item's layout in the current
+	 *         request's locale
+	 */
 	public String getUnescapedName() {
-		return _layout.getName(_vars.getThemeDisplay().getLocale());
+		return _layout.getName(_themeDisplay.getLocale());
 	}
 
+	/**
+	 * Returns the URL of the navigation item's layout, in a format that makes
+	 * it safe to use the URL as an HREF attribute value
+	 *
+	 * @return the URL of the navigation item's layout, in a format that makes
+	 *         it safe to use the URL as an HREF attribute value
+	 * @throws Exception if an exception occurred
+	 */
 	public String getURL() throws Exception {
-		return HtmlUtil.escape(HtmlUtil.escapeHREF(getRegularFullURL()));
+		return HtmlUtil.escapeHREF(getRegularFullURL());
 	}
 
-	public boolean hasChildren() throws Exception {
-		if (getChildren().size() > 0) {
+	/**
+	 * Returns <code>true</code> if the navigation item's layout has browsable
+	 * child layouts.
+	 *
+	 * @return <code>true</code> if the navigation item's layout has browsable
+	 * 		   child layouts; <code>false</code> otherwise
+	 * @throws Exception if an exception occurred
+	 */
+	public boolean hasBrowsableChildren() throws Exception {
+		List<NavItem> browsableChildren = getBrowsableChildren();
+
+		if (!browsableChildren.isEmpty()) {
 			return true;
 		}
 		else {
@@ -137,37 +282,69 @@ public class NavItem implements Serializable {
 		}
 	}
 
+	/**
+	 * Returns <code>true</code> if the navigation item's layout has child
+	 * layouts.
+	 *
+	 * @return <code>true</code> if the navigation item's layout has child
+	 *         layouts; <code>false</code> otherwise
+	 * @throws Exception if an exception occurred
+	 */
+	public boolean hasChildren() throws Exception {
+		List<NavItem> children = getChildren();
+
+		if (!children.isEmpty()) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return _layout.hashCode();
+	}
+
 	public void icon() throws Exception {
-		HttpServletRequest request = _vars.getRequest();
+		Object velocityTaglib = _contextObjects.get("theme");
 
-		Object velocityTaglib = request.getAttribute(WebKeys.VELOCITY_TAGLIB);
-
-		Method method = MethodCache.get(_methodKey);
+		Method method = (Method)_contextObjects.get(
+			"velocityTaglib_layoutIcon");
 
 		method.invoke(velocityTaglib, _layout);
 	}
 
-	public boolean isChildSelected() throws PortalException, SystemException {
-		ThemeDisplay themeDisplay = _vars.getThemeDisplay();
+	public boolean isBrowsable() {
+		LayoutType layoutType = _layout.getLayoutType();
 
+		return layoutType.isBrowsable();
+	}
+
+	public boolean isChildSelected() throws PortalException {
 		return _layout.isChildSelected(
-			themeDisplay.isTilesSelectable(), themeDisplay.getLayout());
+			_themeDisplay.isTilesSelectable(), _themeDisplay.getLayout());
 	}
 
-	public boolean isSelected() {
-		ThemeDisplay themeDisplay = _vars.getThemeDisplay();
+	public boolean isInNavigation(List<NavItem> navItems) {
+		if (navItems == null) {
+			return false;
+		}
 
+		return navItems.contains(this);
+	}
+
+	public boolean isSelected() throws Exception {
 		return _layout.isSelected(
-			themeDisplay.isTilesSelectable(), themeDisplay.getLayout(),
-			_vars.getAncestorPlid());
+			_themeDisplay.isTilesSelectable(), _themeDisplay.getLayout(),
+			_themeDisplay.getLayout().getAncestorPlid());
 	}
 
-	private static MethodKey _methodKey = new MethodKey(
-		"com.liferay.taglib.util.VelocityTaglib", "layoutIcon",
-		new Class[] {Layout.class});
-
+	private List<NavItem> _browsableChildren;
 	private List<NavItem> _children;
-	private Layout _layout;
-	private RequestVars _vars;
+	private final Map<String, Object> _contextObjects;
+	private final Layout _layout;
+	private final HttpServletRequest _request;
+	private final ThemeDisplay _themeDisplay;
 
 }

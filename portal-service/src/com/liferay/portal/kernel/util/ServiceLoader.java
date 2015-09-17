@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +13,9 @@
  */
 
 package com.liferay.portal.kernel.util;
+
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -28,23 +31,56 @@ import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Miguel Pastor
+ * @author Raymond Augé
  */
 public class ServiceLoader {
 
 	public static <S> List<S> load(Class<S> clazz) throws Exception {
+		return load(clazz, _serviceLoaderCondition);
+	}
+
+	public static <S> List<S> load(
+			Class<S> clazz, ServiceLoaderCondition serviceLoaderCondition)
+		throws Exception {
+
 		Thread currentThread = Thread.currentThread();
 
 		ClassLoader classLoader = currentThread.getContextClassLoader();
 
+		return load(classLoader, clazz, serviceLoaderCondition);
+	}
+
+	public static <S> List<S> load(ClassLoader classLoader, Class<S> clazz)
+		throws Exception {
+
+		return load(classLoader, clazz, _serviceLoaderCondition);
+	}
+
+	public static <S> List<S> load(
+			ClassLoader classLoader, Class<S> clazz,
+			ServiceLoaderCondition serviceLoaderCondition)
+		throws Exception {
+
 		Enumeration<URL> enu = classLoader.getResources(
 			"META-INF/services/" + clazz.getName());
 
-		List<S> services = new ArrayList<S>();
+		List<S> services = new ArrayList<>();
 
 		while (enu.hasMoreElements()) {
 			URL url = enu.nextElement();
 
-			_load(services, classLoader, clazz, url);
+			if (!serviceLoaderCondition.isLoad(url)) {
+				continue;
+			}
+
+			try {
+				_load(services, classLoader, clazz, url);
+			}
+			catch (Exception e) {
+				_log.error(
+					"Unable to load " + clazz + " with " + classLoader, e);
+			}
 		}
 
 		return services;
@@ -54,9 +90,7 @@ public class ServiceLoader {
 			List<S> services, ClassLoader classLoader, Class<S> clazz, URL url)
 		throws Exception {
 
-		InputStream inputStream = url.openStream();
-
-		try {
+		try (InputStream inputStream = url.openStream()) {
 			BufferedReader bufferedReader = new BufferedReader(
 				new InputStreamReader(inputStream, StringPool.UTF8));
 
@@ -92,9 +126,11 @@ public class ServiceLoader {
 				services.add(service);
 			}
 		}
-		finally {
-			inputStream.close();
-		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(ServiceLoader.class);
+
+	private static final ServiceLoaderCondition _serviceLoaderCondition =
+		new DefaultServiceLoaderCondition();
 
 }

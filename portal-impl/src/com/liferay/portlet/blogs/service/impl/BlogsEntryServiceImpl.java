@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,10 +17,14 @@ package com.liferay.portlet.blogs.service.impl;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.Company;
@@ -44,6 +48,8 @@ import com.sun.syndication.feed.synd.SyndEntry;
 import com.sun.syndication.feed.synd.SyndEntryImpl;
 import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.feed.synd.SyndFeedImpl;
+import com.sun.syndication.feed.synd.SyndLink;
+import com.sun.syndication.feed.synd.SyndLinkImpl;
 import com.sun.syndication.io.FeedException;
 
 import java.io.InputStream;
@@ -53,11 +59,23 @@ import java.util.Date;
 import java.util.List;
 
 /**
+ * Provides the remote service for accessing, adding, deleting, subscription
+ * handling of, trash handling of, and updating blog entries. Its methods
+ * include permission checks.
+ *
  * @author Brian Wing Shun Chan
  * @author Mate Thurzo
  */
 public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #addEntry(String, String,
+	 *             String, String, int, int, int, int, int, boolean, boolean,
+	 *             String[], String, ImageSelector, ImageSelector,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
+	@Override
 	public BlogsEntry addEntry(
 			String title, String description, String content,
 			int displayDateMonth, int displayDateDay, int displayDateYear,
@@ -65,38 +83,76 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			boolean allowTrackbacks, String[] trackbacks, boolean smallImage,
 			String smallImageURL, String smallImageFileName,
 			InputStream smallImageInputStream, ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
+
+		BlogsPermission.check(
+			getPermissionChecker(), serviceContext.getScopeGroupId(),
+			ActionKeys.ADD_ENTRY);
+
+		ImageSelector coverImageImageSelector = null;
+		ImageSelector smallImageImageSelector = null;
+
+		if (smallImage && Validator.isNotNull(smallImageFileName) &&
+			(smallImageInputStream != null)) {
+
+			FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
+				serviceContext.getScopeGroupId(), getUserId(),
+				BlogsEntry.class.getName(), smallImageFileName,
+				smallImageInputStream,
+				MimeTypesUtil.getContentType(smallImageFileName));
+
+			smallImageImageSelector = new ImageSelector(
+				fileEntry.getFileEntryId(), smallImageURL, null);
+		}
+
+		return addEntry(
+			title, StringPool.BLANK, description, content, displayDateMonth,
+			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
+			allowPingbacks, allowTrackbacks, trackbacks, StringPool.BLANK,
+			coverImageImageSelector, smallImageImageSelector, serviceContext);
+	}
+
+	@Override
+	public BlogsEntry addEntry(
+			String title, String subtitle, String description, String content,
+			int displayDateMonth, int displayDateDay, int displayDateYear,
+			int displayDateHour, int displayDateMinute, boolean allowPingbacks,
+			boolean allowTrackbacks, String[] trackbacks,
+			String coverImageCaption, ImageSelector coverImageImageSelector,
+			ImageSelector smallImageImageSelector,
+			ServiceContext serviceContext)
+		throws PortalException {
 
 		BlogsPermission.check(
 			getPermissionChecker(), serviceContext.getScopeGroupId(),
 			ActionKeys.ADD_ENTRY);
 
 		return blogsEntryLocalService.addEntry(
-			getUserId(), title, description, content, displayDateMonth,
-			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
-			allowPingbacks, allowTrackbacks, trackbacks, smallImage,
-			smallImageURL, smallImageFileName, smallImageInputStream,
+			getUserId(), title, subtitle, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			coverImageCaption, coverImageImageSelector, smallImageImageSelector,
 			serviceContext);
 	}
 
-	public void deleteEntry(long entryId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void deleteEntry(long entryId) throws PortalException {
 		BlogsEntryPermission.check(
 			getPermissionChecker(), entryId, ActionKeys.DELETE);
 
 		blogsEntryLocalService.deleteEntry(entryId);
 	}
 
+	@Override
 	public List<BlogsEntry> getCompanyEntries(
 			long companyId, Date displayDate, int status, int max)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		List<BlogsEntry> entries = new ArrayList<BlogsEntry>();
+		List<BlogsEntry> entries = new ArrayList<>();
 
 		boolean listNotExhausted = true;
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, false, 0, 0, new EntryDisplayDateComparator());
 
 		if (status == WorkflowConstants.STATUS_ANY) {
@@ -130,11 +186,12 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		return entries;
 	}
 
+	@Override
 	public String getCompanyEntriesRSS(
 			long companyId, Date displayDate, int status, int max, String type,
 			double version, String displayStyle, String feedURL,
 			String entryURL, ThemeDisplay themeDisplay)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Company company = companyPersistence.findByPrimaryKey(companyId);
 
@@ -147,17 +204,17 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			blogsEntries, themeDisplay);
 	}
 
-	public BlogsEntry getEntry(long entryId)
-		throws PortalException, SystemException {
-
+	@Override
+	public BlogsEntry getEntry(long entryId) throws PortalException {
 		BlogsEntryPermission.check(
 			getPermissionChecker(), entryId, ActionKeys.VIEW);
 
 		return blogsEntryLocalService.getEntry(entryId);
 	}
 
+	@Override
 	public BlogsEntry getEntry(long groupId, String urlTitle)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		BlogsEntry entry = blogsEntryLocalService.getEntry(groupId, urlTitle);
 
@@ -167,19 +224,19 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		return entry;
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, Date displayDate, int status, int max)
-		throws SystemException {
+		long groupId, Date displayDate, int status, int max) {
 
 		return getGroupEntries(groupId, displayDate, status, 0, max);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, Date displayDate, int status, int start, int end)
-		throws SystemException {
+		long groupId, Date displayDate, int status, int start, int end) {
 
 		if (status == WorkflowConstants.STATUS_ANY) {
-			return blogsEntryPersistence.filterFindByG_LtD_NeS(
+			return blogsEntryPersistence.filterFindByG_LtD_NotS(
 				groupId, displayDate, WorkflowConstants.STATUS_IN_TRASH, start,
 				end);
 		}
@@ -189,18 +246,17 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		}
 	}
 
-	public List<BlogsEntry> getGroupEntries(long groupId, int status, int max)
-		throws SystemException {
-
+	@Override
+	public List<BlogsEntry> getGroupEntries(long groupId, int status, int max) {
 		return getGroupEntries(groupId, status, 0, max);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupEntries(
-			long groupId, int status, int start, int end)
-		throws SystemException {
+		long groupId, int status, int start, int end) {
 
 		if (status == WorkflowConstants.STATUS_ANY) {
-			return blogsEntryPersistence.filterFindByG_NeS(
+			return blogsEntryPersistence.filterFindByG_NotS(
 				groupId, WorkflowConstants.STATUS_IN_TRASH, start, end);
 		}
 		else {
@@ -209,11 +265,12 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		}
 	}
 
-	public int getGroupEntriesCount(long groupId, Date displayDate, int status)
-		throws SystemException {
+	@Override
+	public int getGroupEntriesCount(
+		long groupId, Date displayDate, int status) {
 
 		if (status == WorkflowConstants.STATUS_ANY) {
-			return blogsEntryPersistence.filterCountByG_LtD_NeS(
+			return blogsEntryPersistence.filterCountByG_LtD_NotS(
 				groupId, displayDate, WorkflowConstants.STATUS_IN_TRASH);
 		}
 		else {
@@ -222,11 +279,10 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		}
 	}
 
-	public int getGroupEntriesCount(long groupId, int status)
-		throws SystemException {
-
+	@Override
+	public int getGroupEntriesCount(long groupId, int status) {
 		if (status == WorkflowConstants.STATUS_ANY) {
-			return blogsEntryPersistence.filterCountByG_NeS(
+			return blogsEntryPersistence.filterCountByG_NotS(
 				groupId, WorkflowConstants.STATUS_IN_TRASH);
 		}
 		else {
@@ -234,15 +290,16 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		}
 	}
 
+	@Override
 	public String getGroupEntriesRSS(
 			long groupId, Date displayDate, int status, int max, String type,
 			double version, String displayStyle, String feedURL,
 			String entryURL, ThemeDisplay themeDisplay)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Group group = groupPersistence.findByPrimaryKey(groupId);
 
-		String name = HtmlUtil.escape(group.getDescriptiveName());
+		String name = group.getDescriptiveName();
 		List<BlogsEntry> blogsEntries = getGroupEntries(
 			groupId, displayDate, status, max);
 
@@ -251,15 +308,16 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			blogsEntries, themeDisplay);
 	}
 
+	@Override
 	public List<BlogsEntry> getGroupsEntries(
 			long companyId, long groupId, Date displayDate, int status, int max)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		List<BlogsEntry> entries = new ArrayList<BlogsEntry>();
+		List<BlogsEntry> entries = new ArrayList<>();
 
 		boolean listNotExhausted = true;
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, false, 0, 0, new EntryDisplayDateComparator());
 
 		if (status == WorkflowConstants.STATUS_ANY) {
@@ -293,15 +351,16 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		return entries;
 	}
 
+	@Override
 	public List<BlogsEntry> getOrganizationEntries(
 			long organizationId, Date displayDate, int status, int max)
-		throws PortalException, SystemException {
+		throws PortalException {
 
-		List<BlogsEntry> entries = new ArrayList<BlogsEntry>();
+		List<BlogsEntry> entries = new ArrayList<>();
 
 		boolean listNotExhausted = true;
 
-		QueryDefinition queryDefinition = new QueryDefinition(
+		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
 			status, false, 0, 0, new EntryDisplayDateComparator());
 
 		if (status == WorkflowConstants.STATUS_ANY) {
@@ -334,11 +393,12 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		return entries;
 	}
 
+	@Override
 	public String getOrganizationEntriesRSS(
 			long organizationId, Date displayDate, int status, int max,
 			String type, double version, String displayStyle, String feedURL,
 			String entryURL, ThemeDisplay themeDisplay)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		Organization organization = organizationPersistence.findByPrimaryKey(
 			organizationId);
@@ -352,42 +412,46 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			blogsEntries, themeDisplay);
 	}
 
-	public void moveEntryToTrash(long entryId)
-		throws PortalException, SystemException {
-
+	@Override
+	public BlogsEntry moveEntryToTrash(long entryId) throws PortalException {
 		BlogsEntryPermission.check(
 			getPermissionChecker(), entryId, ActionKeys.DELETE);
 
-		blogsEntryLocalService.moveEntryToTrash(getUserId(), entryId);
+		return blogsEntryLocalService.moveEntryToTrash(getUserId(), entryId);
 	}
 
-	public void restoreEntryFromTrash(long entryId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void restoreEntryFromTrash(long entryId) throws PortalException {
 		BlogsEntryPermission.check(
-			getPermissionChecker(), entryId, ActionKeys.UPDATE);
+			getPermissionChecker(), entryId, ActionKeys.DELETE);
 
 		blogsEntryLocalService.restoreEntryFromTrash(getUserId(), entryId);
 	}
 
-	public void subscribe(long groupId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void subscribe(long groupId) throws PortalException {
 		BlogsPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.SUBSCRIBE);
 
 		blogsEntryLocalService.subscribe(getUserId(), groupId);
 	}
 
-	public void unsubscribe(long groupId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void unsubscribe(long groupId) throws PortalException {
 		BlogsPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.SUBSCRIBE);
 
 		blogsEntryLocalService.unsubscribe(getUserId(), groupId);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #updateEntry(long, String,
+	 *             String, String, String, int, int, int, int, int, boolean,
+	 *             boolean, String[], String, ImageSelector, ImageSelector,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
+	@Override
 	public BlogsEntry updateEntry(
 			long entryId, String title, String description, String content,
 			int displayDateMonth, int displayDateDay, int displayDateYear,
@@ -395,56 +459,87 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			boolean allowTrackbacks, String[] trackbacks, boolean smallImage,
 			String smallImageURL, String smallImageFileName,
 			InputStream smallImageInputStream, ServiceContext serviceContext)
-		throws PortalException, SystemException {
+		throws PortalException {
+
+		BlogsPermission.check(
+			getPermissionChecker(), serviceContext.getScopeGroupId(),
+			ActionKeys.UPDATE);
+
+		ImageSelector coverImageImageSelector = null;
+		ImageSelector smallImageImageSelector = null;
+
+		if (smallImage) {
+			if (Validator.isNotNull(smallImageFileName) &&
+				(smallImageInputStream != null)) {
+
+				FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
+					serviceContext.getScopeGroupId(), getUserId(),
+					BlogsEntry.class.getName(), smallImageFileName,
+					smallImageInputStream,
+					MimeTypesUtil.getContentType(smallImageFileName));
+
+				smallImageImageSelector = new ImageSelector(
+					fileEntry.getFileEntryId(), smallImageURL, null);
+			}
+		}
+		else {
+			smallImageImageSelector = new ImageSelector(0);
+		}
+
+		return updateEntry(
+			entryId, title, StringPool.BLANK, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			StringPool.BLANK, coverImageImageSelector, smallImageImageSelector,
+			serviceContext);
+	}
+
+	@Override
+	public BlogsEntry updateEntry(
+			long entryId, String title, String subtitle, String description,
+			String content, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			boolean allowPingbacks, boolean allowTrackbacks,
+			String[] trackbacks, String coverImageCaption,
+			ImageSelector coverImageImageSelector,
+			ImageSelector smallImageImageSelector,
+			ServiceContext serviceContext)
+		throws PortalException {
 
 		BlogsEntryPermission.check(
 			getPermissionChecker(), entryId, ActionKeys.UPDATE);
 
 		return blogsEntryLocalService.updateEntry(
-			getUserId(), entryId, title, description, content, displayDateMonth,
-			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
-			allowPingbacks, allowTrackbacks, trackbacks, smallImage,
-			smallImageURL, smallImageFileName, smallImageInputStream,
+			getUserId(), entryId, title, subtitle, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			coverImageCaption, coverImageImageSelector, smallImageImageSelector,
 			serviceContext);
 	}
 
 	protected String exportToRSS(
-			String name, String description, String type, double version,
-			String displayStyle, String feedURL, String entryURL,
-			List<BlogsEntry> blogsEntries, ThemeDisplay themeDisplay)
-		throws SystemException {
+		String name, String description, String type, double version,
+		String displayStyle, String feedURL, String entryURL,
+		List<BlogsEntry> blogsEntries, ThemeDisplay themeDisplay) {
 
 		SyndFeed syndFeed = new SyndFeedImpl();
 
-		syndFeed.setFeedType(RSSUtil.getFeedType(type, version));
-		syndFeed.setTitle(name);
-		syndFeed.setLink(feedURL);
 		syndFeed.setDescription(description);
 
-		List<SyndEntry> syndEntries = new ArrayList<SyndEntry>();
+		List<SyndEntry> syndEntries = new ArrayList<>();
 
 		syndFeed.setEntries(syndEntries);
 
 		for (BlogsEntry entry : blogsEntries) {
-			String author = HtmlUtil.escape(
-				PortalUtil.getUserName(entry.getUserId(), entry.getUserName()));
+			SyndEntry syndEntry = new SyndEntryImpl();
 
-			StringBundler link = new StringBundler(4);
+			String author = PortalUtil.getUserName(entry);
 
-			if (entryURL.endsWith("/blogs/rss")) {
-				link.append(entryURL.substring(0, entryURL.length() - 3));
-				link.append(entry.getUrlTitle());
-			}
-			else {
-				link.append(entryURL);
+			syndEntry.setAuthor(author);
 
-				if (!entryURL.endsWith(StringPool.QUESTION)) {
-					link.append(StringPool.AMPERSAND);
-				}
+			SyndContent syndContent = new SyndContentImpl();
 
-				link.append("entryId=");
-				link.append(entry.getEntryId());
-			}
+			syndContent.setType(RSSUtil.ENTRY_TYPE_DEFAULT);
 
 			String value = null;
 
@@ -464,34 +559,56 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			}
 			else {
 				value = StringUtil.replace(
-					entry.getContent(),
-					new String[] {
-						"href=\"/", "src=\"/"
-					},
+					entry.getContent(), new String[] {"href=\"/", "src=\"/"},
 					new String[] {
 						"href=\"" + themeDisplay.getURLPortal() + "/",
 						"src=\"" + themeDisplay.getURLPortal() + "/"
 					});
 			}
 
-			SyndEntry syndEntry = new SyndEntryImpl();
-
-			syndEntry.setAuthor(author);
-			syndEntry.setTitle(entry.getTitle());
-			syndEntry.setLink(link.toString());
-			syndEntry.setUri(syndEntry.getLink());
-			syndEntry.setPublishedDate(entry.getCreateDate());
-			syndEntry.setUpdatedDate(entry.getModifiedDate());
-
-			SyndContent syndContent = new SyndContentImpl();
-
-			syndContent.setType(RSSUtil.ENTRY_TYPE_DEFAULT);
 			syndContent.setValue(value);
 
 			syndEntry.setDescription(syndContent);
 
+			StringBundler sb = new StringBundler(4);
+
+			sb.append(entryURL);
+
+			if (!entryURL.endsWith(StringPool.QUESTION)) {
+				sb.append(StringPool.AMPERSAND);
+			}
+
+			sb.append("entryId=");
+			sb.append(entry.getEntryId());
+
+			String link = sb.toString();
+
+			syndEntry.setLink(link);
+
+			syndEntry.setPublishedDate(entry.getDisplayDate());
+			syndEntry.setTitle(entry.getTitle());
+			syndEntry.setUpdatedDate(entry.getModifiedDate());
+			syndEntry.setUri(link);
+
 			syndEntries.add(syndEntry);
 		}
+
+		syndFeed.setFeedType(RSSUtil.getFeedType(type, version));
+
+		List<SyndLink> syndLinks = new ArrayList<>();
+
+		syndFeed.setLinks(syndLinks);
+
+		SyndLink selfSyndLink = new SyndLinkImpl();
+
+		syndLinks.add(selfSyndLink);
+
+		selfSyndLink.setHref(feedURL);
+		selfSyndLink.setRel("self");
+
+		syndFeed.setPublishedDate(new Date());
+		syndFeed.setTitle(name);
+		syndFeed.setUri(feedURL);
 
 		try {
 			return RSSUtil.export(syndFeed);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,194 +14,85 @@
 
 package com.liferay.portlet.announcements.model;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.ModelWrapper;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>
  * This class is a wrapper for {@link AnnouncementsFlag}.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       AnnouncementsFlag
+ * @author Brian Wing Shun Chan
+ * @see AnnouncementsFlag
  * @generated
  */
+@ProviderType
 public class AnnouncementsFlagWrapper implements AnnouncementsFlag,
 	ModelWrapper<AnnouncementsFlag> {
 	public AnnouncementsFlagWrapper(AnnouncementsFlag announcementsFlag) {
 		_announcementsFlag = announcementsFlag;
 	}
 
+	@Override
 	public Class<?> getModelClass() {
 		return AnnouncementsFlag.class;
 	}
 
+	@Override
 	public String getModelClassName() {
 		return AnnouncementsFlag.class.getName();
 	}
 
-	/**
-	* Returns the primary key of this announcements flag.
-	*
-	* @return the primary key of this announcements flag
-	*/
-	public long getPrimaryKey() {
-		return _announcementsFlag.getPrimaryKey();
+	@Override
+	public Map<String, Object> getModelAttributes() {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+
+		attributes.put("flagId", getFlagId());
+		attributes.put("userId", getUserId());
+		attributes.put("createDate", getCreateDate());
+		attributes.put("entryId", getEntryId());
+		attributes.put("value", getValue());
+
+		return attributes;
 	}
 
-	/**
-	* Sets the primary key of this announcements flag.
-	*
-	* @param primaryKey the primary key of this announcements flag
-	*/
-	public void setPrimaryKey(long primaryKey) {
-		_announcementsFlag.setPrimaryKey(primaryKey);
-	}
+	@Override
+	public void setModelAttributes(Map<String, Object> attributes) {
+		Long flagId = (Long)attributes.get("flagId");
 
-	/**
-	* Returns the flag ID of this announcements flag.
-	*
-	* @return the flag ID of this announcements flag
-	*/
-	public long getFlagId() {
-		return _announcementsFlag.getFlagId();
-	}
+		if (flagId != null) {
+			setFlagId(flagId);
+		}
 
-	/**
-	* Sets the flag ID of this announcements flag.
-	*
-	* @param flagId the flag ID of this announcements flag
-	*/
-	public void setFlagId(long flagId) {
-		_announcementsFlag.setFlagId(flagId);
-	}
+		Long userId = (Long)attributes.get("userId");
 
-	/**
-	* Returns the user ID of this announcements flag.
-	*
-	* @return the user ID of this announcements flag
-	*/
-	public long getUserId() {
-		return _announcementsFlag.getUserId();
-	}
+		if (userId != null) {
+			setUserId(userId);
+		}
 
-	/**
-	* Sets the user ID of this announcements flag.
-	*
-	* @param userId the user ID of this announcements flag
-	*/
-	public void setUserId(long userId) {
-		_announcementsFlag.setUserId(userId);
-	}
+		Date createDate = (Date)attributes.get("createDate");
 
-	/**
-	* Returns the user uuid of this announcements flag.
-	*
-	* @return the user uuid of this announcements flag
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.lang.String getUserUuid()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return _announcementsFlag.getUserUuid();
-	}
+		if (createDate != null) {
+			setCreateDate(createDate);
+		}
 
-	/**
-	* Sets the user uuid of this announcements flag.
-	*
-	* @param userUuid the user uuid of this announcements flag
-	*/
-	public void setUserUuid(java.lang.String userUuid) {
-		_announcementsFlag.setUserUuid(userUuid);
-	}
+		Long entryId = (Long)attributes.get("entryId");
 
-	/**
-	* Returns the create date of this announcements flag.
-	*
-	* @return the create date of this announcements flag
-	*/
-	public java.util.Date getCreateDate() {
-		return _announcementsFlag.getCreateDate();
-	}
+		if (entryId != null) {
+			setEntryId(entryId);
+		}
 
-	/**
-	* Sets the create date of this announcements flag.
-	*
-	* @param createDate the create date of this announcements flag
-	*/
-	public void setCreateDate(java.util.Date createDate) {
-		_announcementsFlag.setCreateDate(createDate);
-	}
+		Integer value = (Integer)attributes.get("value");
 
-	/**
-	* Returns the entry ID of this announcements flag.
-	*
-	* @return the entry ID of this announcements flag
-	*/
-	public long getEntryId() {
-		return _announcementsFlag.getEntryId();
-	}
-
-	/**
-	* Sets the entry ID of this announcements flag.
-	*
-	* @param entryId the entry ID of this announcements flag
-	*/
-	public void setEntryId(long entryId) {
-		_announcementsFlag.setEntryId(entryId);
-	}
-
-	/**
-	* Returns the value of this announcements flag.
-	*
-	* @return the value of this announcements flag
-	*/
-	public int getValue() {
-		return _announcementsFlag.getValue();
-	}
-
-	/**
-	* Sets the value of this announcements flag.
-	*
-	* @param value the value of this announcements flag
-	*/
-	public void setValue(int value) {
-		_announcementsFlag.setValue(value);
-	}
-
-	public boolean isNew() {
-		return _announcementsFlag.isNew();
-	}
-
-	public void setNew(boolean n) {
-		_announcementsFlag.setNew(n);
-	}
-
-	public boolean isCachedModel() {
-		return _announcementsFlag.isCachedModel();
-	}
-
-	public void setCachedModel(boolean cachedModel) {
-		_announcementsFlag.setCachedModel(cachedModel);
-	}
-
-	public boolean isEscapedModel() {
-		return _announcementsFlag.isEscapedModel();
-	}
-
-	public java.io.Serializable getPrimaryKeyObj() {
-		return _announcementsFlag.getPrimaryKeyObj();
-	}
-
-	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
-		_announcementsFlag.setPrimaryKeyObj(primaryKeyObj);
-	}
-
-	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
-		return _announcementsFlag.getExpandoBridge();
-	}
-
-	public void setExpandoBridgeAttributes(
-		com.liferay.portal.service.ServiceContext serviceContext) {
-		_announcementsFlag.setExpandoBridgeAttributes(serviceContext);
+		if (value != null) {
+			setValue(value);
+		}
 	}
 
 	@Override
@@ -209,9 +100,90 @@ public class AnnouncementsFlagWrapper implements AnnouncementsFlag,
 		return new AnnouncementsFlagWrapper((AnnouncementsFlag)_announcementsFlag.clone());
 	}
 
+	@Override
 	public int compareTo(
 		com.liferay.portlet.announcements.model.AnnouncementsFlag announcementsFlag) {
 		return _announcementsFlag.compareTo(announcementsFlag);
+	}
+
+	/**
+	* Returns the create date of this announcements flag.
+	*
+	* @return the create date of this announcements flag
+	*/
+	@Override
+	public Date getCreateDate() {
+		return _announcementsFlag.getCreateDate();
+	}
+
+	/**
+	* Returns the entry ID of this announcements flag.
+	*
+	* @return the entry ID of this announcements flag
+	*/
+	@Override
+	public long getEntryId() {
+		return _announcementsFlag.getEntryId();
+	}
+
+	@Override
+	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
+		return _announcementsFlag.getExpandoBridge();
+	}
+
+	/**
+	* Returns the flag ID of this announcements flag.
+	*
+	* @return the flag ID of this announcements flag
+	*/
+	@Override
+	public long getFlagId() {
+		return _announcementsFlag.getFlagId();
+	}
+
+	/**
+	* Returns the primary key of this announcements flag.
+	*
+	* @return the primary key of this announcements flag
+	*/
+	@Override
+	public long getPrimaryKey() {
+		return _announcementsFlag.getPrimaryKey();
+	}
+
+	@Override
+	public java.io.Serializable getPrimaryKeyObj() {
+		return _announcementsFlag.getPrimaryKeyObj();
+	}
+
+	/**
+	* Returns the user ID of this announcements flag.
+	*
+	* @return the user ID of this announcements flag
+	*/
+	@Override
+	public long getUserId() {
+		return _announcementsFlag.getUserId();
+	}
+
+	/**
+	* Returns the user uuid of this announcements flag.
+	*
+	* @return the user uuid of this announcements flag
+	*/
+	@Override
+	public java.lang.String getUserUuid() {
+		return _announcementsFlag.getUserUuid();
+	}
+
+	/**
+	* Returns the value of this announcements flag.
+	*
+	* @return the value of this announcements flag
+	*/
+	@Override
+	public int getValue() {
+		return _announcementsFlag.getValue();
 	}
 
 	@Override
@@ -219,10 +191,135 @@ public class AnnouncementsFlagWrapper implements AnnouncementsFlag,
 		return _announcementsFlag.hashCode();
 	}
 
+	@Override
+	public boolean isCachedModel() {
+		return _announcementsFlag.isCachedModel();
+	}
+
+	@Override
+	public boolean isEscapedModel() {
+		return _announcementsFlag.isEscapedModel();
+	}
+
+	@Override
+	public boolean isNew() {
+		return _announcementsFlag.isNew();
+	}
+
+	@Override
+	public void persist() {
+		_announcementsFlag.persist();
+	}
+
+	@Override
+	public void setCachedModel(boolean cachedModel) {
+		_announcementsFlag.setCachedModel(cachedModel);
+	}
+
+	/**
+	* Sets the create date of this announcements flag.
+	*
+	* @param createDate the create date of this announcements flag
+	*/
+	@Override
+	public void setCreateDate(Date createDate) {
+		_announcementsFlag.setCreateDate(createDate);
+	}
+
+	/**
+	* Sets the entry ID of this announcements flag.
+	*
+	* @param entryId the entry ID of this announcements flag
+	*/
+	@Override
+	public void setEntryId(long entryId) {
+		_announcementsFlag.setEntryId(entryId);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.model.BaseModel<?> baseModel) {
+		_announcementsFlag.setExpandoBridgeAttributes(baseModel);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portlet.expando.model.ExpandoBridge expandoBridge) {
+		_announcementsFlag.setExpandoBridgeAttributes(expandoBridge);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		_announcementsFlag.setExpandoBridgeAttributes(serviceContext);
+	}
+
+	/**
+	* Sets the flag ID of this announcements flag.
+	*
+	* @param flagId the flag ID of this announcements flag
+	*/
+	@Override
+	public void setFlagId(long flagId) {
+		_announcementsFlag.setFlagId(flagId);
+	}
+
+	@Override
+	public void setNew(boolean n) {
+		_announcementsFlag.setNew(n);
+	}
+
+	/**
+	* Sets the primary key of this announcements flag.
+	*
+	* @param primaryKey the primary key of this announcements flag
+	*/
+	@Override
+	public void setPrimaryKey(long primaryKey) {
+		_announcementsFlag.setPrimaryKey(primaryKey);
+	}
+
+	@Override
+	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
+		_announcementsFlag.setPrimaryKeyObj(primaryKeyObj);
+	}
+
+	/**
+	* Sets the user ID of this announcements flag.
+	*
+	* @param userId the user ID of this announcements flag
+	*/
+	@Override
+	public void setUserId(long userId) {
+		_announcementsFlag.setUserId(userId);
+	}
+
+	/**
+	* Sets the user uuid of this announcements flag.
+	*
+	* @param userUuid the user uuid of this announcements flag
+	*/
+	@Override
+	public void setUserUuid(java.lang.String userUuid) {
+		_announcementsFlag.setUserUuid(userUuid);
+	}
+
+	/**
+	* Sets the value of this announcements flag.
+	*
+	* @param value the value of this announcements flag
+	*/
+	@Override
+	public void setValue(int value) {
+		_announcementsFlag.setValue(value);
+	}
+
+	@Override
 	public com.liferay.portal.model.CacheModel<com.liferay.portlet.announcements.model.AnnouncementsFlag> toCacheModel() {
 		return _announcementsFlag.toCacheModel();
 	}
 
+	@Override
 	public com.liferay.portlet.announcements.model.AnnouncementsFlag toEscapedModel() {
 		return new AnnouncementsFlagWrapper(_announcementsFlag.toEscapedModel());
 	}
@@ -232,29 +329,63 @@ public class AnnouncementsFlagWrapper implements AnnouncementsFlag,
 		return _announcementsFlag.toString();
 	}
 
+	@Override
+	public com.liferay.portlet.announcements.model.AnnouncementsFlag toUnescapedModel() {
+		return new AnnouncementsFlagWrapper(_announcementsFlag.toUnescapedModel());
+	}
+
+	@Override
 	public java.lang.String toXmlString() {
 		return _announcementsFlag.toXmlString();
 	}
 
-	public void persist()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		_announcementsFlag.persist();
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof AnnouncementsFlagWrapper)) {
+			return false;
+		}
+
+		AnnouncementsFlagWrapper announcementsFlagWrapper = (AnnouncementsFlagWrapper)obj;
+
+		if (Validator.equals(_announcementsFlag,
+					announcementsFlagWrapper._announcementsFlag)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedModel}
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedModel}
 	 */
+	@Deprecated
 	public AnnouncementsFlag getWrappedAnnouncementsFlag() {
 		return _announcementsFlag;
 	}
 
+	@Override
 	public AnnouncementsFlag getWrappedModel() {
 		return _announcementsFlag;
 	}
 
+	@Override
+	public boolean isEntityCacheEnabled() {
+		return _announcementsFlag.isEntityCacheEnabled();
+	}
+
+	@Override
+	public boolean isFinderCacheEnabled() {
+		return _announcementsFlag.isFinderCacheEnabled();
+	}
+
+	@Override
 	public void resetOriginalValues() {
 		_announcementsFlag.resetOriginalValues();
 	}
 
-	private AnnouncementsFlag _announcementsFlag;
+	private final AnnouncementsFlag _announcementsFlag;
 }

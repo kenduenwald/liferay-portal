@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import com.liferay.portal.kernel.util.StringPool;
+
 /**
  * @author Brian Wing Shun Chan
  */
@@ -22,6 +24,12 @@ public class OrganizationConstants {
 	public static final int ANY_PARENT_ORGANIZATION_ID = -1;
 
 	public static final int DEFAULT_PARENT_ORGANIZATION_ID = 0;
+
+	public static final String NAME_GENERAL_RESTRICTIONS = "blank";
+
+	public static final String NAME_LABEL = "organization-name";
+
+	public static final String NAME_RESERVED_WORDS = StringPool.NULL;
 
 	public static final String TYPE_LOCATION = "location";
 

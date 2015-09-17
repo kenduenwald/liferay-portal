@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,12 +18,14 @@ import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeAdminPortlets;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeAsset;
+import com.liferay.portal.upgrade.v6_1_0.UpgradeAssetPublisher;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeBlogs;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeCamelCasePortletPreferences;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeCountry;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeDocumentLibrary;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeExpando;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeGroup;
+import com.liferay.portal.upgrade.v6_1_0.UpgradeIFrame;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeImageGallery;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeJournal;
 import com.liferay.portal.upgrade.v6_1_0.UpgradeLayout;
@@ -56,7 +58,9 @@ public class UpgradeProcess_6_1_0 extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		upgrade(UpgradeSchema.class);
+
 		upgrade(UpgradeUserName.class);
+
 		upgrade(UpgradeAdminPortlets.class);
 		upgrade(UpgradeBlogs.class);
 		upgrade(UpgradeCamelCasePortletPreferences.class);
@@ -64,6 +68,7 @@ public class UpgradeProcess_6_1_0 extends UpgradeProcess {
 		upgrade(UpgradeDocumentLibrary.class);
 		upgrade(UpgradeExpando.class);
 		upgrade(UpgradeGroup.class);
+		upgrade(UpgradeIFrame.class);
 		upgrade(UpgradeImageGallery.class);
 		upgrade(UpgradeJournal.class);
 		upgrade(UpgradeLayout.class);
@@ -78,7 +83,9 @@ public class UpgradeProcess_6_1_0 extends UpgradeProcess {
 		upgrade(UpgradeSubscription.class);
 		upgrade(UpgradeVirtualHost.class);
 		upgrade(UpgradeWorkflow.class);
+
 		upgrade(UpgradeAsset.class);
+		upgrade(UpgradeAssetPublisher.class);
 	}
 
 }

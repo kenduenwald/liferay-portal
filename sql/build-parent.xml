@@ -5,15 +5,37 @@
 
 	<mkdir dir="log" />
 
+	<var name="fork.mode" value="false" />
+
+	<if>
+		<equals arg1="${db.build.debug}" arg2="true" />
+		<then>
+			<var name="fork.mode" value="true" />
+		</then>
+	</if>
+
 	<target name="build-db">
+		<if>
+			<not>
+				<isset property="db.sql.dir" />
+			</not>
+			<then>
+				<var name="db.sql.dir" value="${basedir}" />
+			</then>
+		</if>
+
 		<java
 			classname="com.liferay.portal.tools.DBBuilder"
 			classpathref="project.classpath"
+			fork="${fork.mode}"
 		>
+			<jvmarg line="${db.build.debug.jpda}" />
+			<jvmarg value="-Xmx${db.build.java.mx}" />
+			<jvmarg value="-XX:MaxPermSize=${db.build.java.maxpermsize}" />
 			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
 			<arg value="db.database.name=${database.name}" />
 			<arg value="db.database.types=${database.types}" />
-			<arg value="db.sql.dir=${basedir}" />
+			<arg value="db.sql.dir=${db.sql.dir}" />
 		</java>
 	</target>
 
@@ -77,34 +99,35 @@
 		<java
 			classname="com.liferay.portal.tools.DBLoader"
 			classpathref="project.classpath"
+			fork="${fork.mode}"
 		>
+			<jvmarg line="${db.build.debug.jpda}" />
 			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
 			<arg value="-Dfile.encoding=UTF-8" />
 			<arg value="db.database.name=${database.name}" />
 			<arg value="db.database.type=hypersonic" />
 			<arg value="db.sql.dir=${basedir}" />
-			<arg value="db.file.name=portal${minimal.suffix}/portal${minimal.suffix}-hypersonic.sql" />
-		</java>
-
-		<java
-			classname="com.liferay.portal.tools.DBLoader"
-			classpathref="project.classpath"
-		>
-			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<arg value="-Dfile.encoding=UTF-8" />
-			<arg value="db.database.name=${database.name}" />
-			<arg value="db.database.type=hypersonic" />
-			<arg value="db.sql.dir=${basedir}" />
-			<arg value="db.file.name=indexes.sql" />
+			<arg value="db.file.name=portal${database.create.suffix}/portal${database.create.suffix}-hypersonic.sql,indexes.sql" />
 		</java>
 
 		<delete dir="${database.name}.tmp" failonerror="false" />
 	</target>
 
 	<target name="rebuild-mysql">
-		<exec executable="${mysql.executable}" input="${mysql.input}" output="log/${mysql.log}">
+		<exec executable="${mysql.executable}" input="${mysql.input}" output="log/${mysql.log}" resultproperty="rebuild-mysql.result">
 			<arg line="${mysql.arg.line}" />
 		</exec>
+
+		<if>
+			<not>
+				<equals arg1="${rebuild-mysql.result}" arg2="0" />
+			</not>
+			<then>
+				<loadfile property="mysql.log.content" srcFile="log/${mysql.log}" />
+
+				<fail>${mysql.log.content}</fail>
+			</then>
+		</if>
 	</target>
 
 	<target name="rebuild-oracle">
@@ -141,47 +164,5 @@
 			<param name="arg.line" value="${sybase.arg.line}" />
 			<param name="log" value="${sybase.log}" />
 		</antcall>
-	</target>
-
-	<target name="test-sample-sql" >
-		<tstamp>
-			<format property="tstamp.value" pattern="yyyyMMddkkmmssSSS" />
-		</tstamp>
-
-		<mkdir dir="${tstamp.value}" />
-
-		<java
-			classname="com.liferay.portal.tools.samplesqlbuilder.TestSampleSQLBuilder"
-			classpathref="project.classpath"
-			failonerror="true"
-		>
-			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<arg value="sql.dir=${basedir}" />
-			<arg value="sample.sql.base.dir=${basedir}/../benchmarks" />
-			<arg value="sample.sql.output.dir=${tstamp.value}" />
-			<arg value="sample.sql.output.merge=true" />
-			<arg value="sample.sql.db.type=hypersonic" />
-			<arg value="sample.sql.blogs.entry.comment.count=1" />
-			<arg value="sample.sql.blogs.entry.count=1" />
-			<arg value="sample.sql.ddl.record.count=1" />
-			<arg value="sample.sql.ddl.record.set.count=1" />
-			<arg value="sample.sql.dl.file.entry.count=1" />
-			<arg value="sample.sql.dl.file.entry.size=1" />
-			<arg value="sample.sql.dl.folder.count=1" />
-			<arg value="sample.sql.dl.folder.depth=1" />
-			<arg value="sample.sql.group.count=1" />
-			<arg value="sample.sql.journal.article.count=${sample.sql.journal.article.count}" />
-			<arg value="sample.sql.journal.article.size=${sample.sql.journal.article.size}" />
-			<arg value="sample.sql.mb.category.count=1" />
-			<arg value="sample.sql.mb.message.count=1" />
-			<arg value="sample.sql.mb.thread.count=1" />
-			<arg value="sample.sql.user.count=1" />
-			<arg value="sample.sql.user.to.group.count=1" />
-			<arg value="sample.sql.wiki.node.count=1" />
-			<arg value="sample.sql.wiki.page.comment.count=1" />
-			<arg value="sample.sql.wiki.page.count=1" />
-		</java>
-
-		<delete dir="${tstamp.value}" />
 	</target>
 </project>

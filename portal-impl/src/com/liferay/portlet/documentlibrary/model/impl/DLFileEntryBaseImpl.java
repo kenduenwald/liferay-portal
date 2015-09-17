@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
 import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see DLFileEntryImpl
- * @see com.liferay.portlet.documentlibrary.model.DLFileEntry
+ * @see DLFileEntry
  * @generated
  */
+@ProviderType
 public abstract class DLFileEntryBaseImpl extends DLFileEntryModelImpl
 	implements DLFileEntry {
 	/*
@@ -38,12 +39,22 @@ public abstract class DLFileEntryBaseImpl extends DLFileEntryModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a document library file entry model instance should use the {@link DLFileEntry} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			DLFileEntryLocalServiceUtil.addDLFileEntry(this);
 		}
 		else {
 			DLFileEntryLocalServiceUtil.updateDLFileEntry(this);
 		}
+	}
+
+	@Override
+	public void updateTreePath(String treePath) {
+		DLFileEntry dlFileEntry = this;
+
+		dlFileEntry.setTreePath(treePath);
+
+		DLFileEntryLocalServiceUtil.updateDLFileEntry(dlFileEntry);
 	}
 }

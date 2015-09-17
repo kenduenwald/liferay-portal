@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.kernel.servlet;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortalLifecycle;
 import com.liferay.portal.kernel.util.PortalLifecycleUtil;
@@ -40,12 +41,15 @@ public class PortalClassLoaderServlet
 	}
 
 	@Override
-	public void init(ServletConfig servletConfig) {
+	public void init(ServletConfig servletConfig) throws ServletException {
+		super.init(servletConfig);
+
 		_servletConfig = servletConfig;
 
 		PortalLifecycleUtil.register(this);
 	}
 
+	@Override
 	public void portalDestroy() {
 		if (!_calledPortalDestroy) {
 			PortalLifecycleUtil.removeDestroy(this);
@@ -56,6 +60,7 @@ public class PortalClassLoaderServlet
 		}
 	}
 
+	@Override
 	public void portalInit() {
 		Thread currentThread = Thread.currentThread();
 
@@ -69,8 +74,8 @@ public class PortalClassLoaderServlet
 			String servletClass = _servletConfig.getInitParameter(
 				"servlet-class");
 
-			_servlet = (HttpServlet)portalClassLoader.loadClass(
-				servletClass).newInstance();
+			_servlet = (HttpServlet)InstanceFactory.newInstance(
+				portalClassLoader, servletClass);
 
 			_servlet.init(_servletConfig);
 		}
@@ -111,14 +116,16 @@ public class PortalClassLoaderServlet
 			currentThread.setContextClassLoader(
 				PortalClassLoaderUtil.getClassLoader());
 
-			_servlet.destroy();
+			if (_servlet != null) {
+				_servlet.destroy();
+			}
 		}
 		finally {
 			currentThread.setContextClassLoader(contextClassLoader);
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		PortalClassLoaderServlet.class);
 
 	private boolean _calledPortalDestroy;

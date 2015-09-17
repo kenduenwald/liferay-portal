@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,18 @@
 
 package com.liferay.portlet.blogs.service;
 
+import aQute.bnd.annotation.ProviderType;
+
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.util.MethodCache;
 import com.liferay.portal.kernel.util.ReferenceRegistry;
 
 /**
- * The utility for the blogs entry remote service. This utility wraps {@link com.liferay.portlet.blogs.service.impl.BlogsEntryServiceImpl} and is the primary access point for service operations in application layer code running on a remote server.
- *
- * <p>
- * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
- * </p>
+ * Provides the remote service utility for BlogsEntry. This utility wraps
+ * {@link com.liferay.portlet.blogs.service.impl.BlogsEntryServiceImpl} and is the
+ * primary access point for service operations in application layer code running
+ * on a remote server. Methods of this service are expected to have security
+ * checks based on the propagated JAAS credentials because this service can be
+ * accessed remotely.
  *
  * @author Brian Wing Shun Chan
  * @see BlogsEntryService
@@ -31,12 +33,21 @@ import com.liferay.portal.kernel.util.ReferenceRegistry;
  * @see com.liferay.portlet.blogs.service.impl.BlogsEntryServiceImpl
  * @generated
  */
+@ProviderType
 public class BlogsEntryServiceUtil {
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never modify this class directly. Add custom service methods to {@link com.liferay.portlet.blogs.service.impl.BlogsEntryServiceImpl} and rerun ServiceBuilder to regenerate this class.
 	 */
+
+	/**
+	* @deprecated As of 7.0.0, replaced by {@link #addEntry(String, String,
+	String, String, int, int, int, int, int, boolean, boolean,
+	String[], String, ImageSelector, ImageSelector,
+	ServiceContext)}
+	*/
+	@Deprecated
 	public static com.liferay.portlet.blogs.model.BlogsEntry addEntry(
 		java.lang.String title, java.lang.String description,
 		java.lang.String content, int displayDateMonth, int displayDateDay,
@@ -46,8 +57,7 @@ public class BlogsEntryServiceUtil {
 		java.lang.String smallImageURL, java.lang.String smallImageFileName,
 		java.io.InputStream smallImageInputStream,
 		com.liferay.portal.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .addEntry(title, description, content, displayDateMonth,
 			displayDateDay, displayDateYear, displayDateHour,
@@ -56,16 +66,42 @@ public class BlogsEntryServiceUtil {
 			smallImageInputStream, serviceContext);
 	}
 
+	public static com.liferay.portlet.blogs.model.BlogsEntry addEntry(
+		java.lang.String title, java.lang.String subtitle,
+		java.lang.String description, java.lang.String content,
+		int displayDateMonth, int displayDateDay, int displayDateYear,
+		int displayDateHour, int displayDateMinute, boolean allowPingbacks,
+		boolean allowTrackbacks, java.lang.String[] trackbacks,
+		java.lang.String coverImageCaption,
+		com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector coverImageImageSelector,
+		com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector smallImageImageSelector,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return getService()
+				   .addEntry(title, subtitle, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			coverImageCaption, coverImageImageSelector,
+			smallImageImageSelector, serviceContext);
+	}
+
 	public static void deleteEntry(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().deleteEntry(entryId);
+	}
+
+	/**
+	* Returns the Spring bean ID for this bean.
+	*
+	* @return the Spring bean ID for this bean
+	*/
+	public static java.lang.String getBeanIdentifier() {
+		return getService().getBeanIdentifier();
 	}
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getCompanyEntries(
 		long companyId, java.util.Date displayDate, int status, int max)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .getCompanyEntries(companyId, displayDate, status, max);
 	}
@@ -75,8 +111,7 @@ public class BlogsEntryServiceUtil {
 		double version, java.lang.String displayStyle,
 		java.lang.String feedURL, java.lang.String entryURL,
 		com.liferay.portal.theme.ThemeDisplay themeDisplay)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .getCompanyEntriesRSS(companyId, displayDate, status, max,
 			type, version, displayStyle, feedURL, entryURL, themeDisplay);
@@ -84,51 +119,43 @@ public class BlogsEntryServiceUtil {
 
 	public static com.liferay.portlet.blogs.model.BlogsEntry getEntry(
 		long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getEntry(entryId);
 	}
 
 	public static com.liferay.portlet.blogs.model.BlogsEntry getEntry(
 		long groupId, java.lang.String urlTitle)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getEntry(groupId, urlTitle);
 	}
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getGroupEntries(
-		long groupId, java.util.Date displayDate, int status, int max)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		long groupId, java.util.Date displayDate, int status, int max) {
 		return getService().getGroupEntries(groupId, displayDate, status, max);
 	}
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getGroupEntries(
-		long groupId, java.util.Date displayDate, int status, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		long groupId, java.util.Date displayDate, int status, int start, int end) {
 		return getService()
 				   .getGroupEntries(groupId, displayDate, status, start, end);
 	}
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getGroupEntries(
-		long groupId, int status, int max)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		long groupId, int status, int max) {
 		return getService().getGroupEntries(groupId, status, max);
 	}
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getGroupEntries(
-		long groupId, int status, int start, int end)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		long groupId, int status, int start, int end) {
 		return getService().getGroupEntries(groupId, status, start, end);
 	}
 
 	public static int getGroupEntriesCount(long groupId,
-		java.util.Date displayDate, int status)
-		throws com.liferay.portal.kernel.exception.SystemException {
+		java.util.Date displayDate, int status) {
 		return getService().getGroupEntriesCount(groupId, displayDate, status);
 	}
 
-	public static int getGroupEntriesCount(long groupId, int status)
-		throws com.liferay.portal.kernel.exception.SystemException {
+	public static int getGroupEntriesCount(long groupId, int status) {
 		return getService().getGroupEntriesCount(groupId, status);
 	}
 
@@ -137,8 +164,7 @@ public class BlogsEntryServiceUtil {
 		double version, java.lang.String displayStyle,
 		java.lang.String feedURL, java.lang.String entryURL,
 		com.liferay.portal.theme.ThemeDisplay themeDisplay)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .getGroupEntriesRSS(groupId, displayDate, status, max, type,
 			version, displayStyle, feedURL, entryURL, themeDisplay);
@@ -146,9 +172,7 @@ public class BlogsEntryServiceUtil {
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getGroupsEntries(
 		long companyId, long groupId, java.util.Date displayDate, int status,
-		int max)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		int max) throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .getGroupsEntries(companyId, groupId, displayDate, status,
 			max);
@@ -156,8 +180,7 @@ public class BlogsEntryServiceUtil {
 
 	public static java.util.List<com.liferay.portlet.blogs.model.BlogsEntry> getOrganizationEntries(
 		long organizationId, java.util.Date displayDate, int status, int max)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .getOrganizationEntries(organizationId, displayDate, status,
 			max);
@@ -168,38 +191,50 @@ public class BlogsEntryServiceUtil {
 		java.lang.String type, double version, java.lang.String displayStyle,
 		java.lang.String feedURL, java.lang.String entryURL,
 		com.liferay.portal.theme.ThemeDisplay themeDisplay)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .getOrganizationEntriesRSS(organizationId, displayDate,
 			status, max, type, version, displayStyle, feedURL, entryURL,
 			themeDisplay);
 	}
 
-	public static void moveEntryToTrash(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
-		getService().moveEntryToTrash(entryId);
+	public static com.liferay.portlet.blogs.model.BlogsEntry moveEntryToTrash(
+		long entryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return getService().moveEntryToTrash(entryId);
 	}
 
 	public static void restoreEntryFromTrash(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().restoreEntryFromTrash(entryId);
 	}
 
+	/**
+	* Sets the Spring bean ID for this bean.
+	*
+	* @param beanIdentifier the Spring bean ID for this bean
+	*/
+	public static void setBeanIdentifier(java.lang.String beanIdentifier) {
+		getService().setBeanIdentifier(beanIdentifier);
+	}
+
 	public static void subscribe(long groupId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().subscribe(groupId);
 	}
 
 	public static void unsubscribe(long groupId)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().unsubscribe(groupId);
 	}
 
+	/**
+	* @deprecated As of 7.0.0, replaced by {@link #updateEntry(long, String,
+	String, String, String, int, int, int, int, int, boolean,
+	boolean, String[], String, ImageSelector, ImageSelector,
+	ServiceContext)}
+	*/
+	@Deprecated
 	public static com.liferay.portlet.blogs.model.BlogsEntry updateEntry(
 		long entryId, java.lang.String title, java.lang.String description,
 		java.lang.String content, int displayDateMonth, int displayDateDay,
@@ -209,8 +244,7 @@ public class BlogsEntryServiceUtil {
 		java.lang.String smallImageURL, java.lang.String smallImageFileName,
 		java.io.InputStream smallImageInputStream,
 		com.liferay.portal.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException,
-			com.liferay.portal.kernel.exception.SystemException {
+		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .updateEntry(entryId, title, description, content,
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
@@ -219,26 +253,41 @@ public class BlogsEntryServiceUtil {
 			smallImageInputStream, serviceContext);
 	}
 
+	public static com.liferay.portlet.blogs.model.BlogsEntry updateEntry(
+		long entryId, java.lang.String title, java.lang.String subtitle,
+		java.lang.String description, java.lang.String content,
+		int displayDateMonth, int displayDateDay, int displayDateYear,
+		int displayDateHour, int displayDateMinute, boolean allowPingbacks,
+		boolean allowTrackbacks, java.lang.String[] trackbacks,
+		java.lang.String coverImageCaption,
+		com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector coverImageImageSelector,
+		com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector smallImageImageSelector,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return getService()
+				   .updateEntry(entryId, title, subtitle, description, content,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, allowPingbacks, allowTrackbacks, trackbacks,
+			coverImageCaption, coverImageImageSelector,
+			smallImageImageSelector, serviceContext);
+	}
+
 	public static BlogsEntryService getService() {
 		if (_service == null) {
 			_service = (BlogsEntryService)PortalBeanLocatorUtil.locate(BlogsEntryService.class.getName());
 
 			ReferenceRegistry.registerReference(BlogsEntryServiceUtil.class,
 				"_service");
-			MethodCache.remove(BlogsEntryService.class);
 		}
 
 		return _service;
 	}
 
+	/**
+	 * @deprecated As of 6.2.0
+	 */
+	@Deprecated
 	public void setService(BlogsEntryService service) {
-		MethodCache.remove(BlogsEntryService.class);
-
-		_service = service;
-
-		ReferenceRegistry.registerReference(BlogsEntryServiceUtil.class,
-			"_service");
-		MethodCache.remove(BlogsEntryService.class);
 	}
 
 	private static BlogsEntryService _service;

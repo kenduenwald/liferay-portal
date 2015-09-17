@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,15 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.kernel.dao.search.JSPSearchEntry;
 import com.liferay.portal.kernel.dao.search.ResultRow;
 import com.liferay.portal.kernel.dao.search.SearchEntry;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.taglib.search.JSPSearchEntry;
 
 import java.util.List;
+
+import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,12 +54,14 @@ public class SearchContainerColumnJSPTag<R> extends SearchContainerColumnTag {
 			jspSearchEntry.setAlign(getAlign());
 			jspSearchEntry.setColspan(getColspan());
 			jspSearchEntry.setCssClass(getCssClass());
+			jspSearchEntry.setHref(String.valueOf(getHref()));
 			jspSearchEntry.setPath(getPath());
 			jspSearchEntry.setRequest(
 				(HttpServletRequest)pageContext.getRequest());
 			jspSearchEntry.setResponse(
 				(HttpServletResponse)pageContext.getResponse());
 			jspSearchEntry.setServletContext(pageContext.getServletContext());
+			jspSearchEntry.setTruncate(getTruncate());
 			jspSearchEntry.setValign(getValign());
 
 			resultRow.addSearchEntry(index, jspSearchEntry);
@@ -98,14 +102,27 @@ public class SearchContainerColumnJSPTag<R> extends SearchContainerColumnTag {
 		return EVAL_BODY_INCLUDE;
 	}
 
+	public Object getHref() {
+		if (_href instanceof PortletURL) {
+			_href = _href.toString();
+		}
+
+		return _href;
+	}
+
 	public String getPath() {
 		return _path;
+	}
+
+	public void setHref(Object href) {
+		_href = href;
 	}
 
 	public void setPath(String path) {
 		_path = path;
 	}
 
+	private Object _href;
 	private String _path;
 
 }

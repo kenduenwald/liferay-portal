@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,13 @@
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.UnicodeLanguageUtil;
-import com.liferay.portal.kernel.servlet.taglib.FileAvailabilityUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.taglib.FileAvailabilityUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -38,13 +39,28 @@ public class IconDeleteTag extends IconTag {
 
 	@Override
 	protected String getPage() {
-		if (FileAvailabilityUtil.isAvailable(getServletContext(), _PAGE)) {
+		if (FileAvailabilityUtil.isAvailable(servletContext, _PAGE)) {
 			return _PAGE;
 		}
 
-		setImage("delete");
+		String cssClass = GetterUtil.getString(getCssClass());
 
-		if (_trash) {
+		setCssClass(cssClass.concat(" item-remove"));
+
+		if (Validator.isNull(getImage())) {
+			if (_trash) {
+				setIconCssClass("icon-trash");
+			}
+			else {
+				setIconCssClass("icon-remove");
+
+				if (Validator.isNull(getMessage())) {
+					setMessage("delete");
+				}
+			}
+		}
+
+		if (_trash && Validator.isNull(getMessage())) {
 			setMessage("move-to-the-recycle-bin");
 		}
 
@@ -61,9 +77,8 @@ public class IconDeleteTag extends IconTag {
 		if (url.startsWith(Http.HTTP_WITH_SLASH) ||
 			url.startsWith(Http.HTTPS_WITH_SLASH)) {
 
-			url =
-				"submitForm(document.hrefFm, '".concat(
-					HttpUtil.encodeURL(url)).concat("');");
+			url = "submitForm(document.hrefFm, '".concat(
+				HttpUtil.encodeURL(url)).concat("');");
 		}
 
 		if (url.startsWith("wsrp_rewrite?")) {
@@ -73,29 +88,29 @@ public class IconDeleteTag extends IconTag {
 			url = "submitForm(document.hrefFm, '".concat(url).concat("');");
 		}
 
-		StringBundler sb = new StringBundler(5);
+		if (!_trash) {
+			StringBundler sb = new StringBundler(5);
 
-		sb.append("javascript:if (confirm('");
+			sb.append("javascript:if (confirm('");
 
-		if (Validator.isNotNull(_confirmation)) {
-			sb.append(UnicodeLanguageUtil.get(pageContext, _confirmation));
-		}
-		else {
-			String confirmation = "are-you-sure-you-want-to-delete-this";
+			if (Validator.isNotNull(_confirmation)) {
+				sb.append(UnicodeLanguageUtil.get(request, _confirmation));
+			}
+			else {
+				String confirmation = "are-you-sure-you-want-to-delete-this";
 
-			if (_trash) {
-				confirmation =
-					"are-you-sure-you-want-to-move-this-to-the-recycle-bin";
+				sb.append(UnicodeLanguageUtil.get(request, confirmation));
 			}
 
-			sb.append(UnicodeLanguageUtil.get(pageContext, confirmation));
+			sb.append("')) { ");
+			sb.append(url);
+			sb.append(" } else { self.focus(); }");
+
+			url = sb.toString();
 		}
-
-		sb.append("')) { ");
-		sb.append(url);
-		sb.append(" } else { self.focus(); }");
-
-		url = sb.toString();
+		else {
+			url = "javascript:".concat(url);
+		}
 
 		setUrl(url);
 

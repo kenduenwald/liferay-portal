@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,19 +23,18 @@ import com.liferay.portal.kernel.exception.PortalException;
 public class HotDeployException extends PortalException {
 
 	public HotDeployException() {
-		super();
 	}
 
 	public HotDeployException(String msg) {
 		super(msg);
 	}
 
-	public HotDeployException(Throwable cause) {
-		super(cause);
-	}
-
 	public HotDeployException(String msg, Throwable cause) {
 		super(msg, cause);
+	}
+
+	public HotDeployException(Throwable cause) {
+		super(cause);
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -25,11 +25,14 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
+import org.junit.Test;
+
 /**
  * @author Shuyang Zhou
  */
 public abstract class BaseCacheKeyGeneratorTestCase extends TestCase {
 
+	@Test
 	public void testConsistency() {
 		StringBundler sb = new StringBundler(_KEYS);
 
@@ -43,8 +46,9 @@ public abstract class BaseCacheKeyGeneratorTestCase extends TestCase {
 		assertEquals(hashCode2, hashCode3);
 	}
 
+	@Test
 	public void testScan() {
-		Map<Serializable, String> map = new HashMap<Serializable, String>();
+		Map<Serializable, String> map = new HashMap<>();
 
 		for (int i = 0; i < 1000000; i++) {
 			String value = String.valueOf(i);
@@ -53,17 +57,15 @@ public abstract class BaseCacheKeyGeneratorTestCase extends TestCase {
 
 			String oldValue = map.put(key, value);
 
-			if (oldValue != null) {
-				fail(
-					oldValue + " and " + value + " generate the same key " +
-						key);
-			}
+			assertNull(
+				oldValue + " and " + value + " generate the same key " + key,
+				oldValue);
 		}
 	}
 
+	@Test
 	public void testSpecialCases() {
-		Map<Serializable, String> checkMap =
-			new HashMap<Serializable, String>();
+		Map<Serializable, String> checkMap = new HashMap<>();
 
 		for (String[] values : _SPECIAL_CASES) {
 			String value = Arrays.toString(values);
@@ -72,11 +74,9 @@ public abstract class BaseCacheKeyGeneratorTestCase extends TestCase {
 
 			String oldValue = checkMap.put(key, Arrays.toString(values));
 
-			if (oldValue != null) {
-				fail(
-					oldValue + " and " + value + " generate the same key " +
-						key);
-			}
+			assertNull(
+				oldValue + " and " + value + " generate the same key " + key,
+				oldValue);
 		}
 	}
 
@@ -86,9 +86,11 @@ public abstract class BaseCacheKeyGeneratorTestCase extends TestCase {
 
 	private static final String[][] _SPECIAL_CASES = {
 		{"fetchByT_C_C_P_.java.lang.Long.java.lang.Long.java.lang.Long_A_", ".",
-			"10302", ".", "10303", ".", "13710"},
+			"10302", ".", "10303", ".", "13710"
+		},
 		{"fetchByT_C_C_P_.java.lang.Long.java.lang.Long.java.lang.Long_A_", ".",
-			"10302", ".", "10305", ".", "13510"}
+			"10302", ".", "10305", ".", "13510"
+		}
 	};
 
 }

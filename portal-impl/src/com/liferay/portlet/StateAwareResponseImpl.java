@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -67,6 +67,7 @@ public abstract class StateAwareResponseImpl
 		return _layout;
 	}
 
+	@Override
 	public PortletMode getPortletMode() {
 		return _portletMode;
 	}
@@ -75,6 +76,7 @@ public abstract class StateAwareResponseImpl
 		return _redirectLocation;
 	}
 
+	@Override
 	public Map<String, String[]> getRenderParameterMap() {
 		return _params;
 	}
@@ -83,6 +85,7 @@ public abstract class StateAwareResponseImpl
 		return _user;
 	}
 
+	@Override
 	public WindowState getWindowState() {
 		return _windowState;
 	}
@@ -91,6 +94,7 @@ public abstract class StateAwareResponseImpl
 		return _calledSetRenderParameter;
 	}
 
+	@Override
 	public void removePublicRenderParameter(String name) {
 		if (name == null) {
 			throw new IllegalArgumentException();
@@ -115,6 +119,7 @@ public abstract class StateAwareResponseImpl
 		_publicRenderParameters.remove(key);
 	}
 
+	@Override
 	public void setEvent(QName name, Serializable value) {
 		if (name == null) {
 			throw new IllegalArgumentException();
@@ -123,6 +128,7 @@ public abstract class StateAwareResponseImpl
 		_events.add(new EventImpl(name.getLocalPart(), name, value));
 	}
 
+	@Override
 	public void setEvent(String name, Serializable value) {
 		if (name == null) {
 			throw new IllegalArgumentException();
@@ -131,6 +137,7 @@ public abstract class StateAwareResponseImpl
 		setEvent(new QName(getDefaultNamespace(), name), value);
 	}
 
+	@Override
 	public void setPortletMode(PortletMode portletMode)
 		throws PortletModeException {
 
@@ -160,6 +167,7 @@ public abstract class StateAwareResponseImpl
 		_redirectLocation = redirectLocation;
 	}
 
+	@Override
 	public void setRenderParameter(String name, String value) {
 		if (_redirectLocation != null) {
 			throw new IllegalStateException();
@@ -172,6 +180,7 @@ public abstract class StateAwareResponseImpl
 		setRenderParameter(name, new String[] {value});
 	}
 
+	@Override
 	public void setRenderParameter(String name, String[] values) {
 		if (_redirectLocation != null) {
 			throw new IllegalStateException();
@@ -194,6 +203,7 @@ public abstract class StateAwareResponseImpl
 		_calledSetRenderParameter = true;
 	}
 
+	@Override
 	public void setRenderParameters(Map<String, String[]> params) {
 		if (_redirectLocation != null) {
 			throw new IllegalStateException();
@@ -203,8 +213,7 @@ public abstract class StateAwareResponseImpl
 			throw new IllegalArgumentException();
 		}
 		else {
-			Map<String, String[]> newParams =
-				new LinkedHashMap<String, String[]>();
+			Map<String, String[]> newParams = new LinkedHashMap<>();
 
 			for (Map.Entry<String, String[]> entry : params.entrySet()) {
 				String key = entry.getKey();
@@ -230,6 +239,7 @@ public abstract class StateAwareResponseImpl
 		_calledSetRenderParameter = true;
 	}
 
+	@Override
 	public void setWindowState(WindowState windowState)
 		throws WindowStateException {
 
@@ -286,6 +296,15 @@ public abstract class StateAwareResponseImpl
 		_calledSetRenderParameter = false;
 	}
 
+	protected void reset() {
+		_calledSetRenderParameter = false;
+		_events.clear();
+		_params.clear();
+		_portletMode = null;
+		_redirectLocation = null;
+		_windowState = null;
+	}
+
 	protected boolean setPublicRenderParameter(String name, String[] values) {
 		Portlet portlet = getPortlet();
 
@@ -311,14 +330,13 @@ public abstract class StateAwareResponseImpl
 		return true;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		StateAwareResponseImpl.class);
 
 	private boolean _calledSetRenderParameter;
-	private List<Event> _events = new ArrayList<Event>();
+	private final List<Event> _events = new ArrayList<>();
 	private Layout _layout;
-	private Map<String, String[]> _params =
-		new LinkedHashMap<String, String[]>();
+	private Map<String, String[]> _params = new LinkedHashMap<>();
 	private PortletMode _portletMode;
 	private String _portletName;
 	private PortletRequestImpl _portletRequestImpl;

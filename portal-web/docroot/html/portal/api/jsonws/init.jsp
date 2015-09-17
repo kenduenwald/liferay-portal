@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,11 +16,12 @@
 
 <%@ include file="/html/portal/init.jsp" %>
 
-<%@ page import="com.liferay.portal.kernel.javadoc.JavadocManagerUtil" %><%@
+<%@ page import="com.liferay.portal.javadoc.JavadocUtil" %><%@
+page import="com.liferay.portal.kernel.javadoc.JavadocClass" %><%@
+page import="com.liferay.portal.kernel.javadoc.JavadocManagerUtil" %><%@
 page import="com.liferay.portal.kernel.javadoc.JavadocMethod" %><%@
 page import="com.liferay.portal.kernel.jsonwebservice.JSONWebServiceActionMapping" %><%@
 page import="com.liferay.portal.kernel.jsonwebservice.JSONWebServiceActionsManagerUtil" %><%@
-page import="com.liferay.portal.kernel.util.ContextPathUtil" %><%@
 page import="com.liferay.portal.kernel.util.MethodParameter" %>
 
 <%@ page import="java.io.File" %>
@@ -28,9 +29,9 @@ page import="com.liferay.portal.kernel.util.MethodParameter" %>
 <%@ page import="java.lang.reflect.Method" %>
 
 <%
-String contextPath = request.getParameter("contextPath");
+String jsonWSPath = themeDisplay.getPathContext() + "/api/jsonws";
 
-if (contextPath == null) {
-	contextPath = ContextPathUtil.getContextPath(application);
-}
+String contextName = ParamUtil.getString(request, "contextName");
+
+String jsonWSContextPath = jsonWSPath + "?contextName=" + contextName;
 %>

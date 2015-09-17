@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@
 long classNameId = GetterUtil.getLong((String)request.getAttribute("liferay-ui:asset-tags-navigation:classNameId"));
 String displayStyle = (String)request.getAttribute("liferay-ui:asset-tags-navigation:displayStyle");
 boolean hidePortletWhenEmpty = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:asset-tags-navigation:hidePortletWhenEmpty"));
-int maxAssetTags= GetterUtil.getInteger((String)request.getAttribute("liferay-ui:asset-tags-navigation:maxAssetTags"));
+int maxAssetTags = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:asset-tags-navigation:maxAssetTags"));
 boolean showAssetCount = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:asset-tags-navigation:showAssetCount"));
 boolean showZeroAssetCount = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:asset-tags-navigation:showZeroAssetCount"));
 
@@ -28,7 +28,7 @@ String tag = ParamUtil.getString(request, "tag");
 
 PortletURL portletURL = renderResponse.createRenderURL();
 
-String tagsNavigation = _buildTagsNavigation(scopeGroupId, tag, portletURL, classNameId, displayStyle, maxAssetTags, showAssetCount, showZeroAssetCount);
+String tagsNavigation = _buildTagsNavigation(scopeGroupId, themeDisplay.getSiteGroupId(), tag, portletURL, classNameId, displayStyle, maxAssetTags, showAssetCount, showZeroAssetCount);
 
 if (Validator.isNotNull(tagsNavigation)) {
 %>
@@ -45,23 +45,27 @@ else {
 	}
 %>
 
-	<div class="portlet-msg-info">
+	<div class="alert alert-info">
 		<liferay-ui:message key="there-are-no-tags" />
 	</div>
 
 <%
 }
+
+if (Validator.isNotNull(tag)) {
+	PortalUtil.addPortletBreadcrumbEntry(request, tag, currentURL);
+}
 %>
 
 <%!
-private String _buildTagsNavigation(long groupId, String selectedTagName, PortletURL portletURL, long classNameId, String displayStyle, int maxAssetTags, boolean showAssetCount, boolean showZeroAssetCount) throws Exception {
+private String _buildTagsNavigation(long scopeGroupId, long siteGroupId, String selectedTagName, PortletURL portletURL, long classNameId, String displayStyle, int maxAssetTags, boolean showAssetCount, boolean showZeroAssetCount) throws Exception {
 	List<AssetTag> tags = null;
 
-	if (classNameId > 0) {
-		tags = AssetTagServiceUtil.getTags(groupId, classNameId, null, 0, maxAssetTags, new AssetTagCountComparator());
+	if (showAssetCount && (classNameId > 0)) {
+		tags = AssetTagServiceUtil.getTags(scopeGroupId, classNameId, null, 0, maxAssetTags, new AssetTagCountComparator());
 	}
 	else {
-		tags = AssetTagServiceUtil.getGroupTags(groupId, 0, maxAssetTags, new AssetTagCountComparator());
+		tags = AssetTagServiceUtil.getGroupTags(siteGroupId, 0, maxAssetTags, new AssetTagCountComparator());
 	}
 
 	if (tags.isEmpty()) {
@@ -93,10 +97,10 @@ private String _buildTagsNavigation(long groupId, String selectedTagName, Portle
 			int count = 0;
 
 			if (classNameId > 0) {
-				count = AssetTagServiceUtil.getTagsCount(groupId, classNameId, tagName);
+				count = AssetTagServiceUtil.getVisibleAssetsTagsCount(scopeGroupId, classNameId, tagName);
 			}
 			else {
-				count = AssetTagServiceUtil.getTagsCount(groupId, tagName);
+				count = AssetTagServiceUtil.getVisibleAssetsTagsCount(scopeGroupId, tagName);
 			}
 
 			if (!showZeroAssetCount && (count == 0)) {
@@ -120,10 +124,10 @@ private String _buildTagsNavigation(long groupId, String selectedTagName, Portle
 		int count = 0;
 
 		if (classNameId > 0) {
-			count = AssetTagServiceUtil.getTagsCount(groupId, classNameId, tagName);
+			count = AssetTagServiceUtil.getVisibleAssetsTagsCount(scopeGroupId, classNameId, tagName);
 		}
 		else {
-			count = AssetTagServiceUtil.getTagsCount(groupId, tagName);
+			count = AssetTagServiceUtil.getVisibleAssetsTagsCount(scopeGroupId, tagName);
 		}
 
 		int popularity = (int)(1 + ((maxCount - (maxCount - (count - minCount))) * multiplier));
@@ -142,13 +146,12 @@ private String _buildTagsNavigation(long groupId, String selectedTagName, Portle
 			sb.append("<a class=\"tag-selected\" href=\"");
 		}
 		else {
-			portletURL.setParameter("resetCur", Boolean.TRUE.toString());
 			portletURL.setParameter("tag", tagName);
 
- 			sb.append("<a href=\"");
+			sb.append("<a href=\"");
 		}
 
-		sb.append(portletURL.toString());
+		sb.append(HtmlUtil.escape(portletURL.toString()));
 		sb.append("\">");
 		sb.append(tagName);
 

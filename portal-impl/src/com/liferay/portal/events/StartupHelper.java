@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,18 +20,21 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
+import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.upgrade.UpgradeProcessUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.verify.VerifyException;
 import com.liferay.portal.verify.VerifyProcessUtil;
 
 import java.sql.Connection;
+
+import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
@@ -40,13 +43,67 @@ import java.sql.Connection;
  */
 public class StartupHelper {
 
-	public static void updateIndexes(
-		DB db, Connection con, boolean dropIndexes) {
+	public boolean isDBNew() {
+		return _dbNew;
+	}
+
+	public boolean isStartupFinished() {
+		return _startupFinished;
+	}
+
+	public boolean isUpgraded() {
+		return _upgraded;
+	}
+
+	public boolean isUpgrading() {
+		return _upgrading;
+	}
+
+	public boolean isVerified() {
+		return _verified;
+	}
+
+	public void setDbNew(boolean dbNew) {
+		_dbNew = dbNew;
+	}
+
+	public void setDropIndexes(boolean dropIndexes) {
+		_dropIndexes = dropIndexes;
+	}
+
+	public void setStartupFinished(boolean startupFinished) {
+		_startupFinished = startupFinished;
+	}
+
+	public void updateIndexes() {
+		updateIndexes(_dropIndexes);
+	}
+
+	public void updateIndexes(boolean dropIndexes) {
+		DB db = DBFactoryUtil.getDB();
+
+		Connection connection = null;
 
 		try {
-			Thread currentThread = Thread.currentThread();
+			connection = DataAccess.getConnection();
 
-			ClassLoader classLoader = currentThread.getContextClassLoader();
+			updateIndexes(db, connection, dropIndexes);
+		}
+		catch (Exception e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(e, e);
+			}
+		}
+		finally {
+			DataAccess.cleanUp(connection);
+		}
+	}
+
+	public void updateIndexes(
+		DB db, Connection connection, boolean dropIndexes) {
+
+		try {
+			ClassLoader classLoader = ClassLoaderUtil.getContextClassLoader();
 
 			String tablesSQL = StringUtil.read(
 				classLoader,
@@ -56,85 +113,67 @@ public class StartupHelper {
 				classLoader,
 				"com/liferay/portal/tools/sql/dependencies/indexes.sql");
 
-			String indexesProperties = StringUtil.read(
-				classLoader,
-				"com/liferay/portal/tools/sql/dependencies/indexes.properties");
-
-			db.updateIndexes(
-				con, tablesSQL, indexesSQL, indexesProperties, dropIndexes);
+			db.updateIndexes(connection, tablesSQL, indexesSQL, dropIndexes);
 		}
 		catch (Exception e) {
-			_log.error(e, e);
-		}
-	}
-
-	public boolean isUpgraded() {
-		return _upgraded;
-	}
-
-	public boolean isVerified() {
-		return _verified;
-	}
-
-	public void setDropIndexes(boolean dropIndexes) {
-		_dropIndexes = dropIndexes;
-	}
-
-	public void updateIndexes() {
-		DB db = DBFactoryUtil.getDB();
-
-		Connection con = null;
-
-		try {
-			con = DataAccess.getConnection();
-
-			updateIndexes(db, con, _dropIndexes);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-		finally {
-			DataAccess.cleanUp(con);
+			if (_log.isWarnEnabled()) {
+				_log.warn(e, e);
+			}
 		}
 	}
 
 	public void upgradeProcess(int buildNumber) throws UpgradeException {
-		if (buildNumber == ReleaseInfo.getParentBuildNumber()) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Skipping upgrade process from " + buildNumber + " to " +
-						ReleaseInfo.getParentBuildNumber());
-			}
+		_upgrading = true;
 
-			return;
-		}
-
-		String[] upgradeProcessClassNames = getUpgradeProcessClassNames(
-			PropsKeys.UPGRADE_PROCESSES);
-
-		if (upgradeProcessClassNames.length == 0) {
-			upgradeProcessClassNames = getUpgradeProcessClassNames(
-				PropsKeys.UPGRADE_PROCESSES + StringPool.PERIOD + buildNumber);
-
-			if (upgradeProcessClassNames.length == 0) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
-						"Upgrading from " + buildNumber + " to " +
-							ReleaseInfo.getParentBuildNumber() + " is not " +
-								"supported");
+		try {
+			if (buildNumber == ReleaseInfo.getParentBuildNumber()) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Skipping upgrade process from " + buildNumber +
+							" to " + ReleaseInfo.getParentBuildNumber());
 				}
 
-				System.exit(0);
+				return;
 			}
-		}
 
-		_upgraded = UpgradeProcessUtil.upgradeProcess(
-			buildNumber, upgradeProcessClassNames,
-			PortalClassLoaderUtil.getClassLoader());
+			String[] upgradeProcessClassNames = getUpgradeProcessClassNames(
+				PropsKeys.UPGRADE_PROCESSES);
+
+			if (upgradeProcessClassNames.length == 0) {
+				upgradeProcessClassNames = getUpgradeProcessClassNames(
+					PropsKeys.UPGRADE_PROCESSES + StringPool.PERIOD +
+						buildNumber);
+
+				if (upgradeProcessClassNames.length == 0) {
+					if (_log.isInfoEnabled()) {
+						_log.info(
+							"Upgrading from " + buildNumber + " to " +
+								ReleaseInfo.getParentBuildNumber() +
+									" is not supported");
+					}
+
+					System.exit(0);
+				}
+			}
+
+			List<UpgradeProcess> upgradeProcesses =
+				UpgradeProcessUtil.initUpgradeProcesses(
+					ClassLoaderUtil.getPortalClassLoader(),
+					upgradeProcessClassNames);
+
+			_upgraded = UpgradeProcessUtil.upgradeProcess(
+				buildNumber, upgradeProcesses);
+		}
+		finally {
+			_upgrading = false;
+		}
 	}
 
-	public void verifyProcess(boolean verified) throws VerifyException {
-		_verified = VerifyProcessUtil.verifyProcess(_upgraded, verified);
+	public void verifyProcess(boolean newBuildNumber, boolean verified)
+		throws VerifyException {
+
+		_verified = VerifyProcessUtil.verifyProcess(
+			_upgraded, newBuildNumber, verified);
 	}
 
 	protected String[] getUpgradeProcessClassNames(String key) {
@@ -151,10 +190,13 @@ public class StartupHelper {
 		return StringUtil.split(GetterUtil.getString(PropsUtil.get(key)));
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(StartupHelper.class);
+	private static final Log _log = LogFactoryUtil.getLog(StartupHelper.class);
 
+	private boolean _dbNew;
 	private boolean _dropIndexes;
+	private boolean _startupFinished;
 	private boolean _upgraded;
+	private boolean _upgrading;
 	private boolean _verified;
 
 }

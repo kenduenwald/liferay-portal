@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -45,6 +45,7 @@ public class ICQConnector implements Observer {
 		_instance._send(to, msg);
 	}
 
+	@Override
 	public void update(Observable obs, Object obj) {
 		_connecting = false;
 
@@ -54,7 +55,7 @@ public class ICQConnector implements Observer {
 	}
 
 	private ICQConnector() {
-		_messages = new Vector<KeyValuePair>();
+		_messages = new Vector<>();
 	}
 
 	private void _connect() {
@@ -77,7 +78,9 @@ public class ICQConnector implements Observer {
 			}
 		}
 		catch (Exception e) {
-			_log.warn(e);
+			if (_log.isWarnEnabled()) {
+				_log.warn(e);
+			}
 		}
 	}
 
@@ -92,12 +95,12 @@ public class ICQConnector implements Observer {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ICQConnector.class);
+	private static final Log _log = LogFactoryUtil.getLog(ICQConnector.class);
 
-	private static ICQConnector _instance = new ICQConnector();
+	private static final ICQConnector _instance = new ICQConnector();
 
 	private boolean _connecting;
 	private OscarConnection _icq;
-	private List<KeyValuePair> _messages;
+	private final List<KeyValuePair> _messages;
 
 }

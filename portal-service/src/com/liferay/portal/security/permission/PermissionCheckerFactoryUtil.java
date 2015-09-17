@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,11 @@
 
 package com.liferay.portal.security.permission;
 
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
 import com.liferay.portal.model.User;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
+import com.liferay.registry.ServiceTracker;
 
 /**
  * @author Charles May
@@ -27,8 +31,9 @@ public class PermissionCheckerFactoryUtil {
 	}
 
 	/**
-	 * @deprecated {@link #create(User)}
+	 * @deprecated As of 6.2.0, replaced by {@link #create(User)}
 	 */
+	@Deprecated
 	public static PermissionChecker create(User user, boolean checkGuest)
 		throws Exception {
 
@@ -36,15 +41,24 @@ public class PermissionCheckerFactoryUtil {
 	}
 
 	public static PermissionCheckerFactory getPermissionCheckerFactory() {
-		return _permissionCheckerFactory;
+		PortalRuntimePermission.checkGetBeanProperty(
+			PermissionCheckerFactoryUtil.class);
+
+		return _instance._serviceTracker.getService();
 	}
 
-	public void setPermissionCheckerFactory(
-		PermissionCheckerFactory permissionCheckerFactory) {
+	private PermissionCheckerFactoryUtil() {
+		Registry registry = RegistryUtil.getRegistry();
 
-		_permissionCheckerFactory = permissionCheckerFactory;
+		_serviceTracker = registry.trackServices(
+			PermissionCheckerFactory.class);
+
+		_serviceTracker.open();
 	}
 
-	private static PermissionCheckerFactory _permissionCheckerFactory;
+	private static final PermissionCheckerFactoryUtil _instance =
+		new PermissionCheckerFactoryUtil();
+
+	private final ServiceTracker<?, PermissionCheckerFactory> _serviceTracker;
 
 }

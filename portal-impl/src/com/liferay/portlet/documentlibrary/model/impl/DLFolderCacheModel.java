@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.documentlibrary.model.DLFolder;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,10 +37,35 @@ import java.util.Date;
  * @see DLFolder
  * @generated
  */
-public class DLFolderCacheModel implements CacheModel<DLFolder>, Serializable {
+@ProviderType
+public class DLFolderCacheModel implements CacheModel<DLFolder>, Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof DLFolderCacheModel)) {
+			return false;
+		}
+
+		DLFolderCacheModel dlFolderCacheModel = (DLFolderCacheModel)obj;
+
+		if (folderId == dlFolderCacheModel.folderId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, folderId);
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(33);
+		StringBundler sb = new StringBundler(47);
 
 		sb.append("{uuid=");
 		sb.append(uuid);
@@ -58,6 +89,8 @@ public class DLFolderCacheModel implements CacheModel<DLFolder>, Serializable {
 		sb.append(mountPoint);
 		sb.append(", parentFolderId=");
 		sb.append(parentFolderId);
+		sb.append(", treePath=");
+		sb.append(treePath);
 		sb.append(", name=");
 		sb.append(name);
 		sb.append(", description=");
@@ -66,13 +99,26 @@ public class DLFolderCacheModel implements CacheModel<DLFolder>, Serializable {
 		sb.append(lastPostDate);
 		sb.append(", defaultFileEntryTypeId=");
 		sb.append(defaultFileEntryTypeId);
-		sb.append(", overrideFileEntryTypes=");
-		sb.append(overrideFileEntryTypes);
+		sb.append(", hidden=");
+		sb.append(hidden);
+		sb.append(", restrictionType=");
+		sb.append(restrictionType);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
+		sb.append(", status=");
+		sb.append(status);
+		sb.append(", statusByUserId=");
+		sb.append(statusByUserId);
+		sb.append(", statusByUserName=");
+		sb.append(statusByUserName);
+		sb.append(", statusDate=");
+		sb.append(statusDate);
 		sb.append("}");
 
 		return sb.toString();
 	}
 
+	@Override
 	public DLFolder toEntityModel() {
 		DLFolderImpl dlFolderImpl = new DLFolderImpl();
 
@@ -113,6 +159,13 @@ public class DLFolderCacheModel implements CacheModel<DLFolder>, Serializable {
 		dlFolderImpl.setMountPoint(mountPoint);
 		dlFolderImpl.setParentFolderId(parentFolderId);
 
+		if (treePath == null) {
+			dlFolderImpl.setTreePath(StringPool.BLANK);
+		}
+		else {
+			dlFolderImpl.setTreePath(treePath);
+		}
+
 		if (name == null) {
 			dlFolderImpl.setName(StringPool.BLANK);
 		}
@@ -135,11 +188,130 @@ public class DLFolderCacheModel implements CacheModel<DLFolder>, Serializable {
 		}
 
 		dlFolderImpl.setDefaultFileEntryTypeId(defaultFileEntryTypeId);
-		dlFolderImpl.setOverrideFileEntryTypes(overrideFileEntryTypes);
+		dlFolderImpl.setHidden(hidden);
+		dlFolderImpl.setRestrictionType(restrictionType);
+
+		if (lastPublishDate == Long.MIN_VALUE) {
+			dlFolderImpl.setLastPublishDate(null);
+		}
+		else {
+			dlFolderImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
+
+		dlFolderImpl.setStatus(status);
+		dlFolderImpl.setStatusByUserId(statusByUserId);
+
+		if (statusByUserName == null) {
+			dlFolderImpl.setStatusByUserName(StringPool.BLANK);
+		}
+		else {
+			dlFolderImpl.setStatusByUserName(statusByUserName);
+		}
+
+		if (statusDate == Long.MIN_VALUE) {
+			dlFolderImpl.setStatusDate(null);
+		}
+		else {
+			dlFolderImpl.setStatusDate(new Date(statusDate));
+		}
 
 		dlFolderImpl.resetOriginalValues();
 
 		return dlFolderImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
+		folderId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		repositoryId = objectInput.readLong();
+		mountPoint = objectInput.readBoolean();
+		parentFolderId = objectInput.readLong();
+		treePath = objectInput.readUTF();
+		name = objectInput.readUTF();
+		description = objectInput.readUTF();
+		lastPostDate = objectInput.readLong();
+		defaultFileEntryTypeId = objectInput.readLong();
+		hidden = objectInput.readBoolean();
+		restrictionType = objectInput.readInt();
+		lastPublishDate = objectInput.readLong();
+		status = objectInput.readInt();
+		statusByUserId = objectInput.readLong();
+		statusByUserName = objectInput.readUTF();
+		statusDate = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		objectOutput.writeLong(folderId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+		objectOutput.writeLong(repositoryId);
+		objectOutput.writeBoolean(mountPoint);
+		objectOutput.writeLong(parentFolderId);
+
+		if (treePath == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(treePath);
+		}
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (description == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
+		objectOutput.writeLong(lastPostDate);
+		objectOutput.writeLong(defaultFileEntryTypeId);
+		objectOutput.writeBoolean(hidden);
+		objectOutput.writeInt(restrictionType);
+		objectOutput.writeLong(lastPublishDate);
+		objectOutput.writeInt(status);
+		objectOutput.writeLong(statusByUserId);
+
+		if (statusByUserName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(statusByUserName);
+		}
+
+		objectOutput.writeLong(statusDate);
 	}
 
 	public String uuid;
@@ -153,9 +325,16 @@ public class DLFolderCacheModel implements CacheModel<DLFolder>, Serializable {
 	public long repositoryId;
 	public boolean mountPoint;
 	public long parentFolderId;
+	public String treePath;
 	public String name;
 	public String description;
 	public long lastPostDate;
 	public long defaultFileEntryTypeId;
-	public boolean overrideFileEntryTypes;
+	public boolean hidden;
+	public int restrictionType;
+	public long lastPublishDate;
+	public int status;
+	public long statusByUserId;
+	public String statusByUserName;
+	public long statusDate;
 }

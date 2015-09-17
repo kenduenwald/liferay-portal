@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,6 +28,7 @@ public class RoleResponseElement implements ResponseElement {
 		_type = role.getTypeLabel();
 	}
 
+	@Override
 	public void addElement(Element rootEl) {
 		Element el = rootEl.addElement("Role");
 
@@ -36,8 +37,8 @@ public class RoleResponseElement implements ResponseElement {
 		el.addAttribute("Type", _type);
 	}
 
-	private String _description;
-	private String _name;
-	private String _type;
+	private final String _description;
+	private final String _name;
+	private final String _type;
 
 }

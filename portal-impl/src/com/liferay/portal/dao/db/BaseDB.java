@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,23 +16,31 @@ package com.liferay.portal.dao.db;
 
 import com.liferay.counter.service.CounterLocalServiceUtil;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
+import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.Index;
+import com.liferay.portal.kernel.dao.db.IndexMetadata;
+import com.liferay.portal.kernel.dao.db.IndexMetadataFactoryUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
+import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.template.StringTemplateResource;
+import com.liferay.portal.kernel.template.Template;
+import com.liferay.portal.kernel.template.TemplateConstants;
+import com.liferay.portal.kernel.template.TemplateManagerUtil;
+import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.PropertiesUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.velocity.VelocityUtil;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.util.SimpleCounter;
 
 import java.io.File;
@@ -45,12 +53,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,9 +67,11 @@ import javax.naming.NamingException;
  * @author Alexander Chow
  * @author Ganesh Ram
  * @author Brian Wing Shun Chan
+ * @author Daniel Kocsis
  */
 public abstract class BaseDB implements DB {
 
+	@Override
 	public void addIndexes(
 			Connection con, String indexesSQL, Set<String> validIndexNames)
 		throws IOException {
@@ -106,14 +114,15 @@ public abstract class BaseDB implements DB {
 		}
 	}
 
+	@Override
 	public void buildCreateFile(String sqlDir, String databaseName)
 		throws IOException {
 
-		buildCreateFile(sqlDir, databaseName, POPULATED);
-		buildCreateFile(sqlDir, databaseName, MINIMAL);
-		buildCreateFile(sqlDir, databaseName, SHARDED);
+		buildCreateFile(sqlDir, databaseName, BARE);
+		buildCreateFile(sqlDir, databaseName, DEFAULT);
 	}
 
+	@Override
 	public void buildCreateFile(
 			String sqlDir, String databaseName, int population)
 		throws IOException {
@@ -124,40 +133,18 @@ public abstract class BaseDB implements DB {
 			sqlDir + "/create" + suffix + "/create" + suffix + "-" +
 				getServerName() + ".sql");
 
-		if (population != SHARDED) {
-			String content = buildCreateFileContent(
-				sqlDir, databaseName, population);
+		String content = buildCreateFileContent(
+			sqlDir, databaseName, population);
 
-			if (content != null) {
-				FileUtil.write(file, content);
-			}
-		}
-		else {
-			String content = buildCreateFileContent(
-				sqlDir, databaseName, MINIMAL);
-
-			if (content != null) {
-				FileUtil.write(file, content);
-			}
-
-			content = buildCreateFileContent(
-				sqlDir, databaseName + "1", MINIMAL);
-
-			if (content != null) {
-				FileUtil.write(file, content, false, true);
-			}
-
-			content = buildCreateFileContent(
-				sqlDir, databaseName + "2", MINIMAL);
-
-			if (content != null) {
-				FileUtil.write(file, content, false, true);
-			}
+		if (content != null) {
+			FileUtil.write(file, content);
 		}
 	}
 
+	@Override
 	public abstract String buildSQL(String template) throws IOException;
 
+	@Override
 	public void buildSQLFile(String sqlDir, String fileName)
 		throws IOException {
 
@@ -175,65 +162,85 @@ public abstract class BaseDB implements DB {
 			template);
 	}
 
+	@Override
 	@SuppressWarnings("unused")
 	public List<Index> getIndexes(Connection con) throws SQLException {
 		return Collections.emptyList();
 	}
 
+	@Override
 	public String getTemplateFalse() {
 		return getTemplate()[2];
 	}
 
+	@Override
 	public String getTemplateTrue() {
 		return getTemplate()[1];
 	}
 
+	@Override
 	public String getType() {
 		return _type;
 	}
 
-	public long increment() throws SystemException {
+	@Override
+	public long increment() {
 		return CounterLocalServiceUtil.increment();
 	}
 
-	public long increment(String name) throws SystemException {
+	@Override
+	public long increment(String name) {
 		return CounterLocalServiceUtil.increment(name);
 	}
 
+	@Override
 	public boolean isSupportsAlterColumnName() {
 		return _SUPPORTS_ALTER_COLUMN_NAME;
 	}
 
+	@Override
 	public boolean isSupportsAlterColumnType() {
 		return _SUPPORTS_ALTER_COLUMN_TYPE;
 	}
 
+	@Override
 	public boolean isSupportsDateMilliseconds() {
 		return _SUPPORTS_DATE_MILLISECONDS;
 	}
 
+	@Override
 	public boolean isSupportsInlineDistinct() {
 		return _SUPPORTS_INLINE_DISTINCT;
 	}
 
+	@Override
+	public boolean isSupportsQueryingAfterException() {
+		return _SUPPORTS_QUERYING_AFTER_EXCEPTION;
+	}
+
+	@Override
 	public boolean isSupportsScrollableResults() {
 		return _SUPPORTS_SCROLLABLE_RESULTS;
 	}
 
+	@Override
 	public boolean isSupportsStringCaseSensitiveQuery() {
 		return _supportsStringCaseSensitiveQuery;
 	}
 
+	@Override
 	public boolean isSupportsUpdateWithInnerJoin() {
 		return _SUPPORTS_UPDATE_WITH_INNER_JOIN;
 	}
 
+	@Override
 	public void runSQL(Connection con, String sql)
 		throws IOException, SQLException {
 
 		runSQL(con, new String[] {sql});
 	}
 
+	@Override
 	public void runSQL(Connection con, String[] sqls)
 		throws IOException, SQLException {
 
@@ -263,7 +270,7 @@ public abstract class BaseDB implements DB {
 					s.executeUpdate(sql);
 				}
 				catch (SQLException sqle) {
-					throw sqle;
+					handleSQLException(sql, sqle);
 				}
 			}
 		}
@@ -272,10 +279,12 @@ public abstract class BaseDB implements DB {
 		}
 	}
 
+	@Override
 	public void runSQL(String sql) throws IOException, SQLException {
 		runSQL(new String[] {sql});
 	}
 
+	@Override
 	public void runSQL(String[] sqls) throws IOException, SQLException {
 		Connection con = DataAccess.getConnection();
 
@@ -287,18 +296,18 @@ public abstract class BaseDB implements DB {
 		}
 	}
 
+	@Override
 	public void runSQLTemplate(String path)
 		throws IOException, NamingException, SQLException {
 
 		runSQLTemplate(path, true);
 	}
 
+	@Override
 	public void runSQLTemplate(String path, boolean failOnError)
 		throws IOException, NamingException, SQLException {
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader classLoader = currentThread.getContextClassLoader();
+		ClassLoader classLoader = ClassLoaderUtil.getContextClassLoader();
 
 		InputStream is = classLoader.getResourceAsStream(
 			"com/liferay/portal/tools/sql/dependencies/" + path);
@@ -320,44 +329,48 @@ public abstract class BaseDB implements DB {
 
 		String template = StringUtil.read(is);
 
-		is.close();
-
 		boolean evaluate = path.endsWith(".vm");
 
 		runSQLTemplateString(template, evaluate, failOnError);
 	}
 
+	@Override
 	public void runSQLTemplateString(
-			String template, boolean evaluate, boolean failOnError)
+			Connection connection, String template, boolean evaluate,
+			boolean failOnError)
 		throws IOException, NamingException, SQLException {
+
+		template = applyMaxStringIndexLengthLimitation(
+			_columnLengthPattern.matcher(template));
 
 		if (evaluate) {
 			try {
-				template = evaluateVM(template);
+				template = evaluateVM(template.hashCode() + "", template);
 			}
 			catch (Exception e) {
 				_log.error(e, e);
 			}
 		}
 
-		StringBundler sb = new StringBundler();
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(template))) {
 
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(template));
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (!line.startsWith("##")) {
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (line.startsWith("##")) {
+					continue;
+				}
+
 				if (line.startsWith("@include ")) {
 					int pos = line.indexOf(" ");
 
 					String includeFileName = line.substring(pos + 1);
 
-					Thread currentThread = Thread.currentThread();
-
 					ClassLoader classLoader =
-						currentThread.getContextClassLoader();
+						ClassLoaderUtil.getContextClassLoader();
 
 					InputStream is = classLoader.getResourceAsStream(
 						"com/liferay/portal/tools/sql/dependencies/" +
@@ -369,11 +382,9 @@ public abstract class BaseDB implements DB {
 
 					String include = StringUtil.read(is);
 
-					is.close();
-
 					if (includeFileName.endsWith(".vm")) {
 						try {
-							include = evaluateVM(include);
+							include = evaluateVM(includeFileName, include);
 						}
 						catch (Exception e) {
 							_log.error(e, e);
@@ -395,7 +406,7 @@ public abstract class BaseDB implements DB {
 
 						try {
 							if (!sql.equals("COMMIT_TRANSACTION;")) {
-								runSQL(sql);
+								runSQL(connection, sql);
 							}
 							else {
 								if (_log.isDebugEnabled()) {
@@ -411,34 +422,52 @@ public abstract class BaseDB implements DB {
 								_log.warn(ioe.getMessage());
 							}
 						}
+						catch (SecurityException se) {
+							if (failOnError) {
+								throw se;
+							}
+							else if (_log.isWarnEnabled()) {
+								_log.warn(se.getMessage());
+							}
+						}
 						catch (SQLException sqle) {
 							if (failOnError) {
 								throw sqle;
 							}
-							else if (_log.isWarnEnabled()) {
-								String message = GetterUtil.getString(
-									sqle.getMessage());
 
-								if (!message.startsWith("Duplicate key name")) {
-									_log.warn(message + ": " + buildSQL(sql));
-								}
+							String message = GetterUtil.getString(
+								sqle.getMessage());
 
-								if (message.startsWith("Duplicate entry") ||
-									message.startsWith(
-										"Specified key was too long")) {
+							if (!message.startsWith("Duplicate key name") &&
+								_log.isWarnEnabled()) {
 
-									_log.error(line);
-								}
+								_log.warn(message + ": " + buildSQL(sql));
+							}
+
+							if (message.startsWith("Duplicate entry") ||
+								message.startsWith(
+									"Specified key was too long")) {
+
+								_log.error(line);
 							}
 						}
 					}
 				}
 			}
 		}
-
-		unsyncBufferedReader.close();
 	}
 
+	@Override
+	public void runSQLTemplateString(
+			String template, boolean evaluate, boolean failOnError)
+		throws IOException, NamingException, SQLException {
+
+		try (Connection connection = DataAccess.getConnection()) {
+			runSQLTemplateString(connection, template, evaluate, failOnError);
+		}
+	}
+
+	@Override
 	public void setSupportsStringCaseSensitiveQuery(
 		boolean supportsStringCaseSensitiveQuery) {
 
@@ -454,9 +483,10 @@ public abstract class BaseDB implements DB {
 		_supportsStringCaseSensitiveQuery = supportsStringCaseSensitiveQuery;
 	}
 
+	@Override
 	public void updateIndexes(
 			Connection con, String tablesSQL, String indexesSQL,
-			String indexesProperties, boolean dropIndexes)
+			boolean dropIndexes)
 		throws IOException, SQLException {
 
 		List<Index> indexes = getIndexes(con);
@@ -464,14 +494,13 @@ public abstract class BaseDB implements DB {
 		Set<String> validIndexNames = null;
 
 		if (dropIndexes) {
-			validIndexNames = dropIndexes(
-				con, tablesSQL, indexesSQL, indexesProperties, indexes);
+			validIndexNames = dropIndexes(con, tablesSQL, indexesSQL, indexes);
 		}
 		else {
-			validIndexNames = new HashSet<String>();
+			validIndexNames = new HashSet<>();
 
 			for (Index index : indexes) {
-				String indexName = index.getIndexName().toUpperCase();
+				String indexName = StringUtil.toUpperCase(index.getIndexName());
 
 				validIndexNames.add(indexName);
 			}
@@ -490,6 +519,37 @@ public abstract class BaseDB implements DB {
 		}
 	}
 
+	protected String applyMaxStringIndexLengthLimitation(Matcher matcher) {
+		int stringIndexMaxLength = GetterUtil.getInteger(
+			PropsUtil.get(
+				PropsKeys.DATABASE_STRING_INDEX_MAX_LENGTH,
+				new Filter(getType())),
+			-1);
+
+		if (stringIndexMaxLength < 0) {
+			return matcher.replaceAll(StringPool.BLANK);
+		}
+
+		StringBuffer sb = new StringBuffer();
+
+		String replacement = "\\(" + stringIndexMaxLength + "\\)";
+
+		while (matcher.find()) {
+			int length = Integer.valueOf(matcher.group(1));
+
+			if (length > stringIndexMaxLength) {
+				matcher.appendReplacement(sb, replacement);
+			}
+			else {
+				matcher.appendReplacement(sb, StringPool.BLANK);
+			}
+		}
+
+		matcher.appendTail(sb);
+
+		return sb.toString();
+	}
+
 	protected String[] buildColumnNameTokens(String line) {
 		String[] words = StringUtil.split(line, ' ');
 
@@ -499,9 +559,7 @@ public abstract class BaseDB implements DB {
 			nullable = "not null;";
 		}
 
-		String[] template = {
-			words[1], words[2], words[3], words[4], nullable
-		};
+		String[] template = {words[1], words[2], words[3], words[4], nullable};
 
 		return template;
 	}
@@ -525,9 +583,7 @@ public abstract class BaseDB implements DB {
 			}
 		}
 
-		String[] template = {
-			words[1], words[2], "", words[3], nullable
-		};
+		String[] template = {words[1], words[2], "", words[3], nullable};
 
 		return template;
 	}
@@ -536,63 +592,75 @@ public abstract class BaseDB implements DB {
 			String sqlDir, String databaseName, int population)
 		throws IOException;
 
+	protected String[] buildTableNameTokens(String line) {
+		String[] words = StringUtil.split(line, StringPool.SPACE);
+
+		return new String[] {words[1], words[2]};
+	}
+
 	protected String buildTemplate(String sqlDir, String fileName)
 		throws IOException {
 
 		String template = readFile(sqlDir + "/" + fileName + ".sql");
 
-		if (fileName.equals("portal") || fileName.equals("portal-minimal") ||
+		if (fileName.equals("portal") ||
 			fileName.equals("update-5.0.1-5.1.0")) {
-
-			UnsyncBufferedReader unsyncBufferedReader =
-				new UnsyncBufferedReader(new UnsyncStringReader(template));
 
 			StringBundler sb = new StringBundler();
 
-			String line = null;
+			try (UnsyncBufferedReader unsyncBufferedReader =
+					new UnsyncBufferedReader(
+						new UnsyncStringReader(template))) {
 
-			while ((line = unsyncBufferedReader.readLine()) != null) {
-				if (line.startsWith("@include ")) {
-					int pos = line.indexOf(" ");
+				String line = null;
 
-					String includeFileName = line.substring(pos + 1);
+				while ((line = unsyncBufferedReader.readLine()) != null) {
+					if (line.startsWith("@include ")) {
+						int pos = line.indexOf(" ");
 
-					File includeFile = new File(sqlDir + "/" + includeFileName);
+						String includeFileName = line.substring(pos + 1);
 
-					if (!includeFile.exists()) {
-						continue;
-					}
+						File includeFile = new File(
+							sqlDir + "/" + includeFileName);
 
-					String include = FileUtil.read(includeFile);
-
-					if (includeFileName.endsWith(".vm")) {
-						try {
-							include = evaluateVM(include);
+						if (!includeFile.exists()) {
+							continue;
 						}
-						catch (Exception e) {
-							_log.error(e, e);
+
+						String include = FileUtil.read(includeFile);
+
+						if (includeFileName.endsWith(".vm")) {
+							try {
+								include = evaluateVM(includeFileName, include);
+							}
+							catch (Exception e) {
+								_log.error(e, e);
+							}
 						}
+
+						include = convertTimestamp(include);
+						include = replaceTemplate(include, getTemplate());
+
+						sb.append(include);
+						sb.append("\n\n");
 					}
-
-					include = convertTimestamp(include);
-					include = replaceTemplate(include, getTemplate());
-
-					sb.append(include);
-					sb.append("\n\n");
-				}
-				else {
-					sb.append(line);
-					sb.append("\n");
+					else {
+						sb.append(line);
+						sb.append("\n");
+					}
 				}
 			}
-
-			unsyncBufferedReader.close();
 
 			template = sb.toString();
 		}
 
-		if (fileName.equals("indexes") && (this instanceof SybaseDB)) {
-			template = removeBooleanIndexes(sqlDir, template);
+		if (fileName.equals("indexes")) {
+			template = applyMaxStringIndexLengthLimitation(
+				_columnLengthPattern.matcher(template));
+
+			if (this instanceof SybaseDB) {
+				template = removeBooleanIndexes(sqlDir, template);
+			}
 		}
 
 		return template;
@@ -615,46 +683,50 @@ public abstract class BaseDB implements DB {
 
 	protected Set<String> dropIndexes(
 			Connection con, String tablesSQL, String indexesSQL,
-			String indexesProperties, List<Index> indexes)
+			List<Index> indexes)
 		throws IOException, SQLException {
 
 		if (_log.isInfoEnabled()) {
 			_log.info("Dropping stale indexes");
 		}
 
-		Set<String> validIndexNames = new HashSet<String>();
+		Set<String> validIndexNames = new HashSet<>();
 
 		if (indexes.isEmpty()) {
 			return validIndexNames;
 		}
 
-		String tablesSQLLowerCase = tablesSQL.toLowerCase();
-		String indexesSQLLowerCase = indexesSQL.toLowerCase();
+		String tablesSQLLowerCase = StringUtil.toLowerCase(tablesSQL);
+		String indexesSQLLowerCase = StringUtil.toLowerCase(indexesSQL);
 
-		Properties indexesPropertiesObj = PropertiesUtil.load(
-			indexesProperties);
+		String[] lines = StringUtil.splitLines(indexesSQL);
 
-		Enumeration<String> enu =
-			(Enumeration<String>)indexesPropertiesObj.propertyNames();
+		Set<String> indexNames = new HashSet<>();
 
-		while (enu.hasMoreElements()) {
-			String key = enu.nextElement();
+		for (String line : lines) {
+			if (Validator.isNull(line)) {
+				continue;
+			}
 
-			String value = indexesPropertiesObj.getProperty(key);
+			IndexMetadata indexMetadata =
+				IndexMetadataFactoryUtil.createIndexMetadata(line);
 
-			indexesPropertiesObj.setProperty(key.toLowerCase(), value);
+			indexNames.add(
+				StringUtil.toLowerCase(indexMetadata.getIndexName()));
 		}
 
 		for (Index index : indexes) {
-			String indexNameUpperCase = index.getIndexName().toUpperCase();
-			String indexNameLowerCase = indexNameUpperCase.toLowerCase();
+			String indexNameUpperCase = StringUtil.toUpperCase(
+				index.getIndexName());
+			String indexNameLowerCase = StringUtil.toLowerCase(
+				indexNameUpperCase);
 			String tableName = index.getTableName();
-			String tableNameLowerCase = tableName.toLowerCase();
+			String tableNameLowerCase = StringUtil.toLowerCase(tableName);
 			boolean unique = index.isUnique();
 
 			validIndexNames.add(indexNameUpperCase);
 
-			if (indexesPropertiesObj.containsKey(indexNameLowerCase)) {
+			if (indexNames.contains(indexNameLowerCase)) {
 				if (unique &&
 					indexesSQLLowerCase.contains(
 						"create unique index " + indexNameLowerCase + " ")) {
@@ -669,74 +741,112 @@ public abstract class BaseDB implements DB {
 					continue;
 				}
 			}
-			else {
-				if (!tablesSQLLowerCase.contains(
+			else if (!tablesSQLLowerCase.contains(
 						"create table " + tableNameLowerCase + " (")) {
 
-					continue;
-				}
+				continue;
 			}
 
 			validIndexNames.remove(indexNameUpperCase);
 
-			runSQL(
-				con, "drop index " + indexNameUpperCase + " on " + tableName);
+			String sql =
+				"drop index " + indexNameUpperCase + " on " + tableName;
+
+			if (_log.isInfoEnabled()) {
+				_log.info(sql);
+			}
+
+			runSQL(con, sql);
 		}
 
 		return validIndexNames;
 	}
 
-	protected String evaluateVM(String template) throws Exception {
-		Map<String, Object> variables = new HashMap<String, Object>();
+	protected String evaluateVM(String templateId, String templateContent)
+		throws Exception {
 
-		variables.put("counter", new SimpleCounter());
+		if (Validator.isNull(templateContent)) {
+			return StringPool.BLANK;
+		}
 
-		Thread currentThread = Thread.currentThread();
+		ClassLoader classLoader = ClassLoaderUtil.getContextClassLoader();
 
-		ClassLoader classLoader = currentThread.getContextClassLoader();
+		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
 		try {
-			currentThread.setContextClassLoader(
-				PortalClassLoaderUtil.getClassLoader());
+			ClassLoaderUtil.setContextClassLoader(
+				ClassLoaderUtil.getPortalClassLoader());
 
-			template = VelocityUtil.evaluate(template, variables);
+			StringTemplateResource stringTemplateResource =
+				new StringTemplateResource(templateId, templateContent);
+
+			Template template = TemplateManagerUtil.getTemplate(
+				TemplateConstants.LANG_TYPE_VM, stringTemplateResource, false);
+
+			template.put("counter", new SimpleCounter());
+			template.put("portalUUIDUtil", PortalUUIDUtil.class);
+
+			template.processTemplate(unsyncStringWriter);
 		}
 		finally {
-			currentThread.setContextClassLoader(classLoader);
+			ClassLoaderUtil.setContextClassLoader(classLoader);
 		}
 
 		// Trim insert statements because it breaks MySQL Query Browser
 
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(template));
-
 		StringBundler sb = new StringBundler();
 
-		String line = null;
+		try (UnsyncBufferedReader unsyncBufferedReader =
+			new UnsyncBufferedReader(
+				new UnsyncStringReader(unsyncStringWriter.toString()))) {
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			line = line.trim();
+			String line = null;
 
-			sb.append(line);
-			sb.append("\n");
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				line = line.trim();
+
+				sb.append(line);
+				sb.append("\n");
+			}
 		}
 
-		unsyncBufferedReader.close();
+		templateContent = sb.toString();
+		templateContent = StringUtil.replace(templateContent, "\n\n\n", "\n\n");
 
-		template = sb.toString();
-		template = StringUtil.replace(template, "\n\n\n", "\n\n");
+		return templateContent;
+	}
 
-		return template;
+	protected String getCreateTablesContent(String sqlDir, String suffix)
+		throws IOException {
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append(sqlDir);
+
+		if (!sqlDir.endsWith("/WEB-INF/sql")) {
+			sb.append("/portal");
+			sb.append(suffix);
+			sb.append("/portal");
+		}
+		else {
+			sb.append("/tables");
+			sb.append(suffix);
+			sb.append("/tables");
+		}
+
+		sb.append(suffix);
+		sb.append(StringPool.DASH);
+		sb.append(getServerName());
+		sb.append(".sql");
+
+		return readFile(sb.toString());
 	}
 
 	protected abstract String getServerName();
 
 	protected String getSuffix(int type) {
-		if (type == MINIMAL) {
-			return "-minimal";
-		}
-		else if (type == SHARDED) {
-			return "-sharded";
+		if (type == BARE) {
+			return "-bare";
 		}
 		else {
 			return StringPool.BLANK;
@@ -744,6 +854,29 @@ public abstract class BaseDB implements DB {
 	}
 
 	protected abstract String[] getTemplate();
+
+	protected void handleSQLException(String sql, SQLException sqle)
+		throws SQLException {
+
+		if (_log.isDebugEnabled()) {
+			StringBundler sb = new StringBundler(18);
+
+			sb.append("SQL: ");
+			sb.append(sql);
+			sb.append("\nSQL state: ");
+			sb.append(sqle.getSQLState());
+			sb.append("\nVendor: ");
+			sb.append(getType());
+			sb.append("\nVendor error code: ");
+			sb.append(sqle.getErrorCode());
+			sb.append("\nVendor error message: ");
+			sb.append(sqle.getMessage());
+
+			_log.debug(sb.toString());
+		}
+
+		throw sqle;
+	}
 
 	protected String readFile(String fileName) throws IOException {
 		if (FileUtil.exists(fileName)) {
@@ -761,31 +894,30 @@ public abstract class BaseDB implements DB {
 			return StringPool.BLANK;
 		}
 
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new FileReader(new File(fileName)));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new FileReader(new File(fileName)))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (!line.startsWith(comments)) {
-				line = StringUtil.replace(
-					line, new String[] {"\n", "\t"}, new String[] {"", ""});
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (!line.startsWith(comments)) {
+					line = StringUtil.replace(
+						line, new String[] {"\n", "\t"}, new String[] {"", ""});
 
-				if (line.endsWith(";")) {
-					sb.append(line.substring(0, line.length() - 1));
-					sb.append(eol);
-				}
-				else {
-					sb.append(line);
+					if (line.endsWith(";")) {
+						sb.append(line.substring(0, line.length() - 1));
+						sb.append(eol);
+					}
+					else {
+						sb.append(line);
+					}
 				}
 			}
+
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	protected String removeBooleanIndexes(String sqlDir, String data)
@@ -797,99 +929,94 @@ public abstract class BaseDB implements DB {
 			return StringPool.BLANK;
 		}
 
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			boolean append = true;
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				boolean append = true;
 
-			int x = line.indexOf(" on ");
+				int x = line.indexOf(" on ");
 
-			if (x != -1) {
-				int y = line.indexOf(" (", x);
+				if (x != -1) {
+					int y = line.indexOf(" (", x);
 
-				String table = line.substring(x + 4, y);
+					String table = line.substring(x + 4, y);
 
-				x = y + 2;
-				y = line.indexOf(")", x);
+					x = y + 2;
+					y = line.indexOf(")", x);
 
-				String[] columns = StringUtil.split(line.substring(x, y));
+					String[] columns = StringUtil.split(line.substring(x, y));
 
-				x = portalData.indexOf("create table " + table + " (");
-				y = portalData.indexOf(");", x);
+					x = portalData.indexOf("create table " + table + " (");
+					y = portalData.indexOf(");", x);
 
-				String portalTableData = portalData.substring(x, y);
+					String portalTableData = portalData.substring(x, y);
 
-				for (int i = 0; i < columns.length; i++) {
-					if (portalTableData.indexOf(
-							columns[i].trim() + " BOOLEAN") != -1) {
+					for (int i = 0; i < columns.length; i++) {
+						if (portalTableData.contains(
+								columns[i].trim() + " BOOLEAN")) {
 
-						append = false;
+							append = false;
 
-						break;
+							break;
+						}
 					}
+				}
+
+				if (append) {
+					sb.append(line);
+					sb.append("\n");
 				}
 			}
 
-			if (append) {
-				sb.append(line);
-				sb.append("\n");
-			}
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	protected String removeInserts(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (!line.startsWith("insert into ") &&
-				!line.startsWith("update ")) {
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (!line.startsWith("insert into ") &&
+					!line.startsWith("update ")) {
 
-				sb.append(line);
-				sb.append("\n");
+					sb.append(line);
+					sb.append("\n");
+				}
 			}
+
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	protected String removeLongInserts(String data) throws IOException {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(data));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
-		StringBundler sb = new StringBundler();
+			StringBundler sb = new StringBundler();
 
-		String line = null;
+			String line = null;
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			if (!line.startsWith("insert into Image (") &&
-				!line.startsWith("insert into JournalArticle (") &&
-				!line.startsWith("insert into JournalStructure (") &&
-				!line.startsWith("insert into JournalTemplate (")) {
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				if (!line.startsWith("insert into Image (") &&
+					!line.startsWith("insert into JournalArticle (")) {
 
-				sb.append(line);
-				sb.append("\n");
+					sb.append(line);
+					sb.append("\n");
+				}
 			}
+
+			return sb.toString();
 		}
-
-		unsyncBufferedReader.close();
-
-		return sb.toString();
 	}
 
 	protected String removeNull(String content) {
@@ -950,9 +1077,15 @@ public abstract class BaseDB implements DB {
 
 	protected static final String ALTER_COLUMN_TYPE = "alter_column_type ";
 
+	protected static final String ALTER_TABLE_NAME = "alter_table_name ";
+
 	protected static final String DROP_INDEX = "drop index";
 
 	protected static final String DROP_PRIMARY_KEY = "drop primary key";
+
+	protected static final String[] RENAME_TABLE_TEMPLATE = {
+		"@old-table@", "@new-table@"
+	};
 
 	protected static final String[] REWORD_TEMPLATE = {
 		"@table@", "@old-column@", "@new-column@", "@type@", "@nullable@"
@@ -972,19 +1105,19 @@ public abstract class BaseDB implements DB {
 
 	private static final boolean _SUPPORTS_INLINE_DISTINCT = true;
 
+	private static final boolean _SUPPORTS_QUERYING_AFTER_EXCEPTION = true;
+
 	private static final boolean _SUPPORTS_SCROLLABLE_RESULTS = true;
 
 	private static final boolean _SUPPORTS_UPDATE_WITH_INNER_JOIN = true;
 
-	private static Log _log = LogFactoryUtil.getLog(BaseDB.class);
+	private static final Log _log = LogFactoryUtil.getLog(BaseDB.class);
 
-	private static Pattern _templatePattern;
-	private static Pattern _timestampPattern = Pattern.compile(
+	private static final Pattern _columnLengthPattern = Pattern.compile(
+		"\\[\\$COLUMN_LENGTH:(\\d+)\\$\\]");
+	private static final Pattern _templatePattern;
+	private static final Pattern _timestampPattern = Pattern.compile(
 		"SPECIFIC_TIMESTAMP_\\d+");
-
-	private boolean _supportsStringCaseSensitiveQuery;
-	private Map<String, String> _templateMap = new HashMap<String, String>();
-	private String _type;
 
 	static {
 		StringBundler sb = new StringBundler(TEMPLATE.length * 3 - 3);
@@ -996,7 +1129,10 @@ public abstract class BaseDB implements DB {
 				sb.append(variable);
 			}
 			else {
+				sb.append("(?<!\\[\\$)");
 				sb.append(variable);
+				sb.append("(?!\\$\\])");
+
 				sb.append("\\b");
 			}
 
@@ -1007,5 +1143,9 @@ public abstract class BaseDB implements DB {
 
 		_templatePattern = Pattern.compile(sb.toString());
 	}
+
+	private boolean _supportsStringCaseSensitiveQuery;
+	private final Map<String, String> _templateMap = new HashMap<>();
+	private final String _type;
 
 }

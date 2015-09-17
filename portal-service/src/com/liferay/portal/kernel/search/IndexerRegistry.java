@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,17 +17,23 @@ package com.liferay.portal.kernel.search;
 import java.util.List;
 
 /**
- * @author Raymond Augé
+ * @author Michael C. Han
  */
 public interface IndexerRegistry {
 
-	public Indexer getIndexer(String className);
+	public <T> Indexer<T> getIndexer(Class<T> clazz);
 
-	public List<Indexer> getIndexers();
+	public <T> Indexer<T> getIndexer(String className);
 
-	public Indexer nullSafeGetIndexer(String className);
+	public List<Indexer<?>> getIndexers();
 
-	public void register(String className, Indexer indexer);
+	public <T> Indexer<T> nullSafeGetIndexer(Class<T> clazz);
+
+	public <T> Indexer<T> nullSafeGetIndexer(String className);
+
+	public void register(Indexer<?> indexer);
+
+	public void unregister(Indexer<?> indexer);
 
 	public void unregister(String className);
 

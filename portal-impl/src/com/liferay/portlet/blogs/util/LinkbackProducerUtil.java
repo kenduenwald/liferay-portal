@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,6 @@
 
 package com.liferay.portlet.blogs.util;
 
-import com.liferay.ibm.icu.util.Calendar;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -24,6 +23,7 @@ import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.ReleaseInfo;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xmlrpc.Response;
@@ -33,6 +33,7 @@ import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.xml.StAXReaderUtil;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -214,43 +215,46 @@ public class LinkbackProducerUtil {
 			_log.error("Unable to call HEAD of " + targetUri, e);
 		}
 
-		if (Validator.isNull(serverUri)) {
-			try {
-				Source clientSource = new Source(
-					HttpUtil.URLtoString(targetUri));
+		if (Validator.isNotNull(serverUri)) {
+			return serverUri;
+		}
 
-				List<StartTag> startTags = clientSource.getAllStartTags("link");
+		try {
+			Source clientSource = new Source(HttpUtil.URLtoString(targetUri));
 
-				for (StartTag startTag : startTags) {
-					String rel = startTag.getAttributeValue("rel");
+			List<StartTag> startTags = clientSource.getAllStartTags("link");
 
-					if (rel.equalsIgnoreCase("pingback")) {
-						String href = startTag.getAttributeValue("href");
+			for (StartTag startTag : startTags) {
+				String rel = startTag.getAttributeValue("rel");
 
-						serverUri = HtmlUtil.escape(href);
+				if (StringUtil.equalsIgnoreCase(rel, "pingback")) {
+					String href = startTag.getAttributeValue("href");
 
-						break;
-					}
+					serverUri = HtmlUtil.escape(href);
+
+					break;
 				}
 			}
-			catch (Exception e) {
-				_log.error("Unable to call GET of " + targetUri, e);
-			}
+		}
+		catch (Exception e) {
+			_log.error("Unable to call GET of " + targetUri, e);
 		}
 
 		return serverUri;
 	}
 
 	private static final boolean _HTTP_HEADER_VERSION_VERBOSITY_DEFAULT =
-		PropsValues.HTTP_HEADER_VERSION_VERBOSITY.equalsIgnoreCase(
-			ReleaseInfo.getName());
+		StringUtil.equalsIgnoreCase(
+			PropsValues.HTTP_HEADER_VERSION_VERBOSITY, ReleaseInfo.getName());
 
 	private static final boolean _HTTP_HEADER_VERSION_VERBOSITY_PARTIAL =
-		PropsValues.HTTP_HEADER_VERSION_VERBOSITY.equalsIgnoreCase("partial");
+		StringUtil.equalsIgnoreCase(
+			PropsValues.HTTP_HEADER_VERSION_VERBOSITY, "partial");
 
-	private static Log _log = LogFactoryUtil.getLog(LinkbackProducerUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		LinkbackProducerUtil.class);
 
-	private static List<Tuple> _pingbackQueue = Collections.synchronizedList(
-		new ArrayList<Tuple>());
+	private static final List<Tuple> _pingbackQueue =
+		Collections.synchronizedList(new ArrayList<Tuple>());
 
 }

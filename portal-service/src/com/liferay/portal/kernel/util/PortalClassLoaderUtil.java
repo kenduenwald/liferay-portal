@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,8 +14,7 @@
 
 package com.liferay.portal.kernel.util;
 
-import java.net.URL;
-import java.net.URLClassLoader;
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
 
 /**
  * @author Brian Wing Shun Chan
@@ -23,16 +22,16 @@ import java.net.URLClassLoader;
 public class PortalClassLoaderUtil {
 
 	public static ClassLoader getClassLoader() {
+		PortalRuntimePermission.checkGetClassLoader("portal");
+
 		return _classLoader;
 	}
 
 	public static void setClassLoader(ClassLoader classLoader) {
-		if (ServerDetector.isJOnAS() && JavaProps.isJDK6()) {
-			_classLoader = new URLClassLoader(new URL[0], classLoader);
-		}
-		else {
-			_classLoader = classLoader;
-		}
+		PortalRuntimePermission.checkSetBeanProperty(
+			PortalClassLoaderUtil.class);
+
+		_classLoader = classLoader;
 	}
 
 	private static ClassLoader _classLoader;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -22,14 +24,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class ResourceBlockPermissionSoap implements Serializable {
 	public static ResourceBlockPermissionSoap toSoapModel(
 		ResourceBlockPermission model) {
 		ResourceBlockPermissionSoap soapModel = new ResourceBlockPermissionSoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setResourceBlockPermissionId(model.getResourceBlockPermissionId());
 		soapModel.setResourceBlockId(model.getResourceBlockId());
 		soapModel.setRoleId(model.getRoleId());
@@ -89,6 +93,14 @@ public class ResourceBlockPermissionSoap implements Serializable {
 		setResourceBlockPermissionId(pk);
 	}
 
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
+	}
+
 	public long getResourceBlockPermissionId() {
 		return _resourceBlockPermissionId;
 	}
@@ -121,6 +133,7 @@ public class ResourceBlockPermissionSoap implements Serializable {
 		_actionIds = actionIds;
 	}
 
+	private long _mvccVersion;
 	private long _resourceBlockPermissionId;
 	private long _resourceBlockId;
 	private long _roleId;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,14 +14,19 @@
 
 package com.liferay.portlet.asset.util.comparator;
 
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portlet.asset.model.AssetTag;
-
-import java.util.Comparator;
 
 /**
  * @author Juan Fernández
  */
-public class AssetTagNameComparator implements Comparator<AssetTag> {
+public class AssetTagNameComparator extends OrderByComparator<AssetTag> {
+
+	public static final String ORDER_BY_ASC = "AssetTag.name ASC";
+
+	public static final String ORDER_BY_DESC = "AssetTag.name DESC";
+
+	public static final String[] ORDER_BY_FIELDS = {"name"};
 
 	public AssetTagNameComparator() {
 		this(true, false);
@@ -32,6 +37,7 @@ public class AssetTagNameComparator implements Comparator<AssetTag> {
 		_caseSensitive = caseSensitive;
 	}
 
+	@Override
 	public int compare(AssetTag assetTag1, AssetTag assetTag2) {
 		String name1 = assetTag1.getName();
 		String name2 = assetTag2.getName();
@@ -53,7 +59,27 @@ public class AssetTagNameComparator implements Comparator<AssetTag> {
 		}
 	}
 
-	private boolean _ascending;
-	private boolean _caseSensitive;
+	@Override
+	public String getOrderBy() {
+		if (_ascending) {
+			return ORDER_BY_ASC;
+		}
+		else {
+			return ORDER_BY_DESC;
+		}
+	}
+
+	@Override
+	public String[] getOrderByFields() {
+		return ORDER_BY_FIELDS;
+	}
+
+	@Override
+	public boolean isAscending() {
+		return _ascending;
+	}
+
+	private final boolean _ascending;
+	private final boolean _caseSensitive;
 
 }

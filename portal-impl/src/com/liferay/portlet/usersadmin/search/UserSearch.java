@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,13 +17,14 @@ package com.liferay.portlet.usersadmin.search;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.User;
-import com.liferay.portal.util.PortletKeys;
 import com.liferay.portlet.PortalPreferences;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
@@ -42,8 +43,10 @@ import javax.portlet.PortletURL;
  */
 public class UserSearch extends SearchContainer<User> {
 
-	static List<String> headerNames = new ArrayList<String>();
-	static Map<String, String> orderableHeaders = new HashMap<String, String>();
+	public static final String EMPTY_RESULTS_MESSAGE = "no-users-were-found";
+
+	public static List<String> headerNames = new ArrayList<>();
+	public static Map<String, String> orderableHeaders = new HashMap<>();
 
 	static {
 		headerNames.add("first-name");
@@ -60,13 +63,18 @@ public class UserSearch extends SearchContainer<User> {
 		orderableHeaders.put("job-title", "job-title");
 	}
 
-	public static final String EMPTY_RESULTS_MESSAGE = "no-users-were-found";
-
 	public UserSearch(PortletRequest portletRequest, PortletURL iteratorURL) {
+		this(portletRequest, DEFAULT_CUR_PARAM, iteratorURL);
+	}
+
+	public UserSearch(
+		PortletRequest portletRequest, String curParam,
+		PortletURL iteratorURL) {
+
 		super(
 			portletRequest, new UserDisplayTerms(portletRequest),
-			new UserSearchTerms(portletRequest), DEFAULT_CUR_PARAM,
-			DEFAULT_DELTA, iteratorURL, headerNames, EMPTY_RESULTS_MESSAGE);
+			new UserSearchTerms(portletRequest), curParam, DEFAULT_DELTA,
+			iteratorURL, headerNames, EMPTY_RESULTS_MESSAGE);
 
 		PortletConfig portletConfig =
 			(PortletConfig)portletRequest.getAttribute(
@@ -75,9 +83,11 @@ public class UserSearch extends SearchContainer<User> {
 		UserDisplayTerms displayTerms = (UserDisplayTerms)getDisplayTerms();
 		UserSearchTerms searchTerms = (UserSearchTerms)getSearchTerms();
 
+		String portletId = PortletProviderUtil.getPortletId(
+			User.class.getName(), PortletProvider.Action.VIEW);
 		String portletName = portletConfig.getPortletName();
 
-		if (!portletName.equals(PortletKeys.USERS_ADMIN)) {
+		if (!portletId.equals(portletName)) {
 			displayTerms.setStatus(WorkflowConstants.STATUS_APPROVED);
 			searchTerms.setStatus(WorkflowConstants.STATUS_APPROVED);
 		}
@@ -118,19 +128,18 @@ public class UserSearch extends SearchContainer<User> {
 				Validator.isNotNull(orderByType)) {
 
 				preferences.setValue(
-					PortletKeys.USERS_ADMIN, "users-order-by-col", orderByCol);
+					portletId, "users-order-by-col", orderByCol);
 				preferences.setValue(
-					PortletKeys.USERS_ADMIN, "users-order-by-type",
-					orderByType);
+					portletId, "users-order-by-type", orderByType);
 			}
 			else {
 				orderByCol = preferences.getValue(
-					PortletKeys.USERS_ADMIN, "users-order-by-col", "last-name");
+					portletId, "users-order-by-col", "last-name");
 				orderByType = preferences.getValue(
-					PortletKeys.USERS_ADMIN, "users-order-by-type", "asc");
+					portletId, "users-order-by-type", "asc");
 			}
 
-			OrderByComparator orderByComparator =
+			OrderByComparator<User> orderByComparator =
 				UsersAdminUtil.getUserOrderByComparator(
 					orderByCol, orderByType);
 
@@ -144,6 +153,6 @@ public class UserSearch extends SearchContainer<User> {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(UserSearch.class);
+	private static final Log _log = LogFactoryUtil.getLog(UserSearch.class);
 
 }

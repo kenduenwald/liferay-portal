@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,16 +14,28 @@
 
 package com.liferay.portlet.asset.service.impl;
 
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Criterion;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.model.User;
+import com.liferay.portal.model.adapter.ModelAdapterUtil;
 import com.liferay.portlet.asset.NoSuchLinkException;
+import com.liferay.portlet.asset.model.AssetEntry;
 import com.liferay.portlet.asset.model.AssetLink;
 import com.liferay.portlet.asset.model.AssetLinkConstants;
+import com.liferay.portlet.asset.model.adapter.StagedAssetLink;
 import com.liferay.portlet.asset.service.base.AssetLinkLocalServiceBaseImpl;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
+import com.liferay.portlet.exportimport.lar.StagedModelType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -46,20 +58,19 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 * @param  entryId1 the primary key of the first asset entry
 	 * @param  entryId2 the primary key of the second asset entry
 	 * @param  type the link type. Acceptable values include {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_RELATED}
-	 *         which is a bidirectional relationship and {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_CHILD}
-	 *         which is a unidirectional relationship. For more information see
-	 *         {@link com.liferay.portlet.asset.model.AssetLinkConstants}
+	 *         AssetLinkConstants#TYPE_RELATED} which is a bidirectional
+	 *         relationship and {@link AssetLinkConstants#TYPE_CHILD} which is a
+	 *         unidirectional relationship. For more information see {@link
+	 *         AssetLinkConstants}
 	 * @param  weight the weight of the relationship, allowing precedence
 	 *         ordering of links
 	 * @return the asset link
 	 * @throws PortalException if the user could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public AssetLink addLink(
 			long userId, long entryId1, long entryId2, int type, int weight)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		User user = userPersistence.findByPrimaryKey(userId);
 		Date now = new Date();
@@ -77,7 +88,7 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 		link.setType(type);
 		link.setWeight(weight);
 
-		assetLinkPersistence.update(link, false);
+		assetLinkPersistence.update(link);
 
 		if (AssetLinkConstants.isTypeBi(type)) {
 			long linkId2 = counterLocalService.increment();
@@ -93,7 +104,7 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 			link2.setType(type);
 			link2.setWeight(weight);
 
-			assetLinkPersistence.update(link2, false);
+			assetLinkPersistence.update(link2);
 		}
 
 		return link;
@@ -102,16 +113,19 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	/**
 	 * Deletes the asset link.
 	 *
-	 * @param  link the asset link
-	 * @throws SystemException if a system exception occurred
+	 * @param link the asset link
 	 */
-	public void deleteLink(AssetLink link) throws SystemException {
+	@Override
+	public void deleteLink(AssetLink link) {
 		if (AssetLinkConstants.isTypeBi(link.getType())) {
 			try {
 				assetLinkPersistence.removeByE_E_T(
 					link.getEntryId2(), link.getEntryId1(), link.getType());
 			}
 			catch (NoSuchLinkException nsle) {
+				if (_log.isWarnEnabled()) {
+					_log.warn("Unable to delete asset link", nsle);
+				}
 			}
 		}
 
@@ -123,11 +137,9 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 *
 	 * @param  linkId the primary key of the asset link
 	 * @throws PortalException if the asset link could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
-	public void deleteLink(long linkId)
-		throws PortalException, SystemException {
-
+	@Override
+	public void deleteLink(long linkId) throws PortalException {
 		AssetLink link = assetLinkPersistence.findByPrimaryKey(linkId);
 
 		deleteLink(link);
@@ -136,10 +148,10 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	/**
 	 * Deletes all links associated with the asset entry.
 	 *
-	 * @param  entryId the primary key of the asset entry
-	 * @throws SystemException if a system exception occurred
+	 * @param entryId the primary key of the asset entry
 	 */
-	public void deleteLinks(long entryId) throws SystemException {
+	@Override
+	public void deleteLinks(long entryId) {
 		for (AssetLink link : assetLinkPersistence.findByE1(entryId)) {
 			deleteLink(link);
 		}
@@ -152,13 +164,11 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	/**
 	 * Delete all links that associate the two asset entries.
 	 *
-	 * @param  entryId1 the primary key of the first asset entry
-	 * @param  entryId2 the primary key of the second asset entry
-	 * @throws SystemException if a system exception occurred
+	 * @param entryId1 the primary key of the first asset entry
+	 * @param entryId2 the primary key of the second asset entry
 	 */
-	public void deleteLinks(long entryId1, long entryId2)
-		throws SystemException {
-
+	@Override
+	public void deleteLinks(long entryId1, long entryId2) {
 		List<AssetLink> links = assetLinkPersistence.findByE_E(
 			entryId1, entryId2);
 
@@ -172,10 +182,28 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 *
 	 * @param  entryId the primary key of the asset entry
 	 * @return the asset links whose first entry ID is the given entry ID
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<AssetLink> getDirectLinks(long entryId) throws SystemException {
-		return assetLinkFinder.findByE1_V(entryId, true);
+	@Override
+	public List<AssetLink> getDirectLinks(long entryId) {
+		List<AssetLink> assetLinks = assetLinkPersistence.findByE1(entryId);
+
+		if (!assetLinks.isEmpty()) {
+			List<AssetLink> filteredAssetLinks = new ArrayList<>(
+				assetLinks.size());
+
+			for (AssetLink assetLink : assetLinks) {
+				AssetEntry assetEntry = assetEntryPersistence.fetchByPrimaryKey(
+					assetLink.getEntryId2());
+
+				if ((assetEntry != null) && assetEntry.isVisible()) {
+					filteredAssetLinks.add(assetLink);
+				}
+			}
+
+			assetLinks = Collections.unmodifiableList(filteredAssetLinks);
+		}
+
+		return assetLinks;
 	}
 
 	/**
@@ -184,19 +212,86 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 *
 	 * @param  entryId the primary key of the asset entry
 	 * @param  typeId the link type. Acceptable values include {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_RELATED}
-	 *         which is a bidirectional relationship and {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_CHILD}
-	 *         which is a unidirectional relationship. For more information see
-	 *         {@link com.liferay.portlet.asset.model.AssetLinkConstants}
+	 *         AssetLinkConstants#TYPE_RELATED} which is a bidirectional
+	 *         relationship and {@link AssetLinkConstants#TYPE_CHILD} which is a
+	 *         unidirectional relationship. For more information see {@link
+	 *         AssetLinkConstants}
 	 * @return the asset links of the given link type whose first entry ID is
 	 *         the given entry ID
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<AssetLink> getDirectLinks(long entryId, int typeId)
-		throws SystemException {
+	@Override
+	public List<AssetLink> getDirectLinks(long entryId, int typeId) {
+		List<AssetLink> assetLinks = assetLinkPersistence.findByE1_T(
+			entryId, typeId);
 
-		return assetLinkFinder.findByE1_T_V(entryId, typeId, true);
+		if (!assetLinks.isEmpty()) {
+			List<AssetLink> filteredAssetLinks = new ArrayList<>(
+				assetLinks.size());
+
+			for (AssetLink assetLink : assetLinks) {
+				AssetEntry assetEntry = assetEntryPersistence.fetchByPrimaryKey(
+					assetLink.getEntryId2());
+
+				if ((assetEntry != null) && assetEntry.isVisible()) {
+					filteredAssetLinks.add(assetLink);
+				}
+			}
+
+			assetLinks = Collections.unmodifiableList(filteredAssetLinks);
+		}
+
+		return assetLinks;
+	}
+
+	@Override
+	public ExportActionableDynamicQuery getExportActionbleDynamicQuery(
+		final PortletDataContext portletDataContext) {
+
+		final ExportActionableDynamicQuery exportActionableDynamicQuery =
+			new ExportActionableDynamicQuery();
+
+		exportActionableDynamicQuery.setAddCriteriaMethod(
+			new ActionableDynamicQuery.AddCriteriaMethod() {
+
+				@Override
+				public void addCriteria(DynamicQuery dynamicQuery) {
+					Criterion createDateCriterion =
+						portletDataContext.getDateRangeCriteria("createDate");
+
+					if (createDateCriterion != null) {
+						dynamicQuery.add(createDateCriterion);
+					}
+				}
+
+			});
+		exportActionableDynamicQuery.setBaseLocalService(this);
+		exportActionableDynamicQuery.setClass(AssetLink.class);
+		exportActionableDynamicQuery.setClassLoader(getClassLoader());
+		exportActionableDynamicQuery.setCompanyId(
+			portletDataContext.getCompanyId());
+		exportActionableDynamicQuery.setGroupId(
+			portletDataContext.getScopeGroupId());
+		exportActionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod() {
+
+				@Override
+				public void performAction(Object object)
+					throws PortalException {
+
+					StagedAssetLink stagedAssetLink = ModelAdapterUtil.adapt(
+						(AssetLink)object, AssetLink.class,
+						StagedAssetLink.class);
+
+					StagedModelDataHandlerUtil.exportStagedModel(
+						portletDataContext, stagedAssetLink);
+				}
+
+			});
+		exportActionableDynamicQuery.setPrimaryKeyPropertyName("linkId");
+		exportActionableDynamicQuery.setStagedModelType(
+			new StagedModelType(StagedModelType.class));
+
+		return exportActionableDynamicQuery;
 	}
 
 	/**
@@ -206,13 +301,13 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 * @param  entryId the primary key of the asset entry
 	 * @return the asset links whose first or second entry ID is the given entry
 	 *         ID
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<AssetLink> getLinks(long entryId) throws SystemException {
+	@Override
+	public List<AssetLink> getLinks(long entryId) {
 		List<AssetLink> e1Links = assetLinkPersistence.findByE1(entryId);
 		List<AssetLink> e2Links = assetLinkPersistence.findByE2(entryId);
 
-		List<AssetLink> links = new ArrayList<AssetLink>(
+		List<AssetLink> links = new ArrayList<>(
 			e1Links.size() + e2Links.size());
 
 		links.addAll(e1Links);
@@ -227,24 +322,21 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 *
 	 * @param  entryId the primary key of the asset entry
 	 * @param  typeId the link type. Acceptable values include {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_RELATED}
-	 *         which is a bidirectional relationship and {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_CHILD}
-	 *         which is a unidirectional relationship. For more information see
-	 *         {@link com.liferay.portlet.asset.model.AssetLinkConstants}
+	 *         AssetLinkConstants#TYPE_RELATED} which is a bidirectional
+	 *         relationship and {@link AssetLinkConstants#TYPE_CHILD} which is a
+	 *         unidirectional relationship. For more information see {@link
+	 *         AssetLinkConstants}
 	 * @return the asset links of the given link type whose first or second
 	 *         entry ID is the given entry ID
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<AssetLink> getLinks(long entryId, int typeId)
-		throws SystemException {
-
+	@Override
+	public List<AssetLink> getLinks(long entryId, int typeId) {
 		List<AssetLink> e1Links = assetLinkPersistence.findByE1_T(
 			entryId, typeId);
 		List<AssetLink> e2Links = assetLinkPersistence.findByE2_T(
 			entryId, typeId);
 
-		List<AssetLink> links = new ArrayList<AssetLink>(
+		List<AssetLink> links = new ArrayList<>(
 			e1Links.size() + e2Links.size());
 
 		links.addAll(e1Links);
@@ -259,19 +351,35 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 *
 	 * @param  entryId the primary key of the asset entry
 	 * @param  typeId the link type. Acceptable values include {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_RELATED}
-	 *         which is a bidirectional relationship and {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_CHILD}
-	 *         which is a unidirectional relationship. For more information see
-	 *         {@link com.liferay.portlet.asset.model.AssetLinkConstants}
+	 *         AssetLinkConstants#TYPE_RELATED} which is a bidirectional
+	 *         relationship and {@link AssetLinkConstants#TYPE_CHILD} which is a
+	 *         unidirectional relationship. For more information see {@link
+	 *         AssetLinkConstants}
 	 * @return the asset links of the given link type whose second entry ID is
 	 *         the given entry ID
-	 * @throws SystemException if a system exception occurred
 	 */
-	public List<AssetLink> getReverseLinks(long entryId, int typeId)
-		throws SystemException {
-
+	@Override
+	public List<AssetLink> getReverseLinks(long entryId, int typeId) {
 		return assetLinkPersistence.findByE2_T(entryId, typeId);
+	}
+
+	@Override
+	public AssetLink updateLink(
+			long userId, long entryId1, long entryId2, int typeId, int weight)
+		throws PortalException {
+
+		AssetLink assetLink = assetLinkPersistence.fetchByE_E_T(
+			entryId1, entryId2, typeId);
+
+		if (assetLink == null) {
+			return addLink(userId, entryId1, entryId2, typeId, weight);
+		}
+
+		assetLink.setWeight(weight);
+
+		assetLinkPersistence.update(assetLink);
+
+		return assetLink;
 	}
 
 	/**
@@ -291,18 +399,16 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 * @param  linkEntryIds the primary keys of the asset entries to be linked
 	 *         with the asset entry to be managed
 	 * @param  typeId the type of the asset links to be created. Acceptable
-	 *         values include {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_RELATED}
-	 *         which is a bidirectional relationship and {@link
-	 *         com.liferay.portlet.asset.model.AssetLinkConstants#TYPE_CHILD}
-	 *         which is a unidirectional relationship. For more information see
-	 *         {@link com.liferay.portlet.asset.model.AssetLinkConstants}
+	 *         values include {@link AssetLinkConstants#TYPE_RELATED} which is a
+	 *         bidirectional relationship and {@link
+	 *         AssetLinkConstants#TYPE_CHILD} which is a unidirectional
+	 *         relationship. For more information see {@link AssetLinkConstants}
 	 * @throws PortalException if the user could not be found
-	 * @throws SystemException if a system exception occurred
 	 */
+	@Override
 	public void updateLinks(
 			long userId, long entryId, long[] linkEntryIds, int typeId)
-		throws PortalException, SystemException {
+		throws PortalException {
 
 		if (linkEntryIds == null) {
 			return;
@@ -331,5 +437,8 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 			}
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetLinkLocalServiceImpl.class);
 
 }

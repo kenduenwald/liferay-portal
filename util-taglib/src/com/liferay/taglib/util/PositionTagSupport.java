@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,11 +14,11 @@
 
 package com.liferay.taglib.util;
 
-import com.liferay.portal.kernel.servlet.taglib.BaseBodyTagSupport;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.taglib.BaseBodyTagSupport;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.BodyTag;
@@ -78,10 +78,7 @@ public class PositionTagSupport extends BaseBodyTagSupport implements BodyTag {
 			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-			if (themeDisplay.isIsolated() ||
-				themeDisplay.isLifecycleResource() ||
-				themeDisplay.isStateExclusive()) {
-
+			if (themeDisplay.isStateExclusive() || themeDisplay.isIsolated()) {
 				position = _POSITION_INLINE;
 			}
 			else {

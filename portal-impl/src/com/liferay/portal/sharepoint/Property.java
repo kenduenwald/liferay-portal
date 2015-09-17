@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -24,12 +24,12 @@ public class Property implements ResponseElement {
 
 	public static final String OPEN_PARAGRAPH = "<p>";
 
-	public Property(String key, String value) {
-		this(key, value, true);
-	}
-
 	public Property(String key, ResponseElement value) {
 		this(key, StringPool.NEW_LINE + value.parse(), false);
+	}
+
+	public Property(String key, String value) {
+		this(key, value, true);
 	}
 
 	public Property(String key, String value, boolean newLine) {
@@ -38,6 +38,7 @@ public class Property implements ResponseElement {
 		_newLine = newLine;
 	}
 
+	@Override
 	public String parse() {
 		StringBundler sb = new StringBundler(5);
 
@@ -53,8 +54,8 @@ public class Property implements ResponseElement {
 		return sb.toString();
 	}
 
-	private String _key;
-	private boolean _newLine;
-	private String _value;
+	private final String _key;
+	private final boolean _newLine;
+	private final String _value;
 
 }

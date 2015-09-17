@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,14 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.kernel.servlet.PipingServletResponse;
+import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.kernel.util.DeterminateKeyGenerator;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.SessionClicks;
+import com.liferay.taglib.servlet.PipingServletResponse;
 import com.liferay.taglib.util.IncludeTag;
 
 import javax.servlet.RequestDispatcher;
@@ -116,7 +117,8 @@ public class ToggleTag extends IncludeTag {
 			"liferay-ui:toggle:defaultMessage", defaultMessage);
 
 		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher(page);
+			DirectRequestDispatcherFactoryUtil.getRequestDispatcher(
+				servletContext, page);
 
 		requestDispatcher.include(request, response);
 	}
@@ -124,9 +126,6 @@ public class ToggleTag extends IncludeTag {
 	@Override
 	public int doEndTag() throws JspException {
 		try {
-			ServletContext servletContext = getServletContext();
-			HttpServletRequest request = getServletRequest();
-
 			doTag(
 				getPage(), _id, _showImage, _hideImage, _showMessage,
 				_hideMessage, _defaultShowContent, _stateVar, servletContext,

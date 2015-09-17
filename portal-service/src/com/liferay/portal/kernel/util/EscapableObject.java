@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -57,8 +57,8 @@ public class EscapableObject<T> implements Serializable {
 		return String.valueOf(t);
 	}
 
-	private boolean _escape;
+	private final boolean _escape;
 	private String _escapedValue;
-	private T _originalValue;
+	private final T _originalValue;
 
 }

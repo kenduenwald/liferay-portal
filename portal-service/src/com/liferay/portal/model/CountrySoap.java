@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -22,14 +24,16 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portal.service.http.CountryServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portal.service.http.CountryServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portal.service.http.CountryServiceSoap
  * @generated
  */
+@ProviderType
 public class CountrySoap implements Serializable {
 	public static CountrySoap toSoapModel(Country model) {
 		CountrySoap soapModel = new CountrySoap();
 
+		soapModel.setMvccVersion(model.getMvccVersion());
 		soapModel.setCountryId(model.getCountryId());
 		soapModel.setName(model.getName());
 		soapModel.setA2(model.getA2());
@@ -88,6 +92,14 @@ public class CountrySoap implements Serializable {
 
 	public void setPrimaryKey(long pk) {
 		setCountryId(pk);
+	}
+
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	public void setMvccVersion(long mvccVersion) {
+		_mvccVersion = mvccVersion;
 	}
 
 	public long getCountryId() {
@@ -162,6 +174,7 @@ public class CountrySoap implements Serializable {
 		_active = active;
 	}
 
+	private long _mvccVersion;
 	private long _countryId;
 	private String _name;
 	private String _a2;

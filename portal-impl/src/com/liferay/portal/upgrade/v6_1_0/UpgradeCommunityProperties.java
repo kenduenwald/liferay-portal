@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -69,7 +69,7 @@ public class UpgradeCommunityProperties extends UpgradeProcess {
 			runSQL(sb.toString());
 		}
 		catch (Exception e) {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			sb = new StringBundler(7);
 
@@ -119,7 +119,7 @@ public class UpgradeCommunityProperties extends UpgradeProcess {
 		sb.append(" = ?");
 
 		try {
-			con = DataAccess.getConnection();
+			con = DataAccess.getUpgradeOptimizedConnection();
 
 			ps = con.prepareStatement(sb.toString());
 
@@ -152,7 +152,7 @@ public class UpgradeCommunityProperties extends UpgradeProcess {
 		"communities.email.membership.reply.body",
 		"communities.email.membership.reply.subject",
 		"communities.email.membership.request.body",
-		"communities.email.membership.request.subject",
+		"communities.email.membership.request.subject"
 	};
 
 	private static final String[] _OLD_PORTLET_PREFERENCES = {

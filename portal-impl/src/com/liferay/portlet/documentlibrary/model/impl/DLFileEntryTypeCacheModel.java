@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,13 +14,19 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.HashUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.model.CacheModel;
 
 import com.liferay.portlet.documentlibrary.model.DLFileEntryType;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import java.util.Date;
 
@@ -31,11 +37,36 @@ import java.util.Date;
  * @see DLFileEntryType
  * @generated
  */
+@ProviderType
 public class DLFileEntryTypeCacheModel implements CacheModel<DLFileEntryType>,
-	Serializable {
+	Externalizable {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof DLFileEntryTypeCacheModel)) {
+			return false;
+		}
+
+		DLFileEntryTypeCacheModel dlFileEntryTypeCacheModel = (DLFileEntryTypeCacheModel)obj;
+
+		if (fileEntryTypeId == dlFileEntryTypeCacheModel.fileEntryTypeId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return HashUtil.hash(0, fileEntryTypeId);
+	}
+
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(21);
+		StringBundler sb = new StringBundler(25);
 
 		sb.append("{uuid=");
 		sb.append(uuid);
@@ -53,15 +84,20 @@ public class DLFileEntryTypeCacheModel implements CacheModel<DLFileEntryType>,
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", fileEntryTypeKey=");
+		sb.append(fileEntryTypeKey);
 		sb.append(", name=");
 		sb.append(name);
 		sb.append(", description=");
 		sb.append(description);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
 		sb.append("}");
 
 		return sb.toString();
 	}
 
+	@Override
 	public DLFileEntryType toEntityModel() {
 		DLFileEntryTypeImpl dlFileEntryTypeImpl = new DLFileEntryTypeImpl();
 
@@ -98,6 +134,13 @@ public class DLFileEntryTypeCacheModel implements CacheModel<DLFileEntryType>,
 			dlFileEntryTypeImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		if (fileEntryTypeKey == null) {
+			dlFileEntryTypeImpl.setFileEntryTypeKey(StringPool.BLANK);
+		}
+		else {
+			dlFileEntryTypeImpl.setFileEntryTypeKey(fileEntryTypeKey);
+		}
+
 		if (name == null) {
 			dlFileEntryTypeImpl.setName(StringPool.BLANK);
 		}
@@ -112,9 +155,81 @@ public class DLFileEntryTypeCacheModel implements CacheModel<DLFileEntryType>,
 			dlFileEntryTypeImpl.setDescription(description);
 		}
 
+		if (lastPublishDate == Long.MIN_VALUE) {
+			dlFileEntryTypeImpl.setLastPublishDate(null);
+		}
+		else {
+			dlFileEntryTypeImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
+
 		dlFileEntryTypeImpl.resetOriginalValues();
 
 		return dlFileEntryTypeImpl;
+	}
+
+	@Override
+	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
+		fileEntryTypeId = objectInput.readLong();
+		groupId = objectInput.readLong();
+		companyId = objectInput.readLong();
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+		fileEntryTypeKey = objectInput.readUTF();
+		name = objectInput.readUTF();
+		description = objectInput.readUTF();
+		lastPublishDate = objectInput.readLong();
+	}
+
+	@Override
+	public void writeExternal(ObjectOutput objectOutput)
+		throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		objectOutput.writeLong(fileEntryTypeId);
+		objectOutput.writeLong(groupId);
+		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+
+		if (fileEntryTypeKey == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(fileEntryTypeKey);
+		}
+
+		if (name == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
+
+		if (description == null) {
+			objectOutput.writeUTF(StringPool.BLANK);
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
+		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public String uuid;
@@ -125,6 +240,8 @@ public class DLFileEntryTypeCacheModel implements CacheModel<DLFileEntryType>,
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public String fileEntryTypeKey;
 	public String name;
 	public String description;
+	public long lastPublishDate;
 }

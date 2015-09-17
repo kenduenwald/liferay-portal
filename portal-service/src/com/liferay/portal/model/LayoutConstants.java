@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,10 +23,16 @@ public class LayoutConstants {
 
 	public static final long DEFAULT_PLID = 0;
 
+	public static final int FIRST_PRIORITY = 0;
+
 	public static final int FRIENDLY_URL_MAX_LENGTH = 255;
 
 	public static final String NAME_CONTROL_PANEL_DEFAULT = "Control Panel";
 
+	/**
+	 * @deprecated As of 7.0.0, with no direct replacement
+	 */
+	@Deprecated
 	public static final String TYPE_ARTICLE = "article";
 
 	public static final String TYPE_CONTROL_PANEL = "control_panel";

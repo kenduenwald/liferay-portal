@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -78,7 +78,9 @@ public class StrutsUtil {
 				requestDispatcher.forward(request, response);
 			}
 			catch (IOException ioe1) {
-				_log.warn(ioe1, ioe1);
+				if (_log.isWarnEnabled()) {
+					_log.warn(ioe1, ioe1);
+				}
 			}
 			catch (ServletException se1) {
 				request.setAttribute(PageContext.EXCEPTION, se1.getRootCause());
@@ -96,14 +98,16 @@ public class StrutsUtil {
 					requestDispatcher.forward(request, response);
 				}
 				catch (IOException ioe2) {
-					_log.warn(ioe2, ioe2);
+					if (_log.isWarnEnabled()) {
+						_log.warn(ioe2, ioe2);
+					}
 				}
 				catch (ServletException se2) {
 					throw se2;
 				}
 			}
 		}
-		else {
+		else if (_log.isWarnEnabled()) {
 			_log.warn(uri + " is already committed");
 		}
 	}
@@ -134,14 +138,16 @@ public class StrutsUtil {
 			requestDispatcher.include(request, response);
 		}
 		catch (IOException ioe) {
-			_log.warn(ioe, ioe);
+			if (_log.isWarnEnabled()) {
+				_log.warn(ioe, ioe);
+			}
 		}
 	}
 
 	public static Map<String, Object> removeStrutsAttributes(
 		PortletContext portletContext, PortletRequest portletRequest) {
 
-		Map<String, Object> strutsAttributes = new HashMap<String, Object>();
+		Map<String, Object> strutsAttributes = new HashMap<>();
 
 		Enumeration<String> enu = portletRequest.getAttributeNames();
 
@@ -176,6 +182,6 @@ public class StrutsUtil {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(StrutsUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(StrutsUtil.class);
 
 }

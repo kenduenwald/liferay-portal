@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.messageboards.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.messageboards.service.http.MBCategoryServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.messageboards.service.http.MBCategoryServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.messageboards.service.http.MBCategoryServiceSoap
  * @generated
  */
+@ProviderType
 public class MBCategorySoap implements Serializable {
 	public static MBCategorySoap toSoapModel(MBCategory model) {
 		MBCategorySoap soapModel = new MBCategorySoap();
@@ -46,6 +49,11 @@ public class MBCategorySoap implements Serializable {
 		soapModel.setThreadCount(model.getThreadCount());
 		soapModel.setMessageCount(model.getMessageCount());
 		soapModel.setLastPostDate(model.getLastPostDate());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
+		soapModel.setStatus(model.getStatus());
+		soapModel.setStatusByUserId(model.getStatusByUserId());
+		soapModel.setStatusByUserName(model.getStatusByUserName());
+		soapModel.setStatusDate(model.getStatusDate());
 
 		return soapModel;
 	}
@@ -218,6 +226,46 @@ public class MBCategorySoap implements Serializable {
 		_lastPostDate = lastPostDate;
 	}
 
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
+	public int getStatus() {
+		return _status;
+	}
+
+	public void setStatus(int status) {
+		_status = status;
+	}
+
+	public long getStatusByUserId() {
+		return _statusByUserId;
+	}
+
+	public void setStatusByUserId(long statusByUserId) {
+		_statusByUserId = statusByUserId;
+	}
+
+	public String getStatusByUserName() {
+		return _statusByUserName;
+	}
+
+	public void setStatusByUserName(String statusByUserName) {
+		_statusByUserName = statusByUserName;
+	}
+
+	public Date getStatusDate() {
+		return _statusDate;
+	}
+
+	public void setStatusDate(Date statusDate) {
+		_statusDate = statusDate;
+	}
+
 	private String _uuid;
 	private long _categoryId;
 	private long _groupId;
@@ -233,4 +281,9 @@ public class MBCategorySoap implements Serializable {
 	private int _threadCount;
 	private int _messageCount;
 	private Date _lastPostDate;
+	private Date _lastPublishDate;
+	private int _status;
+	private long _statusByUserId;
+	private String _statusByUserName;
+	private Date _statusDate;
 }

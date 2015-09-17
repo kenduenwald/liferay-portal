@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -58,11 +58,13 @@ public class StringParser {
 	 * following is a valid pattern for greeting:
 	 * </p>
 	 *
+	 * <p>
 	 * <pre>
 	 * <code>
 	 * Hi {name}! How are you?
 	 * </code>
 	 * </pre>
+	 * </p>
 	 *
 	 * <p>
 	 * This pattern would match the string &quot;Hi Tom! How are you?&quot;. The
@@ -72,11 +74,13 @@ public class StringParser {
 	 * following:
 	 * </p>
 	 *
+	 * <p>
 	 * <pre>
 	 * <code>
 	 * Hi {name:[a-z]+}! How are you?
 	 * </code>
 	 * </pre>
+	 * </p>
 	 *
 	 * <p>
 	 * By default, a fragment will match anything except a forward slash or a
@@ -89,11 +93,13 @@ public class StringParser {
 	 * prefixing its name with a percent sign, as shown below:
 	 * </p>
 	 *
+	 * <p>
 	 * <pre>
 	 * <code>
 	 * /view_page/{%path:.*}
 	 * </code>
 	 * </pre>
+	 * </p>
 	 *
 	 * <p>
 	 * The format of the path fragment has also been specified to match anything
@@ -101,11 +107,13 @@ public class StringParser {
 	 * string:
 	 * </p>
 	 *
+	 * <p>
 	 * <pre>
 	 * <code>
 	 * /view_page/root/home/mysite/pages/index.htm
 	 * </code>
 	 * </pre>
+	 * </p>
 	 *
 	 * <p>
 	 * <code>path</code> would be set to
@@ -117,12 +125,9 @@ public class StringParser {
 	 * <b>Do not include capturing subgroups in the pattern.</b>
 	 * </p>
 	 *
-	 *
 	 * @param pattern the pattern string
 	 */
 	public StringParser(String pattern) {
-		_builder = pattern;
-
 		String regex = escapeRegex(pattern);
 
 		Matcher matcher = _fragmentPattern.matcher(pattern);
@@ -135,7 +140,7 @@ public class StringParser {
 
 			_stringParserFragments.add(stringParserFragment);
 
-			_builder = _builder.replace(chunk, stringParserFragment.getToken());
+			pattern = pattern.replace(chunk, stringParserFragment.getToken());
 
 			regex = regex.replace(
 				escapeRegex(chunk),
@@ -143,6 +148,8 @@ public class StringParser {
 					stringParserFragment.getPattern().concat(
 						StringPool.CLOSE_PARENTHESIS)));
 		}
+
+		_builder = pattern;
 
 		_pattern = Pattern.compile(regex);
 	}
@@ -246,14 +253,15 @@ public class StringParser {
 		_stringEncoder = stringEncoder;
 	}
 
-	private static Pattern _escapeRegexPattern = Pattern.compile(
+	private static final Pattern _escapeRegexPattern = Pattern.compile(
 		"[\\{\\}\\(\\)\\[\\]\\*\\+\\?\\$\\^\\.\\#\\\\]");
-	private static Pattern _fragmentPattern = Pattern.compile("\\{.+?\\}");
+	private static final Pattern _fragmentPattern = Pattern.compile(
+		"\\{.+?\\}");
 
-	private String _builder;
-	private Pattern _pattern;
+	private final String _builder;
+	private final Pattern _pattern;
 	private StringEncoder _stringEncoder;
-	private List<StringParserFragment> _stringParserFragments =
-		new ArrayList<StringParserFragment>();
+	private final List<StringParserFragment> _stringParserFragments =
+		new ArrayList<>();
 
 }

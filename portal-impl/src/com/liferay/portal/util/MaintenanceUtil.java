@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -119,9 +119,10 @@ public class MaintenanceUtil {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(MaintenanceUtil.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		MaintenanceUtil.class);
 
-	private static MaintenanceUtil _instance = new MaintenanceUtil();
+	private static final MaintenanceUtil _instance = new MaintenanceUtil();
 
 	private String _className;
 	private boolean _maintaining = false;

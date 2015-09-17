@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -40,7 +40,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class NamespaceServletRequest extends DynamicServletRequest {
 
-	static Set<String> reservedAttrs = new HashSet<String>();
+	public static Set<String> reservedAttrs = new HashSet<>();
 
 	static {
 		reservedAttrs.add(JavaConstants.JAVAX_PORTLET_CONFIG);
@@ -86,7 +86,7 @@ public class NamespaceServletRequest extends DynamicServletRequest {
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		List<String> names = new ArrayList<String>();
+		List<String> names = new ArrayList<>();
 
 		Enumeration<String> enu = super.getAttributeNames();
 
@@ -150,24 +150,31 @@ public class NamespaceServletRequest extends DynamicServletRequest {
 		}
 	}
 
+	@Override
+	protected void injectInto(DynamicServletRequest dynamicServletRequest) {
+		dynamicServletRequest.setRequest(
+			new NamespaceServletRequest(
+				(HttpServletRequest)getRequest(), _attrNamespace,
+				_paramNamespace));
+	}
+
 	private boolean _isReservedParam(String name) {
 		if (reservedAttrs.contains(name)) {
 			return true;
 		}
-		else {
-			for (String requestSharedAttribute :
-					PropsValues.REQUEST_SHARED_ATTRIBUTES) {
 
-				if (name.startsWith(requestSharedAttribute)) {
-					return true;
-				}
+		for (String requestSharedAttribute :
+				PropsValues.REQUEST_SHARED_ATTRIBUTES) {
+
+			if (name.startsWith(requestSharedAttribute)) {
+				return true;
 			}
 		}
 
 		return false;
 	}
 
-	private String _attrNamespace;
-	private String _paramNamespace;
+	private final String _attrNamespace;
+	private final String _paramNamespace;
 
 }

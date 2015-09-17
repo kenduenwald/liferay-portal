@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.blogs.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.blogs.service.http.BlogsEntryServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.blogs.service.http.BlogsEntryServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.blogs.service.http.BlogsEntryServiceSoap
  * @generated
  */
+@ProviderType
 public class BlogsEntrySoap implements Serializable {
 	public static BlogsEntrySoap toSoapModel(BlogsEntry model) {
 		BlogsEntrySoap soapModel = new BlogsEntrySoap();
@@ -40,6 +43,7 @@ public class BlogsEntrySoap implements Serializable {
 		soapModel.setCreateDate(model.getCreateDate());
 		soapModel.setModifiedDate(model.getModifiedDate());
 		soapModel.setTitle(model.getTitle());
+		soapModel.setSubtitle(model.getSubtitle());
 		soapModel.setUrlTitle(model.getUrlTitle());
 		soapModel.setDescription(model.getDescription());
 		soapModel.setContent(model.getContent());
@@ -47,9 +51,14 @@ public class BlogsEntrySoap implements Serializable {
 		soapModel.setAllowPingbacks(model.getAllowPingbacks());
 		soapModel.setAllowTrackbacks(model.getAllowTrackbacks());
 		soapModel.setTrackbacks(model.getTrackbacks());
+		soapModel.setCoverImageCaption(model.getCoverImageCaption());
+		soapModel.setCoverImageFileEntryId(model.getCoverImageFileEntryId());
+		soapModel.setCoverImageURL(model.getCoverImageURL());
 		soapModel.setSmallImage(model.getSmallImage());
+		soapModel.setSmallImageFileEntryId(model.getSmallImageFileEntryId());
 		soapModel.setSmallImageId(model.getSmallImageId());
 		soapModel.setSmallImageURL(model.getSmallImageURL());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 		soapModel.setStatus(model.getStatus());
 		soapModel.setStatusByUserId(model.getStatusByUserId());
 		soapModel.setStatusByUserName(model.getStatusByUserName());
@@ -178,6 +187,14 @@ public class BlogsEntrySoap implements Serializable {
 		_title = title;
 	}
 
+	public String getSubtitle() {
+		return _subtitle;
+	}
+
+	public void setSubtitle(String subtitle) {
+		_subtitle = subtitle;
+	}
+
 	public String getUrlTitle() {
 		return _urlTitle;
 	}
@@ -242,6 +259,30 @@ public class BlogsEntrySoap implements Serializable {
 		_trackbacks = trackbacks;
 	}
 
+	public String getCoverImageCaption() {
+		return _coverImageCaption;
+	}
+
+	public void setCoverImageCaption(String coverImageCaption) {
+		_coverImageCaption = coverImageCaption;
+	}
+
+	public long getCoverImageFileEntryId() {
+		return _coverImageFileEntryId;
+	}
+
+	public void setCoverImageFileEntryId(long coverImageFileEntryId) {
+		_coverImageFileEntryId = coverImageFileEntryId;
+	}
+
+	public String getCoverImageURL() {
+		return _coverImageURL;
+	}
+
+	public void setCoverImageURL(String coverImageURL) {
+		_coverImageURL = coverImageURL;
+	}
+
 	public boolean getSmallImage() {
 		return _smallImage;
 	}
@@ -252,6 +293,14 @@ public class BlogsEntrySoap implements Serializable {
 
 	public void setSmallImage(boolean smallImage) {
 		_smallImage = smallImage;
+	}
+
+	public long getSmallImageFileEntryId() {
+		return _smallImageFileEntryId;
+	}
+
+	public void setSmallImageFileEntryId(long smallImageFileEntryId) {
+		_smallImageFileEntryId = smallImageFileEntryId;
 	}
 
 	public long getSmallImageId() {
@@ -268,6 +317,14 @@ public class BlogsEntrySoap implements Serializable {
 
 	public void setSmallImageURL(String smallImageURL) {
 		_smallImageURL = smallImageURL;
+	}
+
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
 	}
 
 	public int getStatus() {
@@ -311,6 +368,7 @@ public class BlogsEntrySoap implements Serializable {
 	private Date _createDate;
 	private Date _modifiedDate;
 	private String _title;
+	private String _subtitle;
 	private String _urlTitle;
 	private String _description;
 	private String _content;
@@ -318,9 +376,14 @@ public class BlogsEntrySoap implements Serializable {
 	private boolean _allowPingbacks;
 	private boolean _allowTrackbacks;
 	private String _trackbacks;
+	private String _coverImageCaption;
+	private long _coverImageFileEntryId;
+	private String _coverImageURL;
 	private boolean _smallImage;
+	private long _smallImageFileEntryId;
 	private long _smallImageId;
 	private String _smallImageURL;
+	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
 	private String _statusByUserName;

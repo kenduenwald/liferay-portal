@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,7 @@
 
 package com.liferay.portal.kernel.workflow;
 
+import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.List;
  * @author Micha Kiener
  * @author Shuyang Zhou
  * @author Brian Wing Shun Chan
+ * @author Raymond Augé
  */
 public class WorkflowLogManagerUtil {
 
@@ -29,7 +31,7 @@ public class WorkflowLogManagerUtil {
 			long companyId, long workflowInstanceId, List<Integer> logTypes)
 		throws WorkflowException {
 
-		return _workflowLogManager.getWorkflowLogCountByWorkflowInstance(
+		return getWorkflowLogManager().getWorkflowLogCountByWorkflowInstance(
 			companyId, workflowInstanceId, logTypes);
 	}
 
@@ -37,34 +39,41 @@ public class WorkflowLogManagerUtil {
 			long companyId, long workflowTaskId, List<Integer> logTypes)
 		throws WorkflowException {
 
-		return _workflowLogManager.getWorkflowLogCountByWorkflowTask(
+		return getWorkflowLogManager().getWorkflowLogCountByWorkflowTask(
 			companyId, workflowTaskId, logTypes);
 	}
 
 	public static WorkflowLogManager getWorkflowLogManager() {
+		PortalRuntimePermission.checkGetBeanProperty(
+			WorkflowLogManagerUtil.class);
+
 		return _workflowLogManager;
 	}
 
 	public static List<WorkflowLog> getWorkflowLogsByWorkflowInstance(
 			long companyId, long workflowInstanceId, List<Integer> logTypes,
-			int start, int end, OrderByComparator orderByComparator)
+			int start, int end,
+			OrderByComparator<WorkflowLog> orderByComparator)
 		throws WorkflowException {
 
-		return _workflowLogManager.getWorkflowLogsByWorkflowInstance(
+		return getWorkflowLogManager().getWorkflowLogsByWorkflowInstance(
 			companyId, workflowInstanceId, logTypes, start, end,
 			orderByComparator);
 	}
 
 	public static List<WorkflowLog> getWorkflowLogsByWorkflowTask(
 			long companyId, long workflowTaskId, List<Integer> logTypes,
-			int start, int end, OrderByComparator orderByComparator)
+			int start, int end,
+			OrderByComparator<WorkflowLog> orderByComparator)
 		throws WorkflowException {
 
-		return _workflowLogManager.getWorkflowLogsByWorkflowTask(
+		return getWorkflowLogManager().getWorkflowLogsByWorkflowTask(
 			companyId, workflowTaskId, logTypes, start, end, orderByComparator);
 	}
 
 	public void setWorkflowLogManager(WorkflowLogManager workflowLogManager) {
+		PortalRuntimePermission.checkSetBeanProperty(getClass());
+
 		_workflowLogManager = workflowLogManager;
 	}
 

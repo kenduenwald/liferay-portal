@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -35,15 +35,20 @@ public class InitialThreadLocal<T> extends CentralizedThreadLocal<T> {
 		_name = name;
 		_initialValue = initialValue;
 
+		Method cloneMethod = null;
+
 		if (_initialValue instanceof Cloneable) {
 			try {
-				_cloneMethod = _initialValue.getClass().getMethod(
-					_METHOD_CLONE);
+				Class<?> clazz = _initialValue.getClass();
+
+				cloneMethod = clazz.getMethod(_METHOD_CLONE);
 			}
 			catch (Exception e) {
 				_log.error(e, e);
 			}
 		}
+
+		_cloneMethod = cloneMethod;
 	}
 
 	@Override
@@ -72,10 +77,11 @@ public class InitialThreadLocal<T> extends CentralizedThreadLocal<T> {
 
 	private static final String _METHOD_CLONE = "clone";
 
-	private static Log _log = LogFactoryUtil.getLog(InitialThreadLocal.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		InitialThreadLocal.class);
 
-	private Method _cloneMethod;
-	private T _initialValue;
-	private String _name;
+	private final Method _cloneMethod;
+	private final T _initialValue;
+	private final String _name;
 
 }

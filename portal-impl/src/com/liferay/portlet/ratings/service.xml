@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 6.1.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_6_1_0.dtd">
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.0.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_0_0.dtd">
 
 <service-builder package-path="com.liferay.portlet.ratings">
 	<namespace>Ratings</namespace>
-	<entity name="RatingsEntry" local-service="true" remote-service="true">
+	<entity name="RatingsEntry" uuid="true" local-service="true" remote-service="true">
 
 		<!-- PK fields -->
 
@@ -22,6 +22,7 @@
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
 		<column name="score" type="double" />
+		<column name="lastPublishDate" type="Date" />
 
 		<!-- Finder methods -->
 
@@ -45,7 +46,6 @@
 		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
 		<reference package-path="com.liferay.portlet.blogs" entity="BlogsEntry" />
 		<reference package-path="com.liferay.portlet.blogs" entity="BlogsStatsUser" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialActivity" />
 	</entity>
 	<entity name="RatingsStats" local-service="true" remote-service="false">
 
@@ -68,4 +68,7 @@
 			<finder-column name="classPK" />
 		</finder>
 	</entity>
+	<exceptions>
+		<exception>EntryScore</exception>
+	</exceptions>
 </service-builder>

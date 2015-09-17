@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.util.SortedProperties;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.util.InitUtil;
 
 import java.io.File;
 import java.io.FileReader;
@@ -36,7 +35,7 @@ import java.util.Properties;
 public class TCKtoJUnitConverter {
 
 	public static void main(String[] args) {
-		InitUtil.initWithSpring();
+		ToolDependencies.wireBasic();
 
 		if (args.length == 2) {
 			new TCKtoJUnitConverter(args[0], args[1]);
@@ -56,13 +55,16 @@ public class TCKtoJUnitConverter {
 	}
 
 	private void _convert(File inputFile, File outputDir) throws Exception {
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new FileReader(inputFile));
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new FileReader(inputFile))) {
 
-		String s = StringPool.BLANK;
+			String s = StringPool.BLANK;
 
-		while ((s = unsyncBufferedReader.readLine()) != null) {
-			if (s.startsWith("Test finished: ")) {
+			while ((s = unsyncBufferedReader.readLine()) != null) {
+				if (!s.startsWith("Test finished: ")) {
+					continue;
+				}
+
 				int x = s.indexOf(StringPool.POUND);
 				int y = s.lastIndexOf(StringPool.SLASH, x);
 
@@ -84,8 +86,6 @@ public class TCKtoJUnitConverter {
 				_convert(className, message, outputDir);
 			}
 		}
-
-		unsyncBufferedReader.close();
 	}
 
 	private void _convert(String className, String message, File outputDir)
@@ -98,7 +98,9 @@ public class TCKtoJUnitConverter {
 		}
 
 		String hostname = GetterUtil.getString(
-			System.getProperty("env.USERDOMAIN")).toLowerCase();
+			System.getProperty("env.USERDOMAIN"));
+
+		hostname = StringUtil.toLowerCase(hostname);
 
 		StringBundler sb = new StringBundler();
 

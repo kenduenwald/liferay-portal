@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,73 +17,78 @@ package com.liferay.portal.json;
 import com.liferay.portal.kernel.json.JSONSerializer;
 import com.liferay.portal.kernel.json.JSONTransformer;
 
-import flexjson.transformer.Transformer;
+import jodd.json.JsonSerializer;
+import jodd.json.TypeJsonSerializer;
 
 /**
- * Wrapper over flexjson serializer.
- *
  * @author Igor Spasic
  */
 public class JSONSerializerImpl implements JSONSerializer {
 
 	public JSONSerializerImpl() {
-		_jsonSerializer = new flexjson.JSONSerializer();
+		_jsonSerializer = new JsonSerializer();
 	}
 
+	@Override
 	public JSONSerializerImpl exclude(String... fields) {
 		_jsonSerializer.exclude(fields);
 
 		return this;
 	}
 
+	@Override
 	public JSONSerializerImpl include(String... fields) {
 		_jsonSerializer.include(fields);
 
 		return this;
 	}
 
+	@Override
 	public String serialize(Object target) {
 		return _jsonSerializer.serialize(target);
 	}
 
+	@Override
 	public String serializeDeep(Object target) {
-		return _jsonSerializer.deepSerialize(target);
+		return _jsonSerializer.deep(true).serialize(target);
 	}
 
+	@Override
 	public JSONSerializerImpl transform(
-		JSONTransformer jsonTransformer, Class<?>... types) {
+		JSONTransformer jsonTransformer, Class<?> type) {
 
-		Transformer transformer = null;
+		TypeJsonSerializer<?> typeJsonSerializer = null;
 
-		if (jsonTransformer instanceof Transformer) {
-			transformer = (Transformer)jsonTransformer;
+		if (jsonTransformer instanceof TypeJsonSerializer) {
+			typeJsonSerializer = (TypeJsonSerializer<?>)jsonTransformer;
 		}
 		else {
-			transformer = new FlexjsonTransformer(jsonTransformer);
+			typeJsonSerializer = new JoddJsonTransformer(jsonTransformer);
 		}
 
-		_jsonSerializer.transform(transformer, types);
+		_jsonSerializer.use(type, typeJsonSerializer);
 
 		return this;
 	}
 
+	@Override
 	public JSONSerializerImpl transform(
-		JSONTransformer jsonTransformer, String... fields) {
+		JSONTransformer jsonTransformer, String field) {
 
-		Transformer transformer = null;
+		TypeJsonSerializer<?> typeJsonSerializer = null;
 
-		if (jsonTransformer instanceof Transformer) {
-			transformer = (Transformer)jsonTransformer;
+		if (jsonTransformer instanceof TypeJsonSerializer) {
+			typeJsonSerializer = (TypeJsonSerializer<?>)jsonTransformer;
 		}
 		else {
-			transformer = new FlexjsonTransformer(jsonTransformer);
+			typeJsonSerializer = new JoddJsonTransformer(jsonTransformer);
 		}
 
-		_jsonSerializer.transform(transformer, fields);
+		_jsonSerializer.use(field, typeJsonSerializer);
 
 		return this;
 	}
 
-	private final flexjson.JSONSerializer _jsonSerializer;
+	private final JsonSerializer _jsonSerializer;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,8 +20,9 @@ import com.liferay.portal.kernel.deploy.hot.HotDeployException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
-import com.liferay.portal.kernel.util.ObjectValuePair;
+import com.liferay.portal.model.LayoutTemplate;
 import com.liferay.portal.service.LayoutTemplateLocalServiceUtil;
+import com.liferay.portal.util.WebKeys;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import javax.servlet.ServletContext;
  */
 public class LayoutTemplateHotDeployListener extends BaseHotDeployListener {
 
+	@Override
 	public void invokeDeploy(HotDeployEvent hotDeployEvent)
 		throws HotDeployException {
 
@@ -48,6 +50,7 @@ public class LayoutTemplateHotDeployListener extends BaseHotDeployListener {
 		}
 	}
 
+	@Override
 	public void invokeUndeploy(HotDeployEvent hotDeployEvent)
 		throws HotDeployException {
 
@@ -81,24 +84,29 @@ public class LayoutTemplateHotDeployListener extends BaseHotDeployListener {
 			return;
 		}
 
-		logRegistration(servletContextName);
+		if (_log.isInfoEnabled()) {
+			_log.info("Registering layout templates for " + servletContextName);
+		}
 
-		List<ObjectValuePair<String, Boolean>> layoutTemplateIds =
+		List<LayoutTemplate> layoutTemplates =
 			LayoutTemplateLocalServiceUtil.init(
 				servletContextName, servletContext, xmls,
 				hotDeployEvent.getPluginPackage());
 
-		_vars.put(servletContextName, layoutTemplateIds);
+		_layoutTemplates.put(servletContextName, layoutTemplates);
+
+		servletContext.setAttribute(
+			WebKeys.PLUGIN_LAYOUT_TEMPLATES, layoutTemplates);
 
 		if (_log.isInfoEnabled()) {
-			if (layoutTemplateIds.size() == 1) {
+			if (layoutTemplates.size() == 1) {
 				_log.info(
 					"1 layout template for " + servletContextName +
 						" is available for use");
 			}
 			else {
 				_log.info(
-					layoutTemplateIds.size() + " layout templates for " +
+					layoutTemplates.size() + " layout templates for " +
 						servletContextName + " are available for use");
 			}
 		}
@@ -115,10 +123,10 @@ public class LayoutTemplateHotDeployListener extends BaseHotDeployListener {
 			_log.debug("Invoking undeploy for " + servletContextName);
 		}
 
-		List<ObjectValuePair<String, Boolean>> layoutTemplateIds = _vars.get(
+		List<LayoutTemplate> layoutTemplates = _layoutTemplates.get(
 			servletContextName);
 
-		if (layoutTemplateIds == null) {
+		if (layoutTemplates == null) {
 			return;
 		}
 
@@ -127,13 +135,11 @@ public class LayoutTemplateHotDeployListener extends BaseHotDeployListener {
 				"Unregistering layout templates for " + servletContextName);
 		}
 
-		for (ObjectValuePair<String, Boolean> ovp : layoutTemplateIds) {
-			String layoutTemplateId = ovp.getKey();
-			Boolean standard = ovp.getValue();
-
+		for (LayoutTemplate layoutTemplate : layoutTemplates) {
 			try {
 				LayoutTemplateLocalServiceUtil.uninstallLayoutTemplate(
-					layoutTemplateId, standard.booleanValue());
+					layoutTemplate.getLayoutTemplateId(),
+					layoutTemplate.isStandard());
 			}
 			catch (Exception e) {
 				_log.error(e, e);
@@ -141,29 +147,23 @@ public class LayoutTemplateHotDeployListener extends BaseHotDeployListener {
 		}
 
 		if (_log.isInfoEnabled()) {
-			if (layoutTemplateIds.size() == 1) {
+			if (layoutTemplates.size() == 1) {
 				_log.info(
 					"1 layout template for " + servletContextName +
 						" was unregistered");
 			}
 			else {
 				_log.info(
-					layoutTemplateIds.size() + " layout templates for " +
-						servletContextName + " was unregistered");
+					layoutTemplates.size() + " layout templates for " +
+						servletContextName + " were unregistered");
 			}
 		}
 	}
 
-	protected void logRegistration(String servletContextName) {
-		if (_log.isInfoEnabled()) {
-			_log.info("Registering layout templates for " + servletContextName);
-		}
-	}
-
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutTemplateHotDeployListener.class);
 
-	private static Map<String, List<ObjectValuePair<String, Boolean>>> _vars =
-		new HashMap<String, List<ObjectValuePair<String, Boolean>>>();
+	private static final Map<String, List<LayoutTemplate>> _layoutTemplates =
+		new HashMap<>();
 
 }

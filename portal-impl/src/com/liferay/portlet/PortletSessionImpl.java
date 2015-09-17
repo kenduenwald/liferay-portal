@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,14 +15,12 @@
 package com.liferay.portlet;
 
 import com.liferay.portal.kernel.portlet.LiferayPortletSession;
-import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,200 +39,167 @@ public class PortletSessionImpl implements LiferayPortletSession {
 		HttpSession session, PortletContext portletContext, String portletName,
 		long plid) {
 
-		_session = session;
-		_portletContext = portletContext;
-		_portletScope = _getPortletScope(portletName, plid);
-	}
+		this.session = session;
+		this.portletContext = portletContext;
 
-	public Object getAttribute(String name) {
-		if (name == null) {
-			throw new IllegalArgumentException();
-		}
-
-		String scopeName = _getPortletScopeName(name);
-
-		return _session.getAttribute(scopeName);
-	}
-
-	public Object getAttribute(String name, int scope) {
-		if (name == null) {
-			throw new IllegalArgumentException();
-		}
-
-		if (scope == PortletSession.PORTLET_SCOPE) {
-			name = _getPortletScopeName(name);
-		}
-
-		return _session.getAttribute(name);
-	}
-
-	public Map<String, Object> getAttributeMap() {
-		return getAttributeMap(PortletSession.PORTLET_SCOPE);
-	}
-
-	public Map<String, Object> getAttributeMap(int scope) {
-		Map<String, Object> map = new HashMap<String, Object>();
-
-		Enumeration<String> enu = _getAttributeNames(scope, false);
-
-		int portletScopeLength = _portletScope.length();
-
-		while (enu.hasMoreElements()) {
-			String name = enu.nextElement();
-
-			Object value = _session.getAttribute(name);
-
-			if (scope == PortletSession.PORTLET_SCOPE) {
-				name = name.substring(portletScopeLength + 1);
-			}
-
-			map.put(name, value);
-		}
-
-		return map;
-	}
-
-	public Enumeration<String> getAttributeNames() {
-		return _getAttributeNames(PortletSession.PORTLET_SCOPE, true);
-	}
-
-	public Enumeration<String> getAttributeNames(int scope) {
-		return _getAttributeNames(scope, true);
-	}
-
-	public long getCreationTime() {
-		return _session.getCreationTime();
-	}
-
-	public HttpSession getHttpSession() {
-		return _session;
-	}
-
-	public String getId() {
-		return _session.getId();
-	}
-
-	public long getLastAccessedTime() {
-		return _session.getLastAccessedTime();
-	}
-
-	public int getMaxInactiveInterval() {
-		return _session.getMaxInactiveInterval();
-	}
-
-	public PortletContext getPortletContext() {
-		return _portletContext;
-	}
-
-	public void invalidate() {
-		_session.invalidate();
-	}
-
-	public boolean isNew() {
-		return _session.isNew();
-	}
-
-	public void removeAttribute(String name) {
-		if (name == null) {
-			throw new IllegalArgumentException();
-		}
-
-		String scopeName = _getPortletScopeName(name);
-
-		_session.removeAttribute(scopeName);
-	}
-
-	public void removeAttribute(String name, int scope) {
-		if (name == null) {
-			throw new IllegalArgumentException();
-		}
-
-		if (scope == PortletSession.PORTLET_SCOPE) {
-			name = _getPortletScopeName(name);
-		}
-
-		_session.removeAttribute(name);
-	}
-
-	public void setAttribute(String name, Object value) {
-		if (name == null) {
-			throw new IllegalArgumentException();
-		}
-
-		String scopeName = _getPortletScopeName(name);
-
-		_session.setAttribute(scopeName, value);
-	}
-
-	public void setAttribute(String name, Object value, int scope) {
-		if (name == null) {
-			throw new IllegalArgumentException();
-		}
-
-		if (scope == PortletSession.PORTLET_SCOPE) {
-			name = _getPortletScopeName(name);
-		}
-
-		_session.setAttribute(name, value);
-	}
-
-	public void setHttpSession(HttpSession session) {
-		_session = session;
-	}
-
-	public void setMaxInactiveInterval(int interval) {
-		_session.setMaxInactiveInterval(interval);
-	}
-
-	private Enumeration<String> _getAttributeNames(
-		int scope, boolean removePrefix) {
-
-		if (scope == PortletSession.PORTLET_SCOPE) {
-			List<String> attributeNames = new ArrayList<String>();
-
-			int portletScopeLength = _portletScope.length();
-
-			Enumeration<String> enu = _session.getAttributeNames();
-
-			while (enu.hasMoreElements()) {
-				String name = enu.nextElement();
-
-				if ((name.length() > (portletScopeLength + 1)) &&
-					(name.charAt(portletScopeLength) == CharPool.QUESTION) &&
-					name.startsWith(_portletScope)) {
-
-					if (removePrefix) {
-						name = name.substring(portletScopeLength + 1);
-					}
-
-					attributeNames.add(name);
-				}
-			}
-
-			return Collections.enumeration(attributeNames);
-		}
-		else {
-			return _session.getAttributeNames();
-		}
-	}
-
-	private String _getPortletScope(String portletName, long plid) {
-		StringBundler sb = new StringBundler(4);
+		StringBundler sb = new StringBundler(5);
 
 		sb.append(PORTLET_SCOPE_NAMESPACE);
 		sb.append(portletName);
 		sb.append(LAYOUT_SEPARATOR);
 		sb.append(plid);
+		sb.append(StringPool.QUESTION);
 
-		return sb.toString();
+		scopePrefix = sb.toString();
 	}
 
-	private String _getPortletScopeName(String name) {
-		return _portletScope.concat(StringPool.QUESTION).concat(name);
+	@Override
+	public Object getAttribute(String name) {
+		return getAttribute(name, PORTLET_SCOPE);
 	}
 
-	private PortletContext _portletContext;
-	private String _portletScope;
-	private HttpSession _session;
+	@Override
+	public Object getAttribute(String name, int scope) {
+		if (name == null) {
+			throw new IllegalArgumentException();
+		}
+
+		if (scope == PORTLET_SCOPE) {
+			name = scopePrefix.concat(name);
+		}
+
+		return session.getAttribute(name);
+	}
+
+	@Override
+	public Map<String, Object> getAttributeMap() {
+		return getAttributeMap(PortletSession.PORTLET_SCOPE);
+	}
+
+	@Override
+	public Map<String, Object> getAttributeMap(int scope) {
+		if (scope == PORTLET_SCOPE) {
+			return new PortletSessionAttributeMap(session, scopePrefix);
+		}
+
+		return new PortletSessionAttributeMap(session);
+	}
+
+	@Override
+	public Enumeration<String> getAttributeNames() {
+		return getAttributeNames(PORTLET_SCOPE);
+	}
+
+	@Override
+	public Enumeration<String> getAttributeNames(int scope) {
+		if (scope != PORTLET_SCOPE) {
+			return session.getAttributeNames();
+		}
+
+		List<String> attributeNames = new ArrayList<>();
+
+		Enumeration<String> enu = session.getAttributeNames();
+
+		while (enu.hasMoreElements()) {
+			String name = enu.nextElement();
+
+			if (name.startsWith(scopePrefix)) {
+				name = name.substring(scopePrefix.length());
+
+				attributeNames.add(name);
+			}
+		}
+
+		return Collections.enumeration(attributeNames);
+	}
+
+	@Override
+	public long getCreationTime() {
+		return session.getCreationTime();
+	}
+
+	public HttpSession getHttpSession() {
+		return session;
+	}
+
+	@Override
+	public String getId() {
+		return session.getId();
+	}
+
+	@Override
+	public long getLastAccessedTime() {
+		return session.getLastAccessedTime();
+	}
+
+	@Override
+	public int getMaxInactiveInterval() {
+		return session.getMaxInactiveInterval();
+	}
+
+	@Override
+	public PortletContext getPortletContext() {
+		return portletContext;
+	}
+
+	@Override
+	public void invalidate() {
+		session.invalidate();
+	}
+
+	@Override
+	public boolean isNew() {
+		return session.isNew();
+	}
+
+	@Override
+	public void removeAttribute(String name) {
+		removeAttribute(name, PORTLET_SCOPE);
+	}
+
+	@Override
+	public void removeAttribute(String name, int scope) {
+		if (name == null) {
+			throw new IllegalArgumentException();
+		}
+
+		if (scope == PORTLET_SCOPE) {
+			name = scopePrefix.concat(name);
+		}
+
+		session.removeAttribute(name);
+	}
+
+	@Override
+	public void setAttribute(String name, Object value) {
+		setAttribute(name, value, PORTLET_SCOPE);
+	}
+
+	@Override
+	public void setAttribute(String name, Object value, int scope) {
+		if (name == null) {
+			throw new IllegalArgumentException();
+		}
+
+		if (scope == PORTLET_SCOPE) {
+			name = scopePrefix.concat(name);
+		}
+
+		session.setAttribute(name, value);
+	}
+
+	@Override
+	public void setHttpSession(HttpSession session) {
+		this.session = session;
+	}
+
+	@Override
+	public void setMaxInactiveInterval(int interval) {
+		session.setMaxInactiveInterval(interval);
+	}
+
+	protected final PortletContext portletContext;
+	protected final String scopePrefix;
+	protected HttpSession session;
 
 }

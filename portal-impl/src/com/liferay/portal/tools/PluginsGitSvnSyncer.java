@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -96,7 +96,7 @@ public class PluginsGitSvnSyncer {
 	}
 
 	private String[] _getExecOutput(InputStream is) throws IOException {
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 
 		UnsyncBufferedReader unsyncBufferedReader = null;
 
@@ -126,7 +126,7 @@ public class PluginsGitSvnSyncer {
 			}
 		}
 
-		return list.toArray(new String[] {});
+		return list.toArray(new String[list.size()]);
 	}
 
 	private void _updateGitIgnores(String srcDirName, String destDirName)
@@ -242,7 +242,7 @@ public class PluginsGitSvnSyncer {
 		List<String> ignores = null;
 
 		if (!dirName.contains("/docroot")) {
-			ignores = new ArrayList<String>();
+			ignores = new ArrayList<>();
 
 			ignores.add("bin");
 			ignores.add("classes");
@@ -292,7 +292,7 @@ public class PluginsGitSvnSyncer {
 			return;
 		}
 
-		File tempFile = File.createTempFile("svn-ignores-", null, null);
+		File tempFile = _fileUtil.createTempFile("svn-ignores-", "tmp");
 
 		try {
 			String[] ignoresArray = ignores.toArray(new String[ignores.size()]);
@@ -323,6 +323,6 @@ public class PluginsGitSvnSyncer {
 
 	private static final String _SVN_SET_IGNORES = "svn propset svn:ignore ";
 
-	private static FileImpl _fileUtil = FileImpl.getInstance();
+	private static final FileImpl _fileUtil = FileImpl.getInstance();
 
 }

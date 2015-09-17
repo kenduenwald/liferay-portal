@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.asset.model.impl;
 
-import com.liferay.portal.kernel.exception.SystemException;
+import aQute.bnd.annotation.ProviderType;
 
 import com.liferay.portlet.asset.model.AssetTagStats;
 import com.liferay.portlet.asset.service.AssetTagStatsLocalServiceUtil;
@@ -28,9 +28,10 @@ import com.liferay.portlet.asset.service.AssetTagStatsLocalServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see AssetTagStatsImpl
- * @see com.liferay.portlet.asset.model.AssetTagStats
+ * @see AssetTagStats
  * @generated
  */
+@ProviderType
 public abstract class AssetTagStatsBaseImpl extends AssetTagStatsModelImpl
 	implements AssetTagStats {
 	/*
@@ -38,7 +39,8 @@ public abstract class AssetTagStatsBaseImpl extends AssetTagStatsModelImpl
 	 *
 	 * Never modify or reference this class directly. All methods that expect a asset tag stats model instance should use the {@link AssetTagStats} interface instead.
 	 */
-	public void persist() throws SystemException {
+	@Override
+	public void persist() {
 		if (this.isNew()) {
 			AssetTagStatsLocalServiceUtil.addAssetTagStats(this);
 		}

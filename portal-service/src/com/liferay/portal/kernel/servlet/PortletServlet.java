@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -42,7 +42,13 @@ public class PortletServlet extends HttpServlet {
 	public static final String PORTLET_APP =
 		"com.liferay.portal.model.PortletApp";
 
-	public static final String PORTLET_CLASS_LOADER = "PORTLET_CLASS_LOADER";
+	/**
+	 * @deprecated As of 6.2.0, replaced by {@link
+	 *             PluginContextListener#PLUGIN_CLASS_LOADER}
+	 */
+	@Deprecated
+	public static final String PORTLET_CLASS_LOADER =
+		PluginContextListener.PLUGIN_CLASS_LOADER;
 
 	public static final String PORTLET_SERVLET_CONFIG =
 		"com.liferay.portal.kernel.servlet.PortletServletConfig";
@@ -114,6 +120,6 @@ public class PortletServlet extends HttpServlet {
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PortletServlet.class);
+	private static final Log _log = LogFactoryUtil.getLog(PortletServlet.class);
 
 }

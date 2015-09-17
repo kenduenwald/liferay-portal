@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -18,17 +18,17 @@
 
 </div>
 
-<aui:script use="anim,aui-panel">
+<aui:script use="anim,aui-panel-deprecated">
 	var container = new A.Panel(
 		{
 			bodyContent: A.one('#<%= id %>bodyContent'),
 			collapsed: <%= collapsed %>,
 			collapsible: <%= collapsible %>,
 			contentBox: '#<%= id %>',
-			headerContent: '<liferay-ui:message key="<%= label %>" />'
+			headerContent: '<liferay-ui:message key="<%= label %>" localizeKey="<%= localizeLabel %>" />'
 
 			<c:if test="<%= toolTags != null %>">
-				,tools: [
+				,icons: [
 
 				<%
 				for (int i = 0; i < toolTags.size(); i++) {
@@ -38,8 +38,10 @@
 					{
 						icon: '<%= toolTag.getIcon() %>',
 						id: '<%= toolTag.getId() %>',
-						handler: function(event, panel) {
-							<%= toolTag.getHandler() %>
+						on: {
+							click: function(event) {
+								<%= toolTag.getHandler() %>
+							}
 						}
 
 					}

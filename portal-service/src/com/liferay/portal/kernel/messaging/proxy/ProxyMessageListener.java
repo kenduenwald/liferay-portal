@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -30,6 +30,7 @@ import com.liferay.portal.kernel.util.Validator;
  */
 public class ProxyMessageListener implements MessageListener {
 
+	@Override
 	public void receive(Message message) {
 		ProxyResponse proxyResponse = new ProxyResponse();
 
@@ -39,12 +40,15 @@ public class ProxyMessageListener implements MessageListener {
 			if (payload == null) {
 				throw new Exception("Payload is null");
 			}
-			else if (!ProxyRequest.class.isAssignableFrom(payload.getClass())) {
+			else if (!(payload instanceof ProxyRequest)) {
 				throw new Exception(
 					"Payload " + payload.getClass() + " is not of type " +
 						ProxyRequest.class.getName());
 			}
 			else {
+				MessageValuesThreadLocal.populateThreadLocalsFromMessage(
+					message);
+
 				ProxyRequest proxyRequest = (ProxyRequest)payload;
 
 				Object result = proxyRequest.execute(_manager);
@@ -95,7 +99,8 @@ public class ProxyMessageListener implements MessageListener {
 		_messageBus = messageBus;
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ProxyMessageListener.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		ProxyMessageListener.class);
 
 	private Object _manager;
 	private MessageBus _messageBus;

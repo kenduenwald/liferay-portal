@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,9 +19,7 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portal.util.InitUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 
 import java.io.File;
 
@@ -32,19 +30,22 @@ import java.io.File;
 public class EARBuilder {
 
 	public static void main(String[] args) {
-		InitUtil.initWithSpring();
+		ToolDependencies.wireBasic();
 
-		if (args.length == 2) {
-			new EARBuilder(args[0], StringUtil.split(args[1]));
+		if (args.length == 3) {
+			new EARBuilder(args[0], StringUtil.split(args[1]), args[2]);
 		}
 		else {
 			throw new IllegalArgumentException();
 		}
 	}
 
-	public EARBuilder(String originalApplicationXML, String[] pluginFileNames) {
+	public EARBuilder(
+		String originalApplicationXML, String[] pluginFileNames,
+		String portalContextPath) {
+
 		try {
-			Document document = SAXReaderUtil.read(
+			Document document = UnsecureSAXReaderUtil.read(
 				new File(originalApplicationXML));
 
 			Element rootElement = document.getRootElement();
@@ -61,7 +62,8 @@ public class EARBuilder {
 				Element contextRootElement = webElement.addElement(
 					"context-root");
 
-				String contextRoot = _getContextRoot(pluginFileName);
+				String contextRoot = _getContextRoot(
+					pluginFileName, portalContextPath);
 
 				contextRootElement.addText(contextRoot);
 			}
@@ -74,7 +76,9 @@ public class EARBuilder {
 		}
 	}
 
-	private String _getContextRoot(String pluginFileName) {
+	private String _getContextRoot(
+		String pluginFileName, String portalContextPath) {
+
 		String contextRoot = pluginFileName;
 
 		int pos = contextRoot.lastIndexOf(".war");
@@ -84,7 +88,7 @@ public class EARBuilder {
 		}
 
 		if (contextRoot.equals("liferay-portal")) {
-			contextRoot = PropsValues.PORTAL_CTX;
+			contextRoot = portalContextPath;
 
 			if (contextRoot.equals(StringPool.SLASH)) {
 				contextRoot = StringPool.BLANK;

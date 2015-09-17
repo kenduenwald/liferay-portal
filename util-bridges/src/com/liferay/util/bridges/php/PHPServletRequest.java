@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -47,7 +47,7 @@ public class PHPServletRequest extends HttpServletRequestWrapper {
 		_renderResponse = renderResponse;
 		_portletConfig = portletConfig;
 
-		StringBundler sb = new StringBundler();
+		StringBundler sb = new StringBundler(9);
 
 		int pos = phpURI.indexOf(CharPool.QUESTION);
 
@@ -123,6 +123,10 @@ public class PHPServletRequest extends HttpServletRequestWrapper {
 		return _queryString;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	@Override
 	public String getRealPath(String path) {
 		return _servletConfig.getServletContext().getRealPath(path);
@@ -153,11 +157,11 @@ public class PHPServletRequest extends HttpServletRequestWrapper {
 		return _path;
 	}
 
-	private String _path;
-	private PortletConfig _portletConfig;
-	private String _queryString;
-	private RenderRequest _renderRequest;
-	private RenderResponse _renderResponse;
-	private ServletConfig _servletConfig;
+	private final String _path;
+	private final PortletConfig _portletConfig;
+	private final String _queryString;
+	private final RenderRequest _renderRequest;
+	private final RenderResponse _renderResponse;
+	private final ServletConfig _servletConfig;
 
 }

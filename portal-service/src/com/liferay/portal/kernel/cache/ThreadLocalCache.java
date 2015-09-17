@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -50,7 +50,7 @@ public class ThreadLocalCache<T> {
 
 	public void put(String key, T obj) {
 		if (_cache == null) {
-			_cache = new HashMap<String, T>();
+			_cache = new HashMap<>();
 		}
 
 		_cache.put(key, obj);
@@ -84,7 +84,7 @@ public class ThreadLocalCache<T> {
 	}
 
 	private Map<String, T> _cache;
-	private Lifecycle _lifecycle;
-	private Serializable _name;
+	private final Lifecycle _lifecycle;
+	private final Serializable _name;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,20 +16,32 @@ package com.liferay.portal.kernel.search;
 
 import com.liferay.portal.kernel.messaging.proxy.MessagingProxy;
 import com.liferay.portal.kernel.messaging.proxy.ProxyMode;
+import com.liferay.portal.kernel.search.suggest.QuerySuggester;
 
 /**
  * @author Bruno Farache
  * @author Raymond Augé
  */
 @MessagingProxy(mode = ProxyMode.SYNC)
-public interface IndexSearcher {
+public interface IndexSearcher extends QuerySuggester {
+
+	public String getQueryString(SearchContext searchContext, Query query)
+		throws ParseException;
 
 	public Hits search(SearchContext searchContext, Query query)
 		throws SearchException;
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #search(SearchContext,
+	 *             Query)}
+	 */
+	@Deprecated
 	public Hits search(
 			String searchEngineId, long companyId, Query query, Sort[] sort,
 			int start, int end)
+		throws SearchException;
+
+	public long searchCount(SearchContext searchContext, Query query)
 		throws SearchException;
 
 }

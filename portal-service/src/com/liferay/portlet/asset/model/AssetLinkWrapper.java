@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,265 +14,112 @@
 
 package com.liferay.portlet.asset.model;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.ModelWrapper;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>
  * This class is a wrapper for {@link AssetLink}.
  * </p>
  *
- * @author    Brian Wing Shun Chan
- * @see       AssetLink
+ * @author Brian Wing Shun Chan
+ * @see AssetLink
  * @generated
  */
+@ProviderType
 public class AssetLinkWrapper implements AssetLink, ModelWrapper<AssetLink> {
 	public AssetLinkWrapper(AssetLink assetLink) {
 		_assetLink = assetLink;
 	}
 
+	@Override
 	public Class<?> getModelClass() {
 		return AssetLink.class;
 	}
 
+	@Override
 	public String getModelClassName() {
 		return AssetLink.class.getName();
 	}
 
-	/**
-	* Returns the primary key of this asset link.
-	*
-	* @return the primary key of this asset link
-	*/
-	public long getPrimaryKey() {
-		return _assetLink.getPrimaryKey();
+	@Override
+	public Map<String, Object> getModelAttributes() {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+
+		attributes.put("linkId", getLinkId());
+		attributes.put("companyId", getCompanyId());
+		attributes.put("userId", getUserId());
+		attributes.put("userName", getUserName());
+		attributes.put("createDate", getCreateDate());
+		attributes.put("entryId1", getEntryId1());
+		attributes.put("entryId2", getEntryId2());
+		attributes.put("type", getType());
+		attributes.put("weight", getWeight());
+
+		return attributes;
 	}
 
-	/**
-	* Sets the primary key of this asset link.
-	*
-	* @param primaryKey the primary key of this asset link
-	*/
-	public void setPrimaryKey(long primaryKey) {
-		_assetLink.setPrimaryKey(primaryKey);
-	}
+	@Override
+	public void setModelAttributes(Map<String, Object> attributes) {
+		Long linkId = (Long)attributes.get("linkId");
 
-	/**
-	* Returns the link ID of this asset link.
-	*
-	* @return the link ID of this asset link
-	*/
-	public long getLinkId() {
-		return _assetLink.getLinkId();
-	}
+		if (linkId != null) {
+			setLinkId(linkId);
+		}
 
-	/**
-	* Sets the link ID of this asset link.
-	*
-	* @param linkId the link ID of this asset link
-	*/
-	public void setLinkId(long linkId) {
-		_assetLink.setLinkId(linkId);
-	}
+		Long companyId = (Long)attributes.get("companyId");
 
-	/**
-	* Returns the company ID of this asset link.
-	*
-	* @return the company ID of this asset link
-	*/
-	public long getCompanyId() {
-		return _assetLink.getCompanyId();
-	}
+		if (companyId != null) {
+			setCompanyId(companyId);
+		}
 
-	/**
-	* Sets the company ID of this asset link.
-	*
-	* @param companyId the company ID of this asset link
-	*/
-	public void setCompanyId(long companyId) {
-		_assetLink.setCompanyId(companyId);
-	}
+		Long userId = (Long)attributes.get("userId");
 
-	/**
-	* Returns the user ID of this asset link.
-	*
-	* @return the user ID of this asset link
-	*/
-	public long getUserId() {
-		return _assetLink.getUserId();
-	}
+		if (userId != null) {
+			setUserId(userId);
+		}
 
-	/**
-	* Sets the user ID of this asset link.
-	*
-	* @param userId the user ID of this asset link
-	*/
-	public void setUserId(long userId) {
-		_assetLink.setUserId(userId);
-	}
+		String userName = (String)attributes.get("userName");
 
-	/**
-	* Returns the user uuid of this asset link.
-	*
-	* @return the user uuid of this asset link
-	* @throws SystemException if a system exception occurred
-	*/
-	public java.lang.String getUserUuid()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		return _assetLink.getUserUuid();
-	}
+		if (userName != null) {
+			setUserName(userName);
+		}
 
-	/**
-	* Sets the user uuid of this asset link.
-	*
-	* @param userUuid the user uuid of this asset link
-	*/
-	public void setUserUuid(java.lang.String userUuid) {
-		_assetLink.setUserUuid(userUuid);
-	}
+		Date createDate = (Date)attributes.get("createDate");
 
-	/**
-	* Returns the user name of this asset link.
-	*
-	* @return the user name of this asset link
-	*/
-	public java.lang.String getUserName() {
-		return _assetLink.getUserName();
-	}
+		if (createDate != null) {
+			setCreateDate(createDate);
+		}
 
-	/**
-	* Sets the user name of this asset link.
-	*
-	* @param userName the user name of this asset link
-	*/
-	public void setUserName(java.lang.String userName) {
-		_assetLink.setUserName(userName);
-	}
+		Long entryId1 = (Long)attributes.get("entryId1");
 
-	/**
-	* Returns the create date of this asset link.
-	*
-	* @return the create date of this asset link
-	*/
-	public java.util.Date getCreateDate() {
-		return _assetLink.getCreateDate();
-	}
+		if (entryId1 != null) {
+			setEntryId1(entryId1);
+		}
 
-	/**
-	* Sets the create date of this asset link.
-	*
-	* @param createDate the create date of this asset link
-	*/
-	public void setCreateDate(java.util.Date createDate) {
-		_assetLink.setCreateDate(createDate);
-	}
+		Long entryId2 = (Long)attributes.get("entryId2");
 
-	/**
-	* Returns the entry id1 of this asset link.
-	*
-	* @return the entry id1 of this asset link
-	*/
-	public long getEntryId1() {
-		return _assetLink.getEntryId1();
-	}
+		if (entryId2 != null) {
+			setEntryId2(entryId2);
+		}
 
-	/**
-	* Sets the entry id1 of this asset link.
-	*
-	* @param entryId1 the entry id1 of this asset link
-	*/
-	public void setEntryId1(long entryId1) {
-		_assetLink.setEntryId1(entryId1);
-	}
+		Integer type = (Integer)attributes.get("type");
 
-	/**
-	* Returns the entry id2 of this asset link.
-	*
-	* @return the entry id2 of this asset link
-	*/
-	public long getEntryId2() {
-		return _assetLink.getEntryId2();
-	}
+		if (type != null) {
+			setType(type);
+		}
 
-	/**
-	* Sets the entry id2 of this asset link.
-	*
-	* @param entryId2 the entry id2 of this asset link
-	*/
-	public void setEntryId2(long entryId2) {
-		_assetLink.setEntryId2(entryId2);
-	}
+		Integer weight = (Integer)attributes.get("weight");
 
-	/**
-	* Returns the type of this asset link.
-	*
-	* @return the type of this asset link
-	*/
-	public int getType() {
-		return _assetLink.getType();
-	}
-
-	/**
-	* Sets the type of this asset link.
-	*
-	* @param type the type of this asset link
-	*/
-	public void setType(int type) {
-		_assetLink.setType(type);
-	}
-
-	/**
-	* Returns the weight of this asset link.
-	*
-	* @return the weight of this asset link
-	*/
-	public int getWeight() {
-		return _assetLink.getWeight();
-	}
-
-	/**
-	* Sets the weight of this asset link.
-	*
-	* @param weight the weight of this asset link
-	*/
-	public void setWeight(int weight) {
-		_assetLink.setWeight(weight);
-	}
-
-	public boolean isNew() {
-		return _assetLink.isNew();
-	}
-
-	public void setNew(boolean n) {
-		_assetLink.setNew(n);
-	}
-
-	public boolean isCachedModel() {
-		return _assetLink.isCachedModel();
-	}
-
-	public void setCachedModel(boolean cachedModel) {
-		_assetLink.setCachedModel(cachedModel);
-	}
-
-	public boolean isEscapedModel() {
-		return _assetLink.isEscapedModel();
-	}
-
-	public java.io.Serializable getPrimaryKeyObj() {
-		return _assetLink.getPrimaryKeyObj();
-	}
-
-	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
-		_assetLink.setPrimaryKeyObj(primaryKeyObj);
-	}
-
-	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
-		return _assetLink.getExpandoBridge();
-	}
-
-	public void setExpandoBridgeAttributes(
-		com.liferay.portal.service.ServiceContext serviceContext) {
-		_assetLink.setExpandoBridgeAttributes(serviceContext);
+		if (weight != null) {
+			setWeight(weight);
+		}
 	}
 
 	@Override
@@ -280,8 +127,129 @@ public class AssetLinkWrapper implements AssetLink, ModelWrapper<AssetLink> {
 		return new AssetLinkWrapper((AssetLink)_assetLink.clone());
 	}
 
+	@Override
 	public int compareTo(com.liferay.portlet.asset.model.AssetLink assetLink) {
 		return _assetLink.compareTo(assetLink);
+	}
+
+	/**
+	* Returns the company ID of this asset link.
+	*
+	* @return the company ID of this asset link
+	*/
+	@Override
+	public long getCompanyId() {
+		return _assetLink.getCompanyId();
+	}
+
+	/**
+	* Returns the create date of this asset link.
+	*
+	* @return the create date of this asset link
+	*/
+	@Override
+	public Date getCreateDate() {
+		return _assetLink.getCreateDate();
+	}
+
+	/**
+	* Returns the entry id1 of this asset link.
+	*
+	* @return the entry id1 of this asset link
+	*/
+	@Override
+	public long getEntryId1() {
+		return _assetLink.getEntryId1();
+	}
+
+	/**
+	* Returns the entry id2 of this asset link.
+	*
+	* @return the entry id2 of this asset link
+	*/
+	@Override
+	public long getEntryId2() {
+		return _assetLink.getEntryId2();
+	}
+
+	@Override
+	public com.liferay.portlet.expando.model.ExpandoBridge getExpandoBridge() {
+		return _assetLink.getExpandoBridge();
+	}
+
+	/**
+	* Returns the link ID of this asset link.
+	*
+	* @return the link ID of this asset link
+	*/
+	@Override
+	public long getLinkId() {
+		return _assetLink.getLinkId();
+	}
+
+	/**
+	* Returns the primary key of this asset link.
+	*
+	* @return the primary key of this asset link
+	*/
+	@Override
+	public long getPrimaryKey() {
+		return _assetLink.getPrimaryKey();
+	}
+
+	@Override
+	public java.io.Serializable getPrimaryKeyObj() {
+		return _assetLink.getPrimaryKeyObj();
+	}
+
+	/**
+	* Returns the type of this asset link.
+	*
+	* @return the type of this asset link
+	*/
+	@Override
+	public int getType() {
+		return _assetLink.getType();
+	}
+
+	/**
+	* Returns the user ID of this asset link.
+	*
+	* @return the user ID of this asset link
+	*/
+	@Override
+	public long getUserId() {
+		return _assetLink.getUserId();
+	}
+
+	/**
+	* Returns the user name of this asset link.
+	*
+	* @return the user name of this asset link
+	*/
+	@Override
+	public java.lang.String getUserName() {
+		return _assetLink.getUserName();
+	}
+
+	/**
+	* Returns the user uuid of this asset link.
+	*
+	* @return the user uuid of this asset link
+	*/
+	@Override
+	public java.lang.String getUserUuid() {
+		return _assetLink.getUserUuid();
+	}
+
+	/**
+	* Returns the weight of this asset link.
+	*
+	* @return the weight of this asset link
+	*/
+	@Override
+	public int getWeight() {
+		return _assetLink.getWeight();
 	}
 
 	@Override
@@ -289,10 +257,175 @@ public class AssetLinkWrapper implements AssetLink, ModelWrapper<AssetLink> {
 		return _assetLink.hashCode();
 	}
 
+	@Override
+	public boolean isCachedModel() {
+		return _assetLink.isCachedModel();
+	}
+
+	@Override
+	public boolean isEscapedModel() {
+		return _assetLink.isEscapedModel();
+	}
+
+	@Override
+	public boolean isNew() {
+		return _assetLink.isNew();
+	}
+
+	@Override
+	public void persist() {
+		_assetLink.persist();
+	}
+
+	@Override
+	public void setCachedModel(boolean cachedModel) {
+		_assetLink.setCachedModel(cachedModel);
+	}
+
+	/**
+	* Sets the company ID of this asset link.
+	*
+	* @param companyId the company ID of this asset link
+	*/
+	@Override
+	public void setCompanyId(long companyId) {
+		_assetLink.setCompanyId(companyId);
+	}
+
+	/**
+	* Sets the create date of this asset link.
+	*
+	* @param createDate the create date of this asset link
+	*/
+	@Override
+	public void setCreateDate(Date createDate) {
+		_assetLink.setCreateDate(createDate);
+	}
+
+	/**
+	* Sets the entry id1 of this asset link.
+	*
+	* @param entryId1 the entry id1 of this asset link
+	*/
+	@Override
+	public void setEntryId1(long entryId1) {
+		_assetLink.setEntryId1(entryId1);
+	}
+
+	/**
+	* Sets the entry id2 of this asset link.
+	*
+	* @param entryId2 the entry id2 of this asset link
+	*/
+	@Override
+	public void setEntryId2(long entryId2) {
+		_assetLink.setEntryId2(entryId2);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.model.BaseModel<?> baseModel) {
+		_assetLink.setExpandoBridgeAttributes(baseModel);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portlet.expando.model.ExpandoBridge expandoBridge) {
+		_assetLink.setExpandoBridgeAttributes(expandoBridge);
+	}
+
+	@Override
+	public void setExpandoBridgeAttributes(
+		com.liferay.portal.service.ServiceContext serviceContext) {
+		_assetLink.setExpandoBridgeAttributes(serviceContext);
+	}
+
+	/**
+	* Sets the link ID of this asset link.
+	*
+	* @param linkId the link ID of this asset link
+	*/
+	@Override
+	public void setLinkId(long linkId) {
+		_assetLink.setLinkId(linkId);
+	}
+
+	@Override
+	public void setNew(boolean n) {
+		_assetLink.setNew(n);
+	}
+
+	/**
+	* Sets the primary key of this asset link.
+	*
+	* @param primaryKey the primary key of this asset link
+	*/
+	@Override
+	public void setPrimaryKey(long primaryKey) {
+		_assetLink.setPrimaryKey(primaryKey);
+	}
+
+	@Override
+	public void setPrimaryKeyObj(java.io.Serializable primaryKeyObj) {
+		_assetLink.setPrimaryKeyObj(primaryKeyObj);
+	}
+
+	/**
+	* Sets the type of this asset link.
+	*
+	* @param type the type of this asset link
+	*/
+	@Override
+	public void setType(int type) {
+		_assetLink.setType(type);
+	}
+
+	/**
+	* Sets the user ID of this asset link.
+	*
+	* @param userId the user ID of this asset link
+	*/
+	@Override
+	public void setUserId(long userId) {
+		_assetLink.setUserId(userId);
+	}
+
+	/**
+	* Sets the user name of this asset link.
+	*
+	* @param userName the user name of this asset link
+	*/
+	@Override
+	public void setUserName(java.lang.String userName) {
+		_assetLink.setUserName(userName);
+	}
+
+	/**
+	* Sets the user uuid of this asset link.
+	*
+	* @param userUuid the user uuid of this asset link
+	*/
+	@Override
+	public void setUserUuid(java.lang.String userUuid) {
+		_assetLink.setUserUuid(userUuid);
+	}
+
+	/**
+	* Sets the weight of this asset link.
+	*
+	* @param weight the weight of this asset link
+	*/
+	@Override
+	public void setWeight(int weight) {
+		_assetLink.setWeight(weight);
+	}
+
+	@Override
 	public com.liferay.portal.model.CacheModel<com.liferay.portlet.asset.model.AssetLink> toCacheModel() {
 		return _assetLink.toCacheModel();
 	}
 
+	@Override
 	public com.liferay.portlet.asset.model.AssetLink toEscapedModel() {
 		return new AssetLinkWrapper(_assetLink.toEscapedModel());
 	}
@@ -302,29 +435,62 @@ public class AssetLinkWrapper implements AssetLink, ModelWrapper<AssetLink> {
 		return _assetLink.toString();
 	}
 
+	@Override
+	public com.liferay.portlet.asset.model.AssetLink toUnescapedModel() {
+		return new AssetLinkWrapper(_assetLink.toUnescapedModel());
+	}
+
+	@Override
 	public java.lang.String toXmlString() {
 		return _assetLink.toXmlString();
 	}
 
-	public void persist()
-		throws com.liferay.portal.kernel.exception.SystemException {
-		_assetLink.persist();
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (!(obj instanceof AssetLinkWrapper)) {
+			return false;
+		}
+
+		AssetLinkWrapper assetLinkWrapper = (AssetLinkWrapper)obj;
+
+		if (Validator.equals(_assetLink, assetLinkWrapper._assetLink)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
-	 * @deprecated Renamed to {@link #getWrappedModel}
+	 * @deprecated As of 6.1.0, replaced by {@link #getWrappedModel}
 	 */
+	@Deprecated
 	public AssetLink getWrappedAssetLink() {
 		return _assetLink;
 	}
 
+	@Override
 	public AssetLink getWrappedModel() {
 		return _assetLink;
 	}
 
+	@Override
+	public boolean isEntityCacheEnabled() {
+		return _assetLink.isEntityCacheEnabled();
+	}
+
+	@Override
+	public boolean isFinderCacheEnabled() {
+		return _assetLink.isFinderCacheEnabled();
+	}
+
+	@Override
 	public void resetOriginalValues() {
 		_assetLink.resetOriginalValues();
 	}
 
-	private AssetLink _assetLink;
+	private final AssetLink _assetLink;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.documentlibrary.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,9 +25,10 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services.
  *
- * @author    Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
  */
+@ProviderType
 public class DLFileRankSoap implements Serializable {
 	public static DLFileRankSoap toSoapModel(DLFileRank model) {
 		DLFileRankSoap soapModel = new DLFileRankSoap();
@@ -36,6 +39,7 @@ public class DLFileRankSoap implements Serializable {
 		soapModel.setUserId(model.getUserId());
 		soapModel.setCreateDate(model.getCreateDate());
 		soapModel.setFileEntryId(model.getFileEntryId());
+		soapModel.setActive(model.getActive());
 
 		return soapModel;
 	}
@@ -136,10 +140,23 @@ public class DLFileRankSoap implements Serializable {
 		_fileEntryId = fileEntryId;
 	}
 
+	public boolean getActive() {
+		return _active;
+	}
+
+	public boolean isActive() {
+		return _active;
+	}
+
+	public void setActive(boolean active) {
+		_active = active;
+	}
+
 	private long _fileRankId;
 	private long _groupId;
 	private long _companyId;
 	private long _userId;
 	private Date _createDate;
 	private long _fileEntryId;
+	private boolean _active;
 }

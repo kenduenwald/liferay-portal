@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 package com.liferay.portal.kernel.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import java.net.URL;
 
@@ -49,6 +50,8 @@ public interface Http {
 
 	public static final String PROTOCOL_DELIMITER = "://";
 
+	public static final int URL_MAXIMUM_LENGTH = 2083;
+
 	public String addParameter(String url, String name, boolean value);
 
 	public String addParameter(String url, String name, double value);
@@ -65,7 +68,13 @@ public interface Http {
 
 	public String decodeURL(String url);
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link #decodeURL(String)}
+	 */
+	@Deprecated
 	public String decodeURL(String url, boolean unescapeSpaces);
+
+	public String encodeParameters(String url);
 
 	public String encodePath(String path);
 
@@ -117,6 +126,10 @@ public interface Http {
 
 	public boolean isProxyHost(String host);
 
+	public boolean isSecure(String url);
+
+	public String normalizePath(String uri);
+
 	public Map<String, String[]> parameterMapFromString(String queryString);
 
 	public String parameterMapToString(Map<String, String[]> parameterMap);
@@ -130,13 +143,19 @@ public interface Http {
 
 	public String protocolize(String url, HttpServletRequest request);
 
+	public String protocolize(String url, int port, boolean secure);
+
 	public String protocolize(String url, RenderRequest renderRequest);
 
 	public String removeDomain(String url);
 
 	public String removeParameter(String url, String name);
 
+	public String removePathParameters(String uri);
+
 	public String removeProtocol(String url);
+
+	public String sanitizeHeader(String header);
 
 	public String setParameter(String url, String name, boolean value);
 
@@ -150,11 +169,21 @@ public interface Http {
 
 	public String setParameter(String url, String name, String value);
 
+	public String shortenURL(String url, int count);
+
 	public byte[] URLtoByteArray(Http.Options options) throws IOException;
 
 	public byte[] URLtoByteArray(String location) throws IOException;
 
 	public byte[] URLtoByteArray(String location, boolean post)
+		throws IOException;
+
+	public InputStream URLtoInputStream(Http.Options options)
+		throws IOException;
+
+	public InputStream URLtoInputStream(String location) throws IOException;
+
+	public InputStream URLtoInputStream(String location, boolean post)
 		throws IOException;
 
 	public String URLtoString(Http.Options options) throws IOException;
@@ -209,11 +238,11 @@ public interface Http {
 			return _username;
 		}
 
-		private String _host;
-		private String _password;
-		private int _port;
-		private String _realm;
-		private String _username;
+		private final String _host;
+		private final String _password;
+		private final int _port;
+		private final String _realm;
+		private final String _username;
 
 	}
 
@@ -237,8 +266,8 @@ public interface Http {
 			return _contentType;
 		}
 
-		private String _charset;
-		private String _content;
+		private final String _charset;
+		private final String _content;
 		private String _contentType;
 
 	}
@@ -276,11 +305,11 @@ public interface Http {
 			return _value;
 		}
 
-		private String _charSet;
+		private final String _charSet;
 		private String _contentType;
-		private String _fileName;
-		private String _name;
-		private byte[] _value;
+		private final String _fileName;
+		private final String _name;
+		private final byte[] _value;
 
 	}
 
@@ -303,7 +332,7 @@ public interface Http {
 			}
 
 			if (_fileParts == null) {
-				_fileParts = new ArrayList<FilePart>();
+				_fileParts = new ArrayList<>();
 			}
 
 			FilePart filePart = new FilePart(
@@ -314,7 +343,7 @@ public interface Http {
 
 		public void addHeader(String name, String value) {
 			if (_headers == null) {
-				_headers = new HashMap<String, String>();
+				_headers = new HashMap<>();
 			}
 
 			_headers.put(name, value);
@@ -327,7 +356,7 @@ public interface Http {
 			}
 
 			if (_parts == null) {
-				_parts = new HashMap<String, String>();
+				_parts = new HashMap<>();
 			}
 
 			_parts.put(name, value);
@@ -528,14 +557,18 @@ public interface Http {
 
 		public void addHeader(String name, String value) {
 			if (_headers == null) {
-				_headers = new HashMap<String, String>();
+				_headers = new HashMap<>();
 			}
 
-			_headers.put(name.toLowerCase(), value);
+			_headers.put(StringUtil.toLowerCase(name), value);
 		}
 
 		public int getContentLength() {
 			return _contentLength;
+		}
+
+		public long getContentLengthLong() {
+			return _contentLengthLong;
 		}
 
 		public String getContentType() {
@@ -547,7 +580,7 @@ public interface Http {
 				return null;
 			}
 			else {
-				return _headers.get(name.toLowerCase());
+				return _headers.get(StringUtil.toLowerCase(name));
 			}
 		}
 
@@ -559,8 +592,16 @@ public interface Http {
 			return _redirect;
 		}
 
+		public int getResponseCode() {
+			return _responseCode;
+		}
+
 		public void setContentLength(int contentLength) {
 			_contentLength = contentLength;
+		}
+
+		public void setContentLengthLong(long contentLengthLong) {
+			_contentLengthLong = contentLengthLong;
 		}
 
 		public void setContentType(String contentType) {
@@ -575,10 +616,16 @@ public interface Http {
 			_redirect = redirect;
 		}
 
+		public void setResponseCode(int responseCode) {
+			_responseCode = responseCode;
+		}
+
 		private int _contentLength = -1;
+		private long _contentLengthLong = -1;
 		private String _contentType;
 		private Map<String, String> _headers;
 		private String _redirect;
+		private int _responseCode = -1;
 
 	}
 

@@ -1,6 +1,6 @@
 <%--
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,22 +17,22 @@
 <%@ include file="/html/portlet/login/init.jsp" %>
 
 <%
-String strutsAction = ParamUtil.getString(request, "struts_action");
+String mvcRenderCommandName = ParamUtil.getString(request, "mvcRenderCommandName");
 
 boolean showForgotPasswordIcon = false;
 
-if (!strutsAction.equals("/login/forgot_password") && (company.isSendPassword() || company.isSendPasswordResetLink())) {
+if (!mvcRenderCommandName.equals("/login/forgot_password") && (company.isSendPassword() || company.isSendPasswordResetLink())) {
 	showForgotPasswordIcon = true;
 }
 %>
 
 <c:if test="<%= showForgotPasswordIcon %>">
-	<portlet:renderURL var="forgotPasswordURL">
-		<portlet:param name="struts_action" value="/login/forgot_password" />
+	<portlet:renderURL var="forgotPasswordURL" windowState="<%= WindowState.MAXIMIZED.toString() %>">
+		<portlet:param name="mvcRenderCommandName" value="/login/forgot_password" />
 	</portlet:renderURL>
 
 	<liferay-ui:icon
-		image="help"
+		iconCssClass="icon-question-sign"
 		message="forgot-password"
 		url="<%= forgotPasswordURL %>"
 	/>

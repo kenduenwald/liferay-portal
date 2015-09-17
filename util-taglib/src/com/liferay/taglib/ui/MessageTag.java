@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,9 +16,14 @@ package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.language.UnicodeLanguageUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.JspWriter;
 import javax.servlet.jsp.tagext.TagSupport;
@@ -33,31 +38,50 @@ public class MessageTag extends TagSupport {
 		try {
 			String value = StringPool.BLANK;
 
+			HttpServletRequest request =
+				(HttpServletRequest)pageContext.getRequest();
+
+			boolean unicode = GetterUtil.getBoolean(
+				request.getAttribute(WebKeys.JAVASCRIPT_CONTEXT));
+
+			if (unicode) {
+				_unicode = unicode;
+			}
+
 			if (_arguments == null) {
 				if (!_localizeKey) {
 					value = _key;
 				}
+				else if (_escape) {
+					value = HtmlUtil.escape(LanguageUtil.get(request, _key));
+				}
+				else if (_escapeAttribute) {
+					value = HtmlUtil.escapeAttribute(
+						LanguageUtil.get(request, _key));
+				}
 				else if (_unicode) {
-					value = UnicodeLanguageUtil.get(pageContext, _key);
+					value = UnicodeLanguageUtil.get(request, _key);
 				}
 				else {
-					value = LanguageUtil.get(pageContext, _key);
+					value = LanguageUtil.get(request, _key);
 				}
 			}
 			else {
 				if (_unicode) {
 					value = UnicodeLanguageUtil.format(
-						pageContext, _key, _arguments, _translateArguments);
+						request, _key, _arguments, _translateArguments);
 				}
 				else {
 					value = LanguageUtil.format(
-						pageContext, _key, _arguments, _translateArguments);
+						request, _key, _arguments, _translateArguments);
 				}
 			}
 
-			JspWriter jspWriter = pageContext.getOut();
+			if (Validator.isNotNull(value)) {
+				JspWriter jspWriter = pageContext.getOut();
 
-			jspWriter.write(value);
+				jspWriter.write(value);
+			}
 
 			return EVAL_PAGE;
 		}
@@ -67,6 +91,8 @@ public class MessageTag extends TagSupport {
 		finally {
 			if (!ServerDetector.isResin()) {
 				_arguments = null;
+				_escape = false;
+				_escapeAttribute = false;
 				_key = null;
 				_localizeKey = true;
 				_translateArguments = true;
@@ -76,11 +102,28 @@ public class MessageTag extends TagSupport {
 	}
 
 	public void setArguments(Object argument) {
-		_arguments = new Object[] {argument};
+		if (argument == null) {
+			_arguments = null;
+
+			return;
+		}
+
+		Class<?> clazz = argument.getClass();
+
+		if (clazz.isArray()) {
+			_arguments = (Object[])argument;
+		}
+		else {
+			_arguments = new Object[] {argument};
+		}
 	}
 
-	public void setArguments(Object[] arguments) {
-		_arguments = arguments;
+	public void setEscape(boolean escape) {
+		_escape = escape;
+	}
+
+	public void setEscapeAttribute(boolean escapeAttribute) {
+		_escapeAttribute = escapeAttribute;
 	}
 
 	public void setKey(String key) {
@@ -100,6 +143,8 @@ public class MessageTag extends TagSupport {
 	}
 
 	private Object[] _arguments;
+	private boolean _escape;
+	private boolean _escapeAttribute;
 	private String _key;
 	private boolean _localizeKey = true;
 	private boolean _translateArguments = true;

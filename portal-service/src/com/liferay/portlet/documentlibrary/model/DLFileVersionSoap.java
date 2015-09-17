@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
 
 package com.liferay.portlet.documentlibrary.model;
 
+import aQute.bnd.annotation.ProviderType;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ import java.util.List;
 /**
  * This class is used by SOAP remote services, specifically {@link com.liferay.portlet.documentlibrary.service.http.DLFileVersionServiceSoap}.
  *
- * @author    Brian Wing Shun Chan
- * @see       com.liferay.portlet.documentlibrary.service.http.DLFileVersionServiceSoap
+ * @author Brian Wing Shun Chan
+ * @see com.liferay.portlet.documentlibrary.service.http.DLFileVersionServiceSoap
  * @generated
  */
+@ProviderType
 public class DLFileVersionSoap implements Serializable {
 	public static DLFileVersionSoap toSoapModel(DLFileVersion model) {
 		DLFileVersionSoap soapModel = new DLFileVersionSoap();
@@ -42,6 +45,8 @@ public class DLFileVersionSoap implements Serializable {
 		soapModel.setRepositoryId(model.getRepositoryId());
 		soapModel.setFolderId(model.getFolderId());
 		soapModel.setFileEntryId(model.getFileEntryId());
+		soapModel.setTreePath(model.getTreePath());
+		soapModel.setFileName(model.getFileName());
 		soapModel.setExtension(model.getExtension());
 		soapModel.setMimeType(model.getMimeType());
 		soapModel.setTitle(model.getTitle());
@@ -51,6 +56,8 @@ public class DLFileVersionSoap implements Serializable {
 		soapModel.setFileEntryTypeId(model.getFileEntryTypeId());
 		soapModel.setVersion(model.getVersion());
 		soapModel.setSize(model.getSize());
+		soapModel.setChecksum(model.getChecksum());
+		soapModel.setLastPublishDate(model.getLastPublishDate());
 		soapModel.setStatus(model.getStatus());
 		soapModel.setStatusByUserId(model.getStatusByUserId());
 		soapModel.setStatusByUserName(model.getStatusByUserName());
@@ -195,6 +202,22 @@ public class DLFileVersionSoap implements Serializable {
 		_fileEntryId = fileEntryId;
 	}
 
+	public String getTreePath() {
+		return _treePath;
+	}
+
+	public void setTreePath(String treePath) {
+		_treePath = treePath;
+	}
+
+	public String getFileName() {
+		return _fileName;
+	}
+
+	public void setFileName(String fileName) {
+		_fileName = fileName;
+	}
+
 	public String getExtension() {
 		return _extension;
 	}
@@ -267,6 +290,22 @@ public class DLFileVersionSoap implements Serializable {
 		_size = size;
 	}
 
+	public String getChecksum() {
+		return _checksum;
+	}
+
+	public void setChecksum(String checksum) {
+		_checksum = checksum;
+	}
+
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	public void setLastPublishDate(Date lastPublishDate) {
+		_lastPublishDate = lastPublishDate;
+	}
+
 	public int getStatus() {
 		return _status;
 	}
@@ -310,6 +349,8 @@ public class DLFileVersionSoap implements Serializable {
 	private long _repositoryId;
 	private long _folderId;
 	private long _fileEntryId;
+	private String _treePath;
+	private String _fileName;
 	private String _extension;
 	private String _mimeType;
 	private String _title;
@@ -319,6 +360,8 @@ public class DLFileVersionSoap implements Serializable {
 	private long _fileEntryTypeId;
 	private String _version;
 	private long _size;
+	private String _checksum;
+	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
 	private String _statusByUserName;

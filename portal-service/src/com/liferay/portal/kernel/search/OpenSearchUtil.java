@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -88,10 +88,15 @@ public class OpenSearchUtil {
 		Element link = addElement(root, "link", DEFAULT_NAMESPACE);
 
 		link.addAttribute("rel", rel);
-		link.addAttribute(
-			"href",
-			searchURL + "?keywords=" + HttpUtil.encodeURL(keywords) + "&p=" +
-				page + "&c=" + itemsPerPage + "&format=atom");
+
+		searchURL = HttpUtil.addParameter(
+			searchURL, "keywords", HttpUtil.encodeURL(keywords));
+		searchURL = HttpUtil.addParameter(searchURL, "p", page);
+		searchURL = HttpUtil.addParameter(searchURL, "c", itemsPerPage);
+		searchURL = HttpUtil.addParameter(searchURL, "format", "atom");
+
+		link.addAttribute("href", searchURL);
+
 		link.addAttribute("type", "application/atom+xml");
 	}
 
@@ -128,7 +133,7 @@ public class OpenSearchUtil {
 		}
 	}
 
-	private static Format _dateFormat =
+	private static final Format _dateFormat =
 		FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:sszzz");
 

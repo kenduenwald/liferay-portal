@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.portal.kernel.portlet;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PortalUtil;
 
 import java.util.Map;
@@ -36,45 +37,56 @@ import java.util.Map;
  */
 public abstract class BaseFriendlyURLMapper implements FriendlyURLMapper {
 
+	@Override
 	public String getMapping() {
 		return _mapping;
 	}
 
+	@Override
 	public String getPortletId() {
 		return _portletId;
 	}
 
+	@Override
 	public Router getRouter() {
 		return router;
 	}
 
+	@Override
 	public boolean isCheckMappingWithPrefix() {
 		return _CHECK_MAPPING_WITH_PREFIX;
 	}
 
+	@Override
 	public boolean isPortletInstanceable() {
 		return _portletInstanceable;
 	}
 
+	@Override
 	public void setMapping(String mapping) {
 		_mapping = mapping;
 	}
 
+	@Override
 	public void setPortletId(String portletId) {
 		_portletId = portletId;
 	}
 
+	@Override
 	public void setPortletInstanceable(boolean portletInstanceable) {
 		_portletInstanceable = portletInstanceable;
 	}
 
+	@Override
 	public void setRouter(Router router) {
 		this.router = router;
 	}
 
 	/**
-	 * @deprecated use {@link #addParameter(Map, String, Object)} instead
+	 * @deprecated As of 6.2.0, replaced by {@link #addParameter(Map, String,
+	 *             Object)}
 	 */
+	@Deprecated
 	protected void addParam(
 		Map<String, String[]> parameterMap, String name, Object value) {
 
@@ -82,9 +94,10 @@ public abstract class BaseFriendlyURLMapper implements FriendlyURLMapper {
 	}
 
 	/**
-	 * @deprecated use {@link #addParameter(String, Map, String, String)}
-	 *             instead
+	 * @deprecated As of 6.2.0, replaced by {@link #addParameter(String, Map,
+	 *             String, String)}
 	 */
+	@Deprecated
 	protected void addParam(
 		Map<String, String[]> parameterMap, String name, String value) {
 
@@ -213,7 +226,7 @@ public abstract class BaseFriendlyURLMapper implements FriendlyURLMapper {
 				if (identiferValue != null) {
 					name = identiferValue;
 				}
-				else {
+				else if (Validator.isNotNull(namespace)) {
 					name = namespace.concat(name);
 				}
 			}
@@ -244,7 +257,7 @@ public abstract class BaseFriendlyURLMapper implements FriendlyURLMapper {
 
 	private static final boolean _CHECK_MAPPING_WITH_PREFIX = true;
 
-	private static Log _log = LogFactoryUtil.getLog(
+	private static final Log _log = LogFactoryUtil.getLog(
 		BaseFriendlyURLMapper.class);
 
 	private String _mapping;
