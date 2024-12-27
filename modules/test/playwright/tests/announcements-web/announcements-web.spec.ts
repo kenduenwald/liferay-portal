@@ -37,3 +37,40 @@ test('LPD-27067 Content field is required', async ({
 
 	await expect(page.getByText('Content *')).toBeVisible();
 });
+
+
+test('LPD-28065 Can Create Announcement', async ({
+	announcementsPage,
+	page,
+}) => {
+	const content = 'Announcements Entry Content';
+	const title = 'Announcements Entry Title';
+	const name = 'Announcements Entry Title';
+
+	await announcementsPage.goToCreateNewAnnouncement();
+
+	await announcementsPage.saveNewAnnouncement(
+		content,
+		title
+	);
+
+	await expect(
+		page.getByText('Success:Your request completed successfully.')
+	).toBeVisible();
+
+	await page.getByText(title).click();
+
+	await expect(
+		page.getByText(title)
+	).toBeVisible();
+
+	await expect(
+		page.getByText(content)
+	).toBeVisible();
+
+	// Clean up
+
+	await announcementsPage.deleteAnnouncement(
+		name
+	);	
+});
